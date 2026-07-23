@@ -71,3 +71,15 @@ export default defineConfig([
   },
 ])
 ```
+
+Dir: import.meta.dirname,
+      },
+      // other options...
+    },
+  },
+])
+
+```
+# Web_Admin
+Phát triển trang web quản lý cho admin
+```
