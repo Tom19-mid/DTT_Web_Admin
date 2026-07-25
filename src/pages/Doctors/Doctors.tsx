@@ -1,3 +1,3 @@
 export default function Doctors() {
-  return <h1 className="text-2x1 font-bold">Doctor s</h1>;
+  return <h1 className="text-2x1 font-bold">Doctors</h1>;
 }
