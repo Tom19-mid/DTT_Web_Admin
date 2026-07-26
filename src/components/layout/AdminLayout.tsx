@@ -1,17 +1,25 @@
-import Sidebar from "../../components/layout/Sidebar";
-import Navbar from "../../components/layout/Navbar";
 import { Outlet } from "react-router-dom";
+import Navbar from "./Navbar";
+import Sidebar from "./Sidebar";
 
 export default function AdminLayout() {
   return (
-    <div className="flex">
+    <div className="flex h-screen bg-gray-100">
+
       <Sidebar />
-      <div className="flex-1">
+
+      <main className="flex-1 flex flex-col overflow-hidden">
+
         <Navbar />
-        <main className="p-6">
+
+        <div className="flex-1 overflow-y-auto">
+
           <Outlet />
-        </main>
-      </div>
+
+        </div>
+
+      </main>
+
     </div>
-  )
+  );
 }
