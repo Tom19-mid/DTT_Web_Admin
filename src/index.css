@@ -1,7 +1,27 @@
 @import "tailwindcss";
 
+* {
+  font-family: Tahoma, Geneva, Verdana, sans-serif;
+}
+
+*:focus,
+*:focus-visible {
+  outline: none !important;
+}
+
+svg,
+svg *,
+.recharts-wrapper,
+.recharts-wrapper *,
+.recharts-surface,
+.recharts-rectangle,
+.recharts-tooltip-cursor {
+  outline: none !important;
+  -webkit-tap-highlight-color: transparent;
+}
+
 body {
   margin: 0;
-  font-family: Inter, sans-serif;
+  font-family: Tahoma, Geneva, Verdana, sans-serif;
   background: #f5f5fa;
 }

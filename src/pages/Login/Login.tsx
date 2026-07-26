@@ -1,10 +1,12 @@
 import DTT_Healthcare from "../../assets/images/DTT_Healthcare.jpg";
 import { User, Lock, Eye, EyeOff } from "lucide-react";
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 export default function Login() {
   const [showPassword, setShowPassword] = useState(false);
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const navigate = useNavigate();
   const handleLogin = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
@@ -20,6 +22,8 @@ export default function Login() {
 
     console.log(username);
     console.log(password);
+
+    navigate("/dashboard");
 
     // await authService.login({ Được dùng cho back-end
     //   username,
@@ -88,8 +92,11 @@ export default function Login() {
             </button>
           </div>
 
-          <button type="submit" className="w-full bg-blue-700 text-white py-3 rounded-lg mt-8 font-semibold 
-                             hover:bg-blue-800 transition duration-300  cursor-pointer">
+          <button
+            type="submit"
+            className="w-full bg-blue-700 text-white py-3 rounded-lg mt-8 font-semibold 
+                             hover:bg-blue-800 transition duration-300  cursor-pointer"
+          >
             Đăng nhập
           </button>
           <div className="text-center mt-4">
