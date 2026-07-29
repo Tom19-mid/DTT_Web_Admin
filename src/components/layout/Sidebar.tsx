@@ -72,7 +72,7 @@ export default function Sidebar() {
   return (
     <aside className="w-72 bg-blue-900 text-white flex flex-col h-screen select-none shrink-0">
       {/* Header */}
-      <div className="h-24 flex items-center px-4 border-b border-white">
+      <div className="h-24 flex items-center px-4 border-b border-blue-700">
         <div className="w-18 h-18 rounded-2xl overflow-hidden bg-white flex items-center justify-center shrink-0 border border-white/20">
           <img src={DTT_Healthcare} alt="Logo" className="w-full h-full object-cover" />
         </div>
@@ -124,7 +124,7 @@ export default function Sidebar() {
       </div>
 
       {/* Footer */}
-      <div className="border-t border-white p-3">
+      <div className="border-t border-blue-800 p-3">
         <button
           onClick={handleLogout}
           className="w-full flex items-center gap-3 px-4 py-3.5 text-red-300 hover:bg-blue-800/60 hover:text-red-200 font-bold rounded-2xl transition cursor-pointer"
