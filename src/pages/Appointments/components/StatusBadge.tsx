@@ -1,0 +1,67 @@
+import type { AppointmentStatusName } from "../types";
+
+interface StatusBadgeProps {
+  status: AppointmentStatusName;
+}
+
+export function formatStatusText(status: AppointmentStatusName): string {
+  switch (status) {
+    case "Scheduled":
+    case "Đã đặt lịch":
+      return "Đã đặt lịch";
+    case "Waiting":
+    case "Đang chờ khám":
+      return "Đang chờ khám";
+    case "InProgress":
+    case "Đang khám":
+      return "Đang khám";
+    case "Completed":
+    case "Đã hoàn thành":
+      return "Đã hoàn thành";
+    case "Cancelled":
+    case "Đã hủy":
+      return "Đã hủy";
+    case "NoShow":
+    case "Không đến khám":
+      return "Không đến khám";
+    default:
+      return status;
+  }
+}
+
+export default function StatusBadge({ status }: StatusBadgeProps) {
+  const getStatusStyle = (st: AppointmentStatusName) => {
+    switch (st) {
+      case "Scheduled":
+      case "Đã đặt lịch":
+        return "bg-blue-100 text-blue-700 border border-blue-200/50";
+      case "Waiting":
+      case "Đang chờ khám":
+        return "bg-amber-100 text-amber-700 border border-amber-200/50";
+      case "InProgress":
+      case "Đang khám":
+        return "bg-indigo-100 text-indigo-700 border border-indigo-200/50";
+      case "Completed":
+      case "Đã hoàn thành":
+        return "bg-emerald-100 text-emerald-700 border border-emerald-200/50";
+      case "Cancelled":
+      case "Đã hủy":
+        return "bg-rose-100 text-rose-700 border border-rose-200/50";
+      case "NoShow":
+      case "Không đến khám":
+        return "bg-gray-100 text-gray-700 border border-gray-200/50";
+      default:
+        return "bg-gray-100 text-gray-600";
+    }
+  };
+
+  return (
+    <span
+      className={`inline-flex items-center justify-center px-3.5 py-1 rounded-full text-base font-semibold whitespace-nowrap ${getStatusStyle(
+        status
+      )}`}
+    >
+      {formatStatusText(status)}
+    </span>
+  );
+}

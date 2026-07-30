@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
-import { X, Calendar, ChevronLeft, ChevronRight } from "lucide-react";
-import type { Patient, PatientStatus } from "../types";
+import { X, Calendar, ChevronLeft, ChevronRight, Save } from "lucide-react";
+import type { Patient, PatientStatus, Gender, VerificationStatus } from "../types";
 import ConfirmLockModal from "./ConfirmLockModal";
 
 interface PatientFormModalProps {
@@ -59,6 +59,12 @@ function CustomDatePicker({
         if (!isNaN(dayNum) && !isNaN(monthNum) && !isNaN(yearNum)) {
           return new Date(yearNum, monthNum - 1, dayNum);
         }
+      }
+    } else if (str && str.includes("-")) {
+      const parts = str.split("-");
+      if (parts.length === 3) {
+        const [y, m, d] = parts;
+        return new Date(Number(y), Number(m) - 1, Number(d));
       }
     }
     return new Date();
@@ -259,8 +265,13 @@ export default function PatientFormModal({
   const [code, setCode] = useState("");
   const [fullName, setFullName] = useState("");
   const [dob, setDob] = useState("");
+  const [gender, setGender] = useState<Gender>("Nam");
   const [phone, setPhone] = useState("");
+  const [address, setAddress] = useState("");
+  const [healthInsuranceNumber, setHealthInsuranceNumber] = useState("");
+  const [cccdNumber, setCccdNumber] = useState("");
   const [specialty, setSpecialty] = useState("Nội khoa");
+  const [verificationStatus, setVerificationStatus] = useState<VerificationStatus>("Chờ duyệt");
   const [status, setStatus] = useState<PatientStatus>("Đang hoạt động");
   const [isConfirmLockOpen, setIsConfirmLockOpen] = useState(false);
 
@@ -269,15 +280,25 @@ export default function PatientFormModal({
       setCode(initialData.code);
       setFullName(initialData.fullName);
       setDob(initialData.dob);
+      setGender(initialData.gender || "Nam");
       setPhone(initialData.phone);
+      setAddress(initialData.address || "");
+      setHealthInsuranceNumber(initialData.healthInsuranceNumber || "");
+      setCccdNumber(initialData.cccdNumber || "");
       setSpecialty(initialData.specialty);
+      setVerificationStatus(initialData.verificationStatus || "Chờ duyệt");
       setStatus(initialData.status);
     } else {
       setCode("");
       setFullName("");
       setDob("");
+      setGender("Nam");
       setPhone("");
+      setAddress("");
+      setHealthInsuranceNumber("");
+      setCccdNumber("");
       setSpecialty("Nội khoa");
+      setVerificationStatus("Chờ duyệt");
       setStatus("Đang hoạt động");
     }
     setIsConfirmLockOpen(false);
@@ -302,14 +323,26 @@ export default function PatientFormModal({
   };
 
   const doSave = () => {
+    const nowStr = new Date().toISOString().replace("T", " ").substring(0, 19);
     onSave({
       id: initialData?.id,
+      patient_id: initialData?.patient_id || initialData?.id,
       code: code.trim() || `#00000${Math.floor(Math.random() * 90) + 10}`,
       fullName: fullName.trim(),
       dob: dob.trim(),
+      gender,
+      address: address.trim(),
+      healthInsuranceNumber: healthInsuranceNumber.trim(),
+      cccdNumber: cccdNumber.trim(),
       phone: phone.trim(),
       specialty,
-      status,
+      status: verificationStatus === "Từ chối" ? "Đã khóa" : status,
+      verificationStatus,
+      verifiedAt: verificationStatus === "Chờ duyệt" ? null : (initialData?.verifiedAt || nowStr),
+      verifiedBy: verificationStatus === "Chờ duyệt" ? null : (initialData?.verifiedBy || "Lễ tân"),
+      verificationNote: initialData?.verificationNote || (verificationStatus === "Đã duyệt" ? "Đã xác minh đầy đủ thông tin." : verificationStatus === "Từ chối" ? "Thông tin chưa hợp lệ." : null),
+      createdAt: initialData?.createdAt || nowStr,
+      updatedAt: nowStr,
     });
     setIsConfirmLockOpen(false);
     onClose();
@@ -318,15 +351,20 @@ export default function PatientFormModal({
   return (
     <>
       <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-xs flex items-center justify-center p-4">
-        <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6 relative animation-fadeIn">
+        <div className="bg-white rounded-2xl shadow-xl w-full max-w-2xl p-6 relative max-h-[90vh] overflow-y-auto animate-in fade-in zoom-in duration-200">
           {/* Header */}
-          <div className="flex items-center justify-between mb-5">
-            <h2 className="text-xl font-bold text-gray-900">
-              {initialData ? "Chỉnh sửa bệnh nhân" : "Thêm bệnh nhân mới"}
-            </h2>
+          <div className="flex items-center justify-between pb-4 border-b border-gray-100 mb-5">
+            <div>
+              <h2 className="text-xl font-bold text-gray-900">
+                {initialData ? "Chỉnh sửa bệnh nhân" : "Tạo bệnh nhân mới"}
+              </h2>
+              <p className="text-sm text-gray-500 mt-0.5">
+                Nhập đầy đủ thông tin bệnh nhân vào hệ thống
+              </p>
+            </div>
             <button
               onClick={onClose}
-              className="p-1 text-gray-400 hover:text-gray-600 rounded-lg transition cursor-pointer"
+              className="p-1.5 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100 transition cursor-pointer"
             >
               <X size={20} />
             </button>
@@ -334,101 +372,171 @@ export default function PatientFormModal({
 
           {/* Form */}
           <form onSubmit={handleFormSubmit} className="space-y-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {/* Mã bệnh nhân */}
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-1">
+                  Mã bệnh nhân
+                </label>
+                <input
+                  type="text"
+                  value={code}
+                  onChange={(e) => setCode(e.target.value)}
+                  placeholder="VD: #000009 (Để trống tự tạo)"
+                  className="w-full border border-gray-300 rounded-xl px-4 py-2.5 text-base text-gray-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all"
+                />
+              </div>
+
+              {/* Họ và tên */}
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-1">
+                  Họ và tên <span className="text-rose-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  value={fullName}
+                  onChange={(e) => setFullName(e.target.value)}
+                  placeholder="Nhập họ và tên bệnh nhân..."
+                  required
+                  className="w-full border border-gray-300 rounded-xl px-4 py-2.5 text-base text-gray-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {/* Ngày sinh */}
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-1">
+                  Ngày sinh <span className="text-rose-500">*</span>
+                </label>
+                <CustomDatePicker value={dob} onChange={setDob} />
+              </div>
+
+              {/* Giới tính */}
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-1">
+                  Giới tính <span className="text-rose-500">*</span>
+                </label>
+                <select
+                  value={gender}
+                  onChange={(e) => setGender(e.target.value as Gender)}
+                  className="w-full border border-gray-300 rounded-xl px-4 py-2.5 text-base text-gray-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 bg-white transition-all cursor-pointer font-medium"
+                >
+                  <option value="Nam">Nam</option>
+                  <option value="Nữ">Nữ</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {/* Số điện thoại */}
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-1">
+                  Số điện thoại
+                </label>
+                <input
+                  type="text"
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                  placeholder="Nhập số điện thoại..."
+                  className="w-full border border-gray-300 rounded-xl px-4 py-2.5 text-base text-gray-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all"
+                />
+              </div>
+
+              {/* Chuyên khoa */}
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-1">
+                  Chuyên khoa <span className="text-rose-500">*</span>
+                </label>
+                <select
+                  value={specialty}
+                  onChange={(e) => setSpecialty(e.target.value)}
+                  className="w-full border border-gray-300 rounded-xl px-4 py-2.5 text-base text-gray-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 bg-white transition-all cursor-pointer font-medium"
+                >
+                  {specialtiesList.map((item) => (
+                    <option key={item} value={item}>
+                      {item}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {/* Số thẻ BHYT */}
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-1">
+                  Số thẻ BHYT
+                </label>
+                <input
+                  type="text"
+                  value={healthInsuranceNumber}
+                  onChange={(e) => setHealthInsuranceNumber(e.target.value)}
+                  placeholder="VD: BHYT000001..."
+                  className="w-full border border-gray-300 rounded-xl px-4 py-2.5 text-base text-gray-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all"
+                />
+              </div>
+
+              {/* Số CCCD / CMND */}
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-1">
+                  Số CCCD / CMND
+                </label>
+                <input
+                  type="text"
+                  value={cccdNumber}
+                  onChange={(e) => setCccdNumber(e.target.value)}
+                  placeholder="VD: 079200000001..."
+                  className="w-full border border-gray-300 rounded-xl px-4 py-2.5 text-base text-gray-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all"
+                />
+              </div>
+            </div>
+
+            {/* Địa chỉ */}
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-1">
-                Mã bệnh nhân
+                Địa chỉ thường trú
               </label>
               <input
                 type="text"
-                value={code}
-                onChange={(e) => setCode(e.target.value)}
-                placeholder="VD: #000009 (Để trống tự tạo)"
+                value={address}
+                onChange={(e) => setAddress(e.target.value)}
+                placeholder="VD: Quận 1, TP. Hồ Chí Minh..."
                 className="w-full border border-gray-300 rounded-xl px-4 py-2.5 text-base text-gray-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all"
               />
             </div>
 
+            {/* Trạng thái xác thực */}
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-1">
-                Họ và tên
-              </label>
-              <input
-                type="text"
-                value={fullName}
-                onChange={(e) => setFullName(e.target.value)}
-                placeholder="Nhập họ và tên bệnh nhân..."
-                required
-                className="w-full border border-gray-300 rounded-xl px-4 py-2.5 text-base text-gray-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-1">
-                Ngày sinh
-              </label>
-              <CustomDatePicker value={dob} onChange={setDob} />
-            </div>
-
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-1">
-                Số điện thoại
-              </label>
-              <input
-                type="text"
-                value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-                placeholder="Nhập số điện thoại..."
-                className="w-full border border-gray-300 rounded-xl px-4 py-2.5 text-base text-gray-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-1">
-                Chuyên khoa
+                Trạng thái xác thực hồ sơ <span className="text-rose-500">*</span>
               </label>
               <select
-                value={specialty}
-                onChange={(e) => setSpecialty(e.target.value)}
-                className="w-full border border-gray-300 rounded-xl px-4 py-2.5 text-base text-gray-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 bg-white transition-all cursor-pointer"
+                value={verificationStatus}
+                onChange={(e) => setVerificationStatus(e.target.value as VerificationStatus)}
+                className="w-full border border-gray-300 rounded-xl px-4 py-2.5 text-base text-gray-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 bg-white transition-all cursor-pointer font-medium"
               >
-                {specialtiesList.map((item) => (
-                  <option key={item} value={item}>
-                    {item}
-                  </option>
-                ))}
+                <option value="Chờ duyệt">Chờ duyệt</option>
+                <option value="Đã duyệt">Đã duyệt</option>
+                <option value="Từ chối">Từ chối</option>
               </select>
             </div>
 
-            {initialData && (
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-1">
-                  Trạng thái
-                </label>
-                <select
-                  value={status}
-                  onChange={(e) => setStatus(e.target.value as PatientStatus)}
-                  className="w-full border border-gray-300 rounded-xl px-4 py-2.5 text-base text-gray-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 bg-white transition-all cursor-pointer"
-                >
-                  <option value="Đang hoạt động">Đang hoạt động</option>
-                  <option value="Ngưng hoạt động">Ngưng hoạt động</option>
-                  <option value="Đã khóa">Đã khóa</option>
-                </select>
-              </div>
-            )}
-
             {/* Action Buttons */}
-            <div className="flex items-center justify-between gap-4 pt-4">
+            <div className="flex items-center justify-end gap-3 pt-5 border-t border-gray-100">
               <button
                 type="button"
                 onClick={onClose}
-                className="w-1/2 py-2.5 border border-gray-300 rounded-xl text-gray-700 font-bold hover:bg-gray-50 transition cursor-pointer text-base"
+                className="px-6 py-2.5 border border-gray-300 rounded-xl text-gray-700 font-bold hover:bg-gray-50 transition cursor-pointer text-base"
               >
                 Hủy
               </button>
               <button
                 type="submit"
-                className="w-1/2 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl shadow-sm transition cursor-pointer text-base"
+                className="inline-flex items-center gap-2 px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl shadow-sm transition cursor-pointer text-base"
               >
-                Lưu
+                <Save size={18} />
+                <span>{initialData ? "Cập nhật" : "Tạo bệnh nhân"}</span>
               </button>
             </div>
           </form>
@@ -443,9 +551,19 @@ export default function PatientFormModal({
           code: code || initialData?.code || "#000000",
           fullName: fullName || "Bệnh nhân",
           dob,
+          gender,
+          address,
+          healthInsuranceNumber,
+          cccdNumber,
           phone,
           specialty,
           status: "Đã khóa",
+          verificationStatus: "Từ chối",
+          verifiedAt: initialData?.verifiedAt || null,
+          verifiedBy: initialData?.verifiedBy || null,
+          verificationNote: initialData?.verificationNote || null,
+          createdAt: initialData?.createdAt || "",
+          updatedAt: initialData?.updatedAt || "",
         }}
         onClose={() => setIsConfirmLockOpen(false)} // Bấm Hủy -> Quay về bảng chỉnh sửa!
         onConfirm={doSave} // Bấm Khóa -> Khóa bệnh nhân và lưu!

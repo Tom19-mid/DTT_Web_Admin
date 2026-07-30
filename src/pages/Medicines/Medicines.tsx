@@ -18,6 +18,16 @@ export default function Medicines() {
   const [viewingMedicine, setViewingMedicine] = useState<Medicine | null>(null);
   const [statusTogglingMedicine, setStatusTogglingMedicine] = useState<Medicine | null>(null);
 
+  // Statistics
+  const totalMedicines = medicines.length;
+  const activeCount = medicines.filter(
+    (m) => m.status === "Active" || m.status === "Đang hoạt động"
+  ).length;
+  const inactiveCount = medicines.filter(
+    (m) => m.status === "Inactive" || m.status === "Ngưng hoạt động"
+  ).length;
+  const categoriesCount = categories.length;
+
   // Open add modal
   const handleOpenAddModal = () => {
     setEditingMedicine(null);
@@ -50,8 +60,8 @@ export default function Medicines() {
         prev.map((m) => (m.medicineId === medicineData.medicineId ? medicineData : m))
       );
     } else {
-      // Insert
-      setMedicines((prev) => [medicineData, ...prev]);
+      // Insert - Append to end of list
+      setMedicines((prev) => [...prev, medicineData]);
     }
   };
 
@@ -59,7 +69,7 @@ export default function Medicines() {
   const handleConfirmStatusToggle = () => {
     if (statusTogglingMedicine) {
       const nextStatus =
-        statusTogglingMedicine.status === "Đang hoạt động"
+        statusTogglingMedicine.status === "Đang hoạt động" || statusTogglingMedicine.status === "Active"
           ? "Ngưng hoạt động"
           : "Đang hoạt động";
 
@@ -81,8 +91,14 @@ export default function Medicines() {
 
   return (
     <div className="p-7 bg-[#f4f6f9] min-h-screen">
-      {/* Top Toolbar matching SpecialtyToolbar design */}
-      <MedicineToolbar onAddMedicine={handleOpenAddModal} />
+      {/* Top Toolbar with Summary Cards */}
+      <MedicineToolbar
+        onAddMedicine={handleOpenAddModal}
+        totalMedicines={totalMedicines}
+        activeCount={activeCount}
+        inactiveCount={inactiveCount}
+        categoriesCount={categoriesCount}
+      />
 
       {/* Main Table View */}
       <MedicineTable

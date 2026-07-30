@@ -1,16 +1,27 @@
-import { Pencil, LockKeyhole } from "lucide-react";
+import { Eye, Pencil, LockKeyhole } from "lucide-react";
 
 interface ActionButtonsProps {
+  onViewDetail?: () => void;
   onEdit?: () => void;
   onLock?: () => void;
 }
 
 export default function ActionButtons({
+  onViewDetail,
   onEdit,
   onLock,
 }: ActionButtonsProps) {
   return (
-    <div className="flex items-center gap-2">
+    <div className="flex items-center justify-center gap-1.5">
+      {onViewDetail && (
+        <button
+          onClick={onViewDetail}
+          title="Xem chi tiết bệnh nhân"
+          className="p-2 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors cursor-pointer"
+        >
+          <Eye size={20} />
+        </button>
+      )}
       <button
         onClick={onEdit}
         title="Chỉnh sửa hồ sơ bệnh nhân"

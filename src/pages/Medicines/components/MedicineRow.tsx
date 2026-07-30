@@ -83,7 +83,7 @@ export default function MedicineRow({
       </td>
 
       {/* 11. Chỉnh sửa (Actions) */}
-      <td className="py-4 px-4">
+      <td className="py-4 px-4 text-center">
         <div className="flex items-center justify-center gap-1.5">
           <button
             onClick={() => onViewDetail(medicine)}

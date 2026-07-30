@@ -12,6 +12,12 @@ export default function Users() {
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [lockingUser, setLockingUser] = useState<User | null>(null);
 
+  // Statistics
+  const totalUsers = users.length;
+  const activeCount = users.filter((u) => u.status === "Đang hoạt động").length;
+  const inactiveCount = users.filter((u) => u.status === "Ngưng hoạt động").length;
+  const lockedCount = users.filter((u) => u.status === "Đã khóa").length;
+
   // Open modal for adding new user
   const handleOpenAddModal = () => {
     setEditingUser(null);
@@ -67,7 +73,13 @@ export default function Users() {
 
   return (
     <div className="p-7 bg-[#f4f6f9] min-h-screen">
-      <UserToolbar onAddUser={handleOpenAddModal} />
+      <UserToolbar
+        onAddUser={handleOpenAddModal}
+        totalUsers={totalUsers}
+        activeCount={activeCount}
+        inactiveCount={inactiveCount}
+        lockedCount={lockedCount}
+      />
       <UserTable
         users={users}
         onEditUser={handleOpenEditModal}

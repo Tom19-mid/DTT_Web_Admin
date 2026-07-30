@@ -4,7 +4,7 @@ export const initialUsers: User[] = [
   {
     id: 1,
     stt: 1,
-    fullName: "Nguyen Van Admin",
+    fullName: "Nguyễn Văn Admin",
     email: "admin@clinic.com",
     phone: "0901234567",
     role: "Admin",
@@ -15,7 +15,7 @@ export const initialUsers: User[] = [
   {
     id: 2,
     stt: 2,
-    fullName: "Tran Thi Lan",
+    fullName: "Trần Thị Lan",
     email: "lan@gmail.com",
     phone: "0912345678",
     role: "Bệnh nhân",
@@ -26,7 +26,7 @@ export const initialUsers: User[] = [
   {
     id: 3,
     stt: 3,
-    fullName: "Dr. Le Van Binh",
+    fullName: "BS. Lê Văn Bình",
     email: "dr.le@clinic.com",
     phone: "0923456789",
     role: "Bác sĩ",
@@ -37,7 +37,7 @@ export const initialUsers: User[] = [
   {
     id: 4,
     stt: 4,
-    fullName: "Dr. Pham Thi Lan",
+    fullName: "BS. Phạm Thị Lan",
     email: "dr.pham@clinic.com",
     phone: "0934567890",
     role: "Bác sĩ",
@@ -48,7 +48,7 @@ export const initialUsers: User[] = [
   {
     id: 5,
     stt: 5,
-    fullName: "Hoang Van Nam",
+    fullName: "Hoàng Văn Nam",
     email: "hoang@clinic.com",
     phone: "0901234567",
     role: "Bệnh nhân",
@@ -59,7 +59,7 @@ export const initialUsers: User[] = [
   {
     id: 6,
     stt: 6,
-    fullName: "Nguyen Van A",
+    fullName: "Nguyễn Văn A",
     email: "a@gmail.com",
     phone: "0956789012",
     role: "Bác sĩ",

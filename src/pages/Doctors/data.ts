@@ -4,7 +4,7 @@ export const initialDoctors: Doctor[] = [
   {
     id: 1,
     stt: 1,
-    fullName: "Dr. Nguyen Van Binh",
+    fullName: "BS. Nguyễn Văn Bình",
     specialty: "Tim mạch",
     qualifications: "MD, PhD",
     experience: "12 năm",
@@ -15,7 +15,7 @@ export const initialDoctors: Doctor[] = [
   {
     id: 2,
     stt: 2,
-    fullName: "Dr. Tran Thi Lan",
+    fullName: "BS. Trần Thị Lan",
     specialty: "Thần kinh học",
     qualifications: "MD",
     experience: "8 năm",
@@ -26,7 +26,7 @@ export const initialDoctors: Doctor[] = [
   {
     id: 3,
     stt: 3,
-    fullName: "Dr. Le Van Phuc",
+    fullName: "BS. Lê Văn Phúc",
     specialty: "Nội khoa",
     qualifications: "MD, FCPS",
     experience: "15 năm",
