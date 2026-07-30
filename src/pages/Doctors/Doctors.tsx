@@ -12,6 +12,12 @@ export default function Doctors() {
   const [editingDoctor, setEditingDoctor] = useState<Doctor | null>(null);
   const [lockingDoctor, setLockingDoctor] = useState<Doctor | null>(null);
 
+  // Statistics
+  const totalDoctors = doctors.length;
+  const activeCount = doctors.filter((d) => d.status === "Đang hoạt động").length;
+  const inactiveCount = doctors.filter((d) => d.status === "Ngưng hoạt động").length;
+  const lockedCount = doctors.filter((d) => d.status === "Đã khóa").length;
+
   // Open modal for adding new doctor
   const handleOpenAddModal = () => {
     setEditingDoctor(null);
@@ -67,7 +73,13 @@ export default function Doctors() {
 
   return (
     <div className="p-7 bg-[#f4f6f9] min-h-screen">
-      <DoctorToolbar onAddDoctor={handleOpenAddModal} />
+      <DoctorToolbar
+        onAddDoctor={handleOpenAddModal}
+        totalDoctors={totalDoctors}
+        activeCount={activeCount}
+        inactiveCount={inactiveCount}
+        lockedCount={lockedCount}
+      />
       <DoctorTable
         doctors={doctors}
         onEditDoctor={handleOpenEditModal}

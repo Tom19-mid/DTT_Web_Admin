@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import type { User } from "../types";
 import UserSearch from "./UserSearch";
 import UserRow from "./UserRow";
@@ -15,36 +15,65 @@ export default function UserTable({
   onLockUser,
 }: UserTableProps) {
   const [searchTerm, setSearchTerm] = useState("");
+  const [selectedStatus, setSelectedStatus] = useState("ALL");
+  const [selectedRole, setSelectedRole] = useState("ALL");
 
-  const filteredUsers = users.filter((user) => {
-    const term = searchTerm.toLowerCase().trim();
-    if (!term) return true;
-    return (
-      user.fullName.toLowerCase().includes(term) ||
-      user.email.toLowerCase().includes(term) ||
-      user.phone.includes(term) ||
-      user.role.toLowerCase().includes(term) ||
-      user.status.toLowerCase().includes(term)
-    );
-  });
+  const roles = useMemo(() => {
+    const roleSet = new Set<string>();
+    users.forEach((u) => roleSet.add(u.role));
+    return Array.from(roleSet);
+  }, [users]);
+
+  const handleReset = () => {
+    setSearchTerm("");
+    setSelectedStatus("ALL");
+    setSelectedRole("ALL");
+  };
+
+  const filteredUsers = useMemo(() => {
+    return users.filter((user) => {
+      const term = searchTerm.toLowerCase().trim();
+      const matchesSearch =
+        !term ||
+        user.fullName.toLowerCase().includes(term) ||
+        user.email.toLowerCase().includes(term) ||
+        user.phone.includes(term);
+
+      const matchesStatus =
+        selectedStatus === "ALL" || user.status === selectedStatus;
+
+      const matchesRole =
+        selectedRole === "ALL" || user.role === selectedRole;
+
+      return matchesSearch && matchesStatus && matchesRole;
+    });
+  }, [users, searchTerm, selectedStatus, selectedRole]);
 
   return (
     <div className="bg-white rounded-2xl border border-gray-100/80 shadow-sm p-6">
-      <UserSearch value={searchTerm} onChange={setSearchTerm} />
+      <UserSearch
+        searchTerm={searchTerm}
+        onSearchChange={setSearchTerm}
+        selectedStatus={selectedStatus}
+        onStatusChange={setSelectedStatus}
+        selectedRole={selectedRole}
+        onRoleChange={setSelectedRole}
+        roles={roles}
+        onReset={handleReset}
+      />
 
       <div className="overflow-x-auto">
-        <table className="w-full text-left border-collapse min-w-[950px]">
+        <table className="w-full text-left border-collapse min-w-[850px]">
           <thead>
             <tr className="bg-gray-200/70 text-gray-800 font-bold text-base">
               <th className="py-4 px-4 text-center rounded-l-xl">STT</th>
-              <th className="py-4 px-4">Họ và tên</th>
               <th className="py-4 px-4">Email</th>
               <th className="py-4 px-4">Số điện thoại</th>
               <th className="py-4 px-4">Vai trò</th>
               <th className="py-4 px-4">Ngày tham gia</th>
-              <th className="py-4 px-4">Lần đăng nhập cuối</th>
+              <th className="py-4 px-4">Cập nhật lần cuối</th>
               <th className="py-4 px-4">Trạng thái</th>
-              <th className="py-4 px-4 rounded-r-xl">Chỉnh sửa</th>
+              <th className="py-4 px-4 text-center rounded-r-xl">Chỉnh sửa</th>
             </tr>
           </thead>
           <tbody>
@@ -60,7 +89,7 @@ export default function UserTable({
             ) : (
               <tr>
                 <td
-                  colSpan={9}
+                  colSpan={8}
                   className="text-center py-10 text-gray-500 font-medium text-lg"
                 >
                   Không tìm thấy tài khoản nào khớp với từ khóa.

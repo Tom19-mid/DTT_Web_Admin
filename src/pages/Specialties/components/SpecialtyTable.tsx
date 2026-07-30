@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import type { Specialty } from "../types";
 import SpecialtySearch from "./SpecialtySearch";
 import SpecialtyRow from "./SpecialtyRow";
@@ -15,20 +15,48 @@ export default function SpecialtyTable({
   onLockSpecialty,
 }: SpecialtyTableProps) {
   const [searchTerm, setSearchTerm] = useState("");
+  const [selectedStatus, setSelectedStatus] = useState("ALL");
+  const [selectedScale, setSelectedScale] = useState("ALL");
 
-  const filteredSpecialties = specialties.filter((specialty) => {
-    const term = searchTerm.toLowerCase().trim();
-    if (!term) return true;
-    return (
-      specialty.name.toLowerCase().includes(term) ||
-      specialty.description.toLowerCase().includes(term) ||
-      specialty.status.toLowerCase().includes(term)
-    );
-  });
+  const handleReset = () => {
+    setSearchTerm("");
+    setSelectedStatus("ALL");
+    setSelectedScale("ALL");
+  };
+
+  const filteredSpecialties = useMemo(() => {
+    return specialties.filter((specialty) => {
+      const term = searchTerm.toLowerCase().trim();
+      const matchesSearch =
+        !term ||
+        specialty.name.toLowerCase().includes(term) ||
+        specialty.description.toLowerCase().includes(term);
+
+      const matchesStatus =
+        selectedStatus === "ALL" || specialty.status === selectedStatus;
+
+      let matchesScale = true;
+      if (selectedScale === "HAS_DOCTORS") {
+        matchesScale = specialty.doctorCount > 0;
+      } else if (selectedScale === "NO_DOCTORS") {
+        matchesScale = specialty.doctorCount === 0;
+      }
+
+      return matchesSearch && matchesStatus && matchesScale;
+    });
+  }, [specialties, searchTerm, selectedStatus, selectedScale]);
 
   return (
     <div className="bg-white rounded-2xl border border-gray-100/80 shadow-sm p-6">
-      <SpecialtySearch value={searchTerm} onChange={setSearchTerm} />
+      <SpecialtySearch
+        searchTerm={searchTerm}
+        onSearchChange={setSearchTerm}
+        selectedStatus={selectedStatus}
+        onStatusChange={setSelectedStatus}
+        selectedScale={selectedScale}
+        onScaleChange={setSelectedScale}
+        onReset={handleReset}
+      />
 
       <div className="overflow-x-auto">
         <table className="w-full text-left border-collapse min-w-[850px]">
@@ -39,7 +67,7 @@ export default function SpecialtyTable({
               <th className="py-4 px-4">Mô tả</th>
               <th className="py-4 px-4 text-center">Số lượng bác sĩ</th>
               <th className="py-4 px-4">Trạng thái</th>
-              <th className="py-4 px-4 rounded-r-xl">Chỉnh sửa</th>
+              <th className="py-4 px-4 text-center rounded-r-xl">Chỉnh sửa</th>
             </tr>
           </thead>
           <tbody>
@@ -56,7 +84,7 @@ export default function SpecialtyTable({
               <tr>
                 <td
                   colSpan={6}
-                  className="text-center py-10 text-gray-500 font-medium text-base"
+                  className="text-center py-10 text-gray-500 font-medium text-lg"
                 >
                   Không tìm thấy chuyên khoa nào khớp với từ khóa.
                 </td>

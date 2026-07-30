@@ -38,13 +38,13 @@ export default function DoctorRow({
           {doctor.email}
         </a>
       </td>
-      <td className="py-4 px-4 font-bold text-gray-900 text-base">
+      <td className="py-4 px-4 text-center font-bold text-gray-800 text-base">
         {doctor.clinicRoom}
       </td>
       <td className="py-4 px-4">
         <StatusBadge status={doctor.status} />
       </td>
-      <td className="py-4 px-4">
+      <td className="py-4 px-4 text-center">
         <ActionButtons
           onEdit={() => onEdit && onEdit(doctor)}
           onLock={() => onLock && onLock(doctor)}

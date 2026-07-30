@@ -1,4 +1,4 @@
-export type SpecialtyStatus = "Đang hoạt động" | "Ngưng hoạt động" | "Đã khóa";
+export type SpecialtyStatus = "Đang hoạt động" | "Ngưng hoạt động";
 
 export interface Specialty {
   id: number;

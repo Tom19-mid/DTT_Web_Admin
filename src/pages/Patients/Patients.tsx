@@ -4,13 +4,21 @@ import type { Patient } from "./types";
 import PatientToolbar from "./components/PatientToolbar";
 import PatientTable from "./components/PatientTable";
 import PatientFormModal from "./components/PatientFormModal";
+import PatientDetailModal from "./components/PatientDetailModal";
 import ConfirmLockModal from "./components/ConfirmLockModal";
 
 export default function Patients() {
   const [patients, setPatients] = useState<Patient[]>(initialPatients);
   const [isFormModalOpen, setIsFormModalOpen] = useState(false);
   const [editingPatient, setEditingPatient] = useState<Patient | null>(null);
+  const [viewingPatient, setViewingPatient] = useState<Patient | null>(null);
   const [lockingPatient, setLockingPatient] = useState<Patient | null>(null);
+
+  // Statistics based on verification status and status
+  const totalPatients = patients.length;
+  const activeCount = patients.filter((p) => (p.verificationStatus || p.status) === "Đã duyệt" || p.status === "Đang hoạt động").length;
+  const inactiveCount = patients.filter((p) => (p.verificationStatus || p.status) === "Chờ duyệt" || p.status === "Ngưng hoạt động").length;
+  const lockedCount = patients.filter((p) => (p.verificationStatus || p.status) === "Từ chối" || p.status === "Đã khóa").length;
 
   // Open modal for adding new patient
   const handleOpenAddModal = () => {
@@ -18,8 +26,14 @@ export default function Patients() {
     setIsFormModalOpen(true);
   };
 
+  // Open modal for viewing detail
+  const handleOpenDetailModal = (patient: Patient) => {
+    setViewingPatient(patient);
+  };
+
   // Open modal for editing patient
   const handleOpenEditModal = (patient: Patient) => {
+    setViewingPatient(null);
     setEditingPatient(patient);
     setIsFormModalOpen(true);
   };
@@ -31,16 +45,28 @@ export default function Patients() {
       setPatients((prev) =>
         prev.map((p) =>
           p.id === patientData.id
-            ? { ...p, ...patientData }
+            ? { ...p, ...patientData, updatedAt: new Date().toISOString().replace("T", " ").substring(0, 19) }
             : p
         )
       );
     } else {
       // Add mode
       const newId = patients.length > 0 ? Math.max(...patients.map((p) => p.id)) + 1 : 1;
+      const nowStr = new Date().toISOString().replace("T", " ").substring(0, 19);
       const newPatient: Patient = {
+        gender: "Nam",
+        address: "Chưa cập nhật",
+        healthInsuranceNumber: `BHYT00000${newId}`,
+        cccdNumber: `07920000000${newId}`,
+        verificationStatus: "Chờ duyệt",
+        verifiedAt: null,
+        verifiedBy: null,
+        verificationNote: null,
+        createdAt: nowStr,
+        updatedAt: nowStr,
         ...patientData,
         id: newId,
+        patient_id: newId,
       };
       setPatients((prev) => [...prev, newPatient]);
     }
@@ -56,7 +82,9 @@ export default function Patients() {
     if (lockingPatient) {
       setPatients((prev) =>
         prev.map((p) =>
-          p.id === lockingPatient.id ? { ...p, status: "Đã khóa" } : p
+          p.id === lockingPatient.id
+            ? { ...p, status: "Đã khóa", verificationStatus: "Từ chối", updatedAt: new Date().toISOString().replace("T", " ").substring(0, 19) }
+            : p
         )
       );
       setLockingPatient(null);
@@ -65,11 +93,26 @@ export default function Patients() {
 
   return (
     <div className="p-7 bg-[#f4f6f9] min-h-screen">
-      <PatientToolbar onAddPatient={handleOpenAddModal} />
+      <PatientToolbar
+        onAddPatient={handleOpenAddModal}
+        totalPatients={totalPatients}
+        activeCount={activeCount}
+        inactiveCount={inactiveCount}
+        lockedCount={lockedCount}
+      />
       <PatientTable
         patients={patients}
+        onViewDetailPatient={handleOpenDetailModal}
         onEditPatient={handleOpenEditModal}
         onLockPatient={handleOpenLockModal}
+      />
+
+      {/* Detail Modal */}
+      <PatientDetailModal
+        isOpen={!!viewingPatient}
+        patient={viewingPatient}
+        onClose={() => setViewingPatient(null)}
+        onEdit={handleOpenEditModal}
       />
 
       {/* Add / Edit Form Modal */}

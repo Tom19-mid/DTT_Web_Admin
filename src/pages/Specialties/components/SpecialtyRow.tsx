@@ -30,7 +30,7 @@ export default function SpecialtyRow({
       <td className="py-4 px-4">
         <StatusBadge status={specialty.status} />
       </td>
-      <td className="py-4 px-4">
+      <td className="py-4 px-4 text-center">
         <ActionButtons
           onEdit={() => onEdit && onEdit(specialty)}
           onLock={() => onLock && onLock(specialty)}
