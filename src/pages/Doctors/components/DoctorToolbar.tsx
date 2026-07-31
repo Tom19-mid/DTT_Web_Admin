@@ -1,18 +1,19 @@
-import { Plus, Stethoscope, UserCheck, UserMinus, UserX } from "lucide-react";
+import { Stethoscope, UserCheck, UserMinus, UserX, Calendar } from "lucide-react";
 
 interface DoctorToolbarProps {
   onAddDoctor?: () => void;
   totalDoctors: number;
   activeCount: number;
   inactiveCount: number;
+  onLeaveCount: number;
   lockedCount: number;
 }
 
 export default function DoctorToolbar({
-  onAddDoctor,
   totalDoctors,
   activeCount,
   inactiveCount,
+  onLeaveCount,
   lockedCount,
 }: DoctorToolbarProps) {
   return (
@@ -20,17 +21,10 @@ export default function DoctorToolbar({
       {/* Header */}
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-gray-900">Quản lý bác sĩ</h1>
-        <button
-          onClick={onAddDoctor}
-          className="bg-blue-600 hover:bg-blue-700 text-white font-bold px-5 py-3 rounded-2xl shadow-sm transition flex items-center gap-2 cursor-pointer active:scale-95 text-base"
-        >
-          <Plus size={20} />
-          <span>Thêm bác sĩ mới</span>
-        </button>
       </div>
 
       {/* Summary Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
         <div className="bg-white p-5 rounded-2xl border border-gray-100/80 shadow-xs flex items-center justify-between">
           <div>
             <p className="text-xs font-bold text-gray-500 uppercase tracking-wider">Tổng bác sĩ</p>
@@ -58,6 +52,16 @@ export default function DoctorToolbar({
           </div>
           <div className="p-3 bg-amber-50 text-amber-600 rounded-xl">
             <UserMinus size={24} />
+          </div>
+        </div>
+
+        <div className="bg-white p-5 rounded-2xl border border-gray-100/80 shadow-xs flex items-center justify-between">
+          <div>
+            <p className="text-xs font-bold text-gray-500 uppercase tracking-wider">Nghỉ phép</p>
+            <p className="text-2xl font-bold text-indigo-600 mt-1">{onLeaveCount}</p>
+          </div>
+          <div className="p-3 bg-indigo-50 text-indigo-600 rounded-xl">
+            <Calendar size={24} />
           </div>
         </div>
 

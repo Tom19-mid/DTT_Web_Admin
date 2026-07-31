@@ -63,12 +63,12 @@ export default function MedicineRow({
       </td>
 
       {/* 7. Đơn giá */}
-      <td className="py-4 px-4 font-semibold text-emerald-600 text-base whitespace-nowrap">
+      <td className="py-4 px-4 font-bold text-emerald-600 text-base whitespace-nowrap">
         {medicine.unitPrice.toLocaleString("vi-VN")} đ
       </td>
 
       {/* 8. Số lượng tồn kho */}
-      <td className="py-4 px-4 text-center font-semibold text-gray-700 text-base">
+      <td className="py-4 px-4 text-center font-bold text-gray-900 text-base">
         {medicine.stockQuantity.toLocaleString("vi-VN")}
       </td>
 

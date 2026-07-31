@@ -4,18 +4,21 @@ import type { Doctor } from "./types";
 import DoctorToolbar from "./components/DoctorToolbar";
 import DoctorTable from "./components/DoctorTable";
 import DoctorFormModal from "./components/DoctorFormModal";
+import DoctorDetailModal from "./components/DoctorDetailModal";
 import ConfirmLockModal from "./components/ConfirmLockModal";
 
 export default function Doctors() {
   const [doctors, setDoctors] = useState<Doctor[]>(initialDoctors);
   const [isFormModalOpen, setIsFormModalOpen] = useState(false);
   const [editingDoctor, setEditingDoctor] = useState<Doctor | null>(null);
+  const [viewingDoctor, setViewingDoctor] = useState<Doctor | null>(null);
   const [lockingDoctor, setLockingDoctor] = useState<Doctor | null>(null);
 
   // Statistics
   const totalDoctors = doctors.length;
   const activeCount = doctors.filter((d) => d.status === "Đang hoạt động").length;
   const inactiveCount = doctors.filter((d) => d.status === "Ngưng hoạt động").length;
+  const onLeaveCount = doctors.filter((d) => d.status === "Nghỉ phép").length;
   const lockedCount = doctors.filter((d) => d.status === "Đã khóa").length;
 
   // Open modal for adding new doctor
@@ -28,6 +31,11 @@ export default function Doctors() {
   const handleOpenEditModal = (doctor: Doctor) => {
     setEditingDoctor(doctor);
     setIsFormModalOpen(true);
+  };
+
+  // Open modal for viewing doctor detail
+  const handleOpenDetailModal = (doctor: Doctor) => {
+    setViewingDoctor(doctor);
   };
 
   // Save (Add or Edit) doctor
@@ -78,10 +86,12 @@ export default function Doctors() {
         totalDoctors={totalDoctors}
         activeCount={activeCount}
         inactiveCount={inactiveCount}
+        onLeaveCount={onLeaveCount}
         lockedCount={lockedCount}
       />
       <DoctorTable
         doctors={doctors}
+        onViewDoctorDetail={handleOpenDetailModal}
         onEditDoctor={handleOpenEditModal}
         onLockDoctor={handleOpenLockModal}
       />
@@ -92,6 +102,17 @@ export default function Doctors() {
         onClose={() => setIsFormModalOpen(false)}
         onSave={handleSaveDoctor}
         initialData={editingDoctor}
+      />
+
+      {/* Doctor Detail Modal */}
+      <DoctorDetailModal
+        isOpen={!!viewingDoctor}
+        doctor={viewingDoctor}
+        onClose={() => setViewingDoctor(null)}
+        onEdit={(doc) => {
+          setViewingDoctor(null);
+          handleOpenEditModal(doc);
+        }}
       />
 
       {/* Lock Confirmation Modal */}

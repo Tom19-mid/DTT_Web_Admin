@@ -52,8 +52,8 @@ export default function AppointmentRow({
         {appointment.reason}
       </td>
 
-      {/* 7. Số thứ tự khám */}
-      <td className="py-4 px-4 text-center font-bold text-base text-gray-800">
+      {/* 7. Số thứ tự khám (Màu xanh nước biển) */}
+      <td className="py-4 px-4 text-center font-bold text-base text-blue-600">
         {appointment.queueNumber}
       </td>
 

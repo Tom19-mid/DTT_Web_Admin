@@ -10,17 +10,6 @@ interface PatientFormModalProps {
   initialData?: Patient | null;
 }
 
-const specialtiesList = [
-  "Nội khoa",
-  "Tim mạch",
-  "Thần kinh",
-  "Da liễu",
-  "Chấn thương chỉnh hình",
-  "Phụ khoa",
-  "Nhãn khoa",
-  "Tai Mũi Họng",
-];
-
 const monthNames = [
   "Tháng 1",
   "Tháng 2",
@@ -121,7 +110,7 @@ function CustomDatePicker({
           readOnly
           onClick={() => setIsOpen(!isOpen)}
           placeholder="Chọn ngày sinh (VD: 15/03/1985)"
-          className="w-full border border-gray-300 rounded-xl px-4 py-2.5 pr-11 text-base text-gray-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all cursor-pointer bg-white"
+          className="w-full border border-gray-300 rounded-xl px-4 py-2.5 pr-11 text-base text-gray-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all cursor-pointer bg-white font-medium"
         />
         <button
           type="button"
@@ -270,7 +259,6 @@ export default function PatientFormModal({
   const [address, setAddress] = useState("");
   const [healthInsuranceNumber, setHealthInsuranceNumber] = useState("");
   const [cccdNumber, setCccdNumber] = useState("");
-  const [specialty, setSpecialty] = useState("Nội khoa");
   const [verificationStatus, setVerificationStatus] = useState<VerificationStatus>("Chờ duyệt");
   const [status, setStatus] = useState<PatientStatus>("Đang hoạt động");
   const [isConfirmLockOpen, setIsConfirmLockOpen] = useState(false);
@@ -285,7 +273,6 @@ export default function PatientFormModal({
       setAddress(initialData.address || "");
       setHealthInsuranceNumber(initialData.healthInsuranceNumber || "");
       setCccdNumber(initialData.cccdNumber || "");
-      setSpecialty(initialData.specialty);
       setVerificationStatus(initialData.verificationStatus || "Chờ duyệt");
       setStatus(initialData.status);
     } else {
@@ -297,7 +284,6 @@ export default function PatientFormModal({
       setAddress("");
       setHealthInsuranceNumber("");
       setCccdNumber("");
-      setSpecialty("Nội khoa");
       setVerificationStatus("Chờ duyệt");
       setStatus("Đang hoạt động");
     }
@@ -313,7 +299,6 @@ export default function PatientFormModal({
       return;
     }
 
-    // If status is changed to "Đã khóa" and it wasn't locked previously
     if (status === "Đã khóa" && initialData?.status !== "Đã khóa") {
       setIsConfirmLockOpen(true);
       return;
@@ -335,7 +320,7 @@ export default function PatientFormModal({
       healthInsuranceNumber: healthInsuranceNumber.trim(),
       cccdNumber: cccdNumber.trim(),
       phone: phone.trim(),
-      specialty,
+      specialty: initialData?.specialty || "Nội khoa",
       status: verificationStatus === "Từ chối" ? "Đã khóa" : status,
       verificationStatus,
       verifiedAt: verificationStatus === "Chờ duyệt" ? null : (initialData?.verifiedAt || nowStr),
@@ -443,26 +428,6 @@ export default function PatientFormModal({
                 />
               </div>
 
-              {/* Chuyên khoa */}
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-1">
-                  Chuyên khoa <span className="text-rose-500">*</span>
-                </label>
-                <select
-                  value={specialty}
-                  onChange={(e) => setSpecialty(e.target.value)}
-                  className="w-full border border-gray-300 rounded-xl px-4 py-2.5 text-base text-gray-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 bg-white transition-all cursor-pointer font-medium"
-                >
-                  {specialtiesList.map((item) => (
-                    <option key={item} value={item}>
-                      {item}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {/* Số thẻ BHYT */}
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-1">
@@ -476,7 +441,9 @@ export default function PatientFormModal({
                   className="w-full border border-gray-300 rounded-xl px-4 py-2.5 text-base text-gray-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all"
                 />
               </div>
+            </div>
 
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {/* Số CCCD / CMND */}
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-1">
@@ -490,20 +457,20 @@ export default function PatientFormModal({
                   className="w-full border border-gray-300 rounded-xl px-4 py-2.5 text-base text-gray-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all"
                 />
               </div>
-            </div>
 
-            {/* Địa chỉ */}
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-1">
-                Địa chỉ thường trú
-              </label>
-              <input
-                type="text"
-                value={address}
-                onChange={(e) => setAddress(e.target.value)}
-                placeholder="VD: Quận 1, TP. Hồ Chí Minh..."
-                className="w-full border border-gray-300 rounded-xl px-4 py-2.5 text-base text-gray-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all"
-              />
+              {/* Địa chỉ */}
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-1">
+                  Địa chỉ thường trú
+                </label>
+                <input
+                  type="text"
+                  value={address}
+                  onChange={(e) => setAddress(e.target.value)}
+                  placeholder="VD: Quận 1, TP. Hồ Chí Minh..."
+                  className="w-full border border-gray-300 rounded-xl px-4 py-2.5 text-base text-gray-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all"
+                />
+              </div>
             </div>
 
             {/* Trạng thái xác thực */}
@@ -556,7 +523,7 @@ export default function PatientFormModal({
           healthInsuranceNumber,
           cccdNumber,
           phone,
-          specialty,
+          specialty: initialData?.specialty || "Nội khoa",
           status: "Đã khóa",
           verificationStatus: "Từ chối",
           verifiedAt: initialData?.verifiedAt || null,
@@ -565,8 +532,8 @@ export default function PatientFormModal({
           createdAt: initialData?.createdAt || "",
           updatedAt: initialData?.updatedAt || "",
         }}
-        onClose={() => setIsConfirmLockOpen(false)} // Bấm Hủy -> Quay về bảng chỉnh sửa!
-        onConfirm={doSave} // Bấm Khóa -> Khóa bệnh nhân và lưu!
+        onClose={() => setIsConfirmLockOpen(false)}
+        onConfirm={doSave}
       />
     </>
   );

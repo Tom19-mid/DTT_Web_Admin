@@ -9,14 +9,14 @@ export default function StatusBadge({ status }: StatusBadgeProps) {
 
   if (isOperating) {
     return (
-      <span className="inline-flex items-center justify-center px-3.5 py-1.5 rounded-full text-base font-semibold bg-emerald-100 text-emerald-600 border border-emerald-200/50 whitespace-nowrap">
+      <span className="inline-flex items-center justify-center px-3 py-1 rounded-full text-sm font-bold bg-emerald-100 text-emerald-600 border border-emerald-200/50 whitespace-nowrap">
         Đang hoạt động
       </span>
     );
   }
 
   return (
-    <span className="inline-flex items-center justify-center px-3.5 py-1.5 rounded-full text-base font-semibold bg-amber-100 text-amber-600 border border-amber-200/50 whitespace-nowrap">
+    <span className="inline-flex items-center justify-center px-3 py-1 rounded-full text-sm font-bold bg-amber-100 text-amber-600 border border-amber-200/50 whitespace-nowrap">
       Ngưng hoạt động
     </span>
   );

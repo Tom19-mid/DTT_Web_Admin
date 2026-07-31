@@ -23,7 +23,7 @@ export default function AppointmentTable({
   const [selectedStatus, setSelectedStatus] = useState<string>("ALL");
   const [selectedDoctor, setSelectedDoctor] = useState<string>("ALL");
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 8;
+  const itemsPerPage = 10;
 
   const handleReset = () => {
     setSearchTerm("");

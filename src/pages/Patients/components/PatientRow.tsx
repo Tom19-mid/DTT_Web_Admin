@@ -17,14 +17,17 @@ export default function PatientRow({
 }: PatientRowProps) {
   return (
     <tr className="border-b border-gray-100 hover:bg-gray-50/60 transition-colors">
-      <td className="py-4 px-4 font-bold text-blue-600 text-base text-center">
+      {/* 1. Mã bệnh nhân */}
+      <td className="py-4 px-4 font-medium text-gray-700 text-base text-center">
         <button
           onClick={() => onViewDetail && onViewDetail(patient)}
-          className="hover:underline cursor-pointer"
+          className="hover:text-blue-600 transition cursor-pointer"
         >
-          {patient.code || `#${patient.id}`}
+          {patient.code || String(patient.id)}
         </button>
       </td>
+
+      {/* 2. Họ và tên */}
       <td className="py-4 px-4 font-bold text-gray-900 text-base">
         <button
           onClick={() => onViewDetail && onViewDetail(patient)}
@@ -33,18 +36,28 @@ export default function PatientRow({
           {patient.fullName}
         </button>
       </td>
-      <td className="py-4 px-4 text-gray-600 font-semibold text-base text-center">
+
+      {/* 3. Ngày sinh */}
+      <td className="py-4 px-4 text-gray-700 font-medium text-base text-center">
         {patient.dob}
       </td>
-      <td className="py-4 px-4 text-gray-800 font-semibold text-base">
+
+      {/* 4. Số điện thoại */}
+      <td className="py-4 px-4 text-gray-700 font-medium text-base text-center">
         {patient.phone}
       </td>
-      <td className="py-4 px-4 text-gray-800 font-bold text-base text-center">
+
+      {/* 5. Giới tính */}
+      <td className="py-4 px-4 text-gray-700 font-medium text-base text-center">
         {patient.gender || "Nam"}
       </td>
-      <td className="py-4 px-4 text-left">
+
+      {/* 6. Trạng thái xác thực hồ sơ */}
+      <td className="py-4 px-4 text-center">
         <StatusBadge status={patient.verificationStatus || patient.status} />
       </td>
+
+      {/* 7. Chỉnh sửa */}
       <td className="py-4 px-4 text-center">
         <ActionButtons
           onViewDetail={() => onViewDetail && onViewDetail(patient)}
