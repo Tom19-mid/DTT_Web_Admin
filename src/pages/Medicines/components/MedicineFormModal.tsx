@@ -69,10 +69,14 @@ function CustomDatePicker({
   };
 
   const [viewDate, setViewDate] = useState<Date>(() => parseDate(value));
+  const [prevValue, setPrevValue] = useState(value);
+  const [prevIsOpen, setPrevIsOpen] = useState(isOpen);
 
-  useEffect(() => {
+  if (prevValue !== value || prevIsOpen !== isOpen) {
+    setPrevValue(value);
+    setPrevIsOpen(isOpen);
     setViewDate(parseDate(value));
-  }, [value, isOpen]);
+  }
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
@@ -295,7 +299,6 @@ export default function MedicineFormModal({
   if (!isOpen) return null;
 
   const handleUnitPriceChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    // Strip non-numeric characters
     const digitsOnly = e.target.value.replace(/\D/g, "");
     if (!digitsOnly) {
       setUnitPriceStr("");
@@ -402,7 +405,7 @@ export default function MedicineFormModal({
               />
             </div>
 
-            {/* Đơn giá (Chỉ nhập số, tự động định dạng 2.000) */}
+            {/* Đơn giá (VNĐ) - Chữ thường font-normal */}
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-1">
                 Đơn giá (VNĐ) <span className="text-rose-500">*</span>
@@ -414,7 +417,7 @@ export default function MedicineFormModal({
                 onChange={handleUnitPriceChange}
                 placeholder="Nhập đơn giá (VD: 5.000)"
                 required
-                className="w-full border border-gray-300 rounded-xl px-4 py-2.5 text-base text-gray-900 font-semibold outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all"
+                className="w-full border border-gray-300 rounded-xl px-4 py-2.5 text-base text-gray-900 font-normal outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all"
               />
             </div>
           </div>

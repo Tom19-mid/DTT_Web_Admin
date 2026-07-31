@@ -94,7 +94,7 @@ export default function PatientSearch({
             }`}
           >
             <Filter size={18} className="text-gray-500" />
-            <span className="text-sm font-medium text-gray-500 hidden sm:inline">Trạng thái:</span>
+            <span className="text-sm font-medium text-gray-500 hidden sm:inline">Trạng thái xác thực hồ sơ:</span>
             <span className="font-bold text-gray-900">{currentStatusLabel}</span>
             <ChevronDown
               size={18}
@@ -105,9 +105,9 @@ export default function PatientSearch({
           </button>
 
           {isStatusOpen && (
-            <div className="absolute right-0 top-full mt-2 w-56 bg-white rounded-2xl shadow-xl border border-gray-100 p-2 z-50 animate-in fade-in zoom-in-95 duration-150">
+            <div className="absolute right-0 top-full mt-2 w-64 bg-white rounded-2xl shadow-xl border border-gray-100 p-2 z-50 animate-in fade-in zoom-in-95 duration-150">
               <div className="text-xs font-bold text-gray-400 px-3 py-1.5 uppercase tracking-wider">
-                Lọc theo trạng thái
+                Lọc theo trạng thái xác thực hồ sơ
               </div>
               <div className="space-y-1">
                 {statusOptions.map((option) => {

@@ -4,7 +4,7 @@ export const initialPatients: Patient[] = [
   {
     id: 1,
     patient_id: 1,
-    code: "#000001",
+    code: "1",
     fullName: "Nguyễn Văn An",
     dob: "15/05/2000",
     gender: "Nam",
@@ -24,7 +24,7 @@ export const initialPatients: Patient[] = [
   {
     id: 2,
     patient_id: 2,
-    code: "#000002",
+    code: "2",
     fullName: "Trần Thị Bình",
     dob: "12/08/1999",
     gender: "Nữ",
@@ -44,7 +44,7 @@ export const initialPatients: Patient[] = [
   {
     id: 3,
     patient_id: 3,
-    code: "#000003",
+    code: "3",
     fullName: "Lê Minh Cường",
     dob: "21/03/1998",
     gender: "Nam",
@@ -64,7 +64,7 @@ export const initialPatients: Patient[] = [
   {
     id: 4,
     patient_id: 4,
-    code: "#000004",
+    code: "4",
     fullName: "Phạm Thị Dung",
     dob: "08/11/2001",
     gender: "Nữ",
@@ -84,7 +84,7 @@ export const initialPatients: Patient[] = [
   {
     id: 5,
     patient_id: 5,
-    code: "#000005",
+    code: "5",
     fullName: "Hoàng Văn Em",
     dob: "17/02/1997",
     gender: "Nam",
@@ -104,7 +104,7 @@ export const initialPatients: Patient[] = [
   {
     id: 6,
     patient_id: 6,
-    code: "#000006",
+    code: "6",
     fullName: "Võ Thị Giang",
     dob: "30/09/2002",
     gender: "Nữ",
@@ -124,7 +124,7 @@ export const initialPatients: Patient[] = [
   {
     id: 7,
     patient_id: 7,
-    code: "#000007",
+    code: "7",
     fullName: "Đặng Quốc Huy",
     dob: "18/06/1995",
     gender: "Nam",
@@ -144,7 +144,7 @@ export const initialPatients: Patient[] = [
   {
     id: 8,
     patient_id: 8,
-    code: "#000008",
+    code: "8",
     fullName: "Bùi Thị Lan",
     dob: "25/01/2003",
     gender: "Nữ",
@@ -164,7 +164,7 @@ export const initialPatients: Patient[] = [
   {
     id: 9,
     patient_id: 9,
-    code: "#000009",
+    code: "9",
     fullName: "Ngô Văn Nam",
     dob: "10/12/1996",
     gender: "Nam",
@@ -184,7 +184,7 @@ export const initialPatients: Patient[] = [
   {
     id: 10,
     patient_id: 10,
-    code: "#000010",
+    code: "10",
     fullName: "Phan Thị Oanh",
     dob: "04/07/2000",
     gender: "Nữ",

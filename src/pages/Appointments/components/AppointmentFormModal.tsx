@@ -79,10 +79,14 @@ function CustomDatePicker({
   };
 
   const [viewDate, setViewDate] = useState<Date>(() => parseDate(value));
+  const [prevValue, setPrevValue] = useState(value);
+  const [prevIsOpen, setPrevIsOpen] = useState(isOpen);
 
-  useEffect(() => {
+  if (prevValue !== value || prevIsOpen !== isOpen) {
+    setPrevValue(value);
+    setPrevIsOpen(isOpen);
     setViewDate(parseDate(value));
-  }, [value, isOpen]);
+  }
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
@@ -260,7 +264,7 @@ function CustomDatePicker({
   );
 }
 
-// Custom Time Slot Picker Component
+// Custom Time Slot Picker Component with regular font weight
 function CustomTimePicker({
   value,
   onChange,
@@ -308,7 +312,7 @@ function CustomTimePicker({
       >
         <div className="flex items-center gap-2.5">
           <Clock size={18} className="text-gray-400" />
-          <span className="font-semibold">{value || "Chọn giờ khám"}</span>
+          <span className="font-normal text-gray-800 text-base">{value || "Chọn giờ khám"}</span>
         </div>
         <ChevronDown
           size={18}
@@ -334,7 +338,7 @@ function CustomTimePicker({
                   onChange(slot);
                   setIsOpen(false);
                 }}
-                className={`w-full flex items-center justify-between px-3.5 py-2 rounded-xl text-base font-semibold transition cursor-pointer ${
+                className={`w-full flex items-center justify-between px-3.5 py-2 rounded-xl text-base font-normal transition cursor-pointer ${
                   isSelected
                     ? "bg-blue-50 text-blue-700 font-bold"
                     : "text-gray-700 hover:bg-gray-100/80 hover:text-gray-900"

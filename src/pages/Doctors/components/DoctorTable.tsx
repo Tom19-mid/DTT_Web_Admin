@@ -2,21 +2,26 @@ import { useState, useMemo } from "react";
 import type { Doctor } from "../types";
 import DoctorSearch from "./DoctorSearch";
 import DoctorRow from "./DoctorRow";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 
 interface DoctorTableProps {
   doctors: Doctor[];
+  onViewDoctorDetail?: (doctor: Doctor) => void;
   onEditDoctor?: (doctor: Doctor) => void;
   onLockDoctor?: (doctor: Doctor) => void;
 }
 
 export default function DoctorTable({
   doctors,
+  onViewDoctorDetail,
   onEditDoctor,
   onLockDoctor,
 }: DoctorTableProps) {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedStatus, setSelectedStatus] = useState("ALL");
   const [selectedSpecialty, setSelectedSpecialty] = useState("ALL");
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
 
   const specialties = useMemo(() => {
     const specSet = new Set<string>();
@@ -28,6 +33,7 @@ export default function DoctorTable({
     setSearchTerm("");
     setSelectedStatus("ALL");
     setSelectedSpecialty("ALL");
+    setCurrentPage(1);
   };
 
   const filteredDoctors = useMemo(() => {
@@ -49,15 +55,31 @@ export default function DoctorTable({
     });
   }, [doctors, searchTerm, selectedStatus, selectedSpecialty]);
 
+  // Pagination calculation
+  const totalPages = Math.ceil(filteredDoctors.length / itemsPerPage) || 1;
+  const paginatedDoctors = useMemo(() => {
+    const start = (currentPage - 1) * itemsPerPage;
+    return filteredDoctors.slice(start, start + itemsPerPage);
+  }, [filteredDoctors, currentPage]);
+
   return (
     <div className="bg-white rounded-2xl border border-gray-100/80 shadow-sm p-6">
       <DoctorSearch
         searchTerm={searchTerm}
-        onSearchChange={setSearchTerm}
+        onSearchChange={(val) => {
+          setSearchTerm(val);
+          setCurrentPage(1);
+        }}
         selectedStatus={selectedStatus}
-        onStatusChange={setSelectedStatus}
+        onStatusChange={(val) => {
+          setSelectedStatus(val);
+          setCurrentPage(1);
+        }}
         selectedSpecialty={selectedSpecialty}
-        onSpecialtyChange={setSelectedSpecialty}
+        onSpecialtyChange={(val) => {
+          setSelectedSpecialty(val);
+          setCurrentPage(1);
+        }}
         specialties={specialties}
         onReset={handleReset}
       />
@@ -78,11 +100,12 @@ export default function DoctorTable({
             </tr>
           </thead>
           <tbody>
-            {filteredDoctors.length > 0 ? (
-              filteredDoctors.map((doctor) => (
+            {paginatedDoctors.length > 0 ? (
+              paginatedDoctors.map((doctor) => (
                 <DoctorRow
                   key={doctor.id}
                   doctor={doctor}
+                  onViewDetail={onViewDoctorDetail}
                   onEdit={onEditDoctor}
                   onLock={onLockDoctor}
                 />
@@ -100,6 +123,51 @@ export default function DoctorTable({
           </tbody>
         </table>
       </div>
+
+      {/* Pagination Footer */}
+      {filteredDoctors.length > 0 && (
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mt-6 pt-4 border-t border-gray-100 text-base text-gray-600">
+          <div>
+            Hiển thị <span className="font-bold text-gray-900">{(currentPage - 1) * itemsPerPage + 1}</span> -{" "}
+            <span className="font-bold text-gray-900">
+              {Math.min(currentPage * itemsPerPage, filteredDoctors.length)}
+            </span>{" "}
+            trên <span className="font-bold text-gray-900">{filteredDoctors.length}</span> bác sĩ
+          </div>
+
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
+              disabled={currentPage === 1}
+              className="p-2.5 border border-gray-200 rounded-xl hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition"
+            >
+              <ChevronLeft size={18} />
+            </button>
+
+            {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+              <button
+                key={page}
+                onClick={() => setCurrentPage(page)}
+                className={`px-4 py-2 rounded-xl font-bold text-base cursor-pointer transition ${
+                  currentPage === page
+                    ? "bg-blue-600 text-white shadow-xs"
+                    : "border border-gray-200 text-gray-700 hover:bg-gray-50"
+                }`}
+              >
+                {page}
+              </button>
+            ))}
+
+            <button
+              onClick={() => setCurrentPage((p) => Math.min(p + 1, totalPages))}
+              disabled={currentPage === totalPages}
+              className="p-2.5 border border-gray-200 rounded-xl hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition"
+            >
+              <ChevronRight size={18} />
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

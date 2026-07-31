@@ -1,68 +1,71 @@
 import { useState, useMemo } from "react";
-import type { Specialty } from "../types";
-import SpecialtySearch from "./SpecialtySearch";
-import SpecialtyRow from "./SpecialtyRow";
+import type { WorkSchedule } from "../types";
+import ScheduleSearch from "./ScheduleSearch";
+import ScheduleRow from "./ScheduleRow";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
-interface SpecialtyTableProps {
-  specialties: Specialty[];
-  onEditSpecialty?: (specialty: Specialty) => void;
-  onLockSpecialty?: (specialty: Specialty) => void;
+interface ScheduleTableProps {
+  schedules: WorkSchedule[];
+  onView: (schedule: WorkSchedule) => void;
+  onEdit: (schedule: WorkSchedule) => void;
+  onToggleLock: (schedule: WorkSchedule) => void;
 }
 
-export default function SpecialtyTable({
-  specialties,
-  onEditSpecialty,
-  onLockSpecialty,
-}: SpecialtyTableProps) {
+export default function ScheduleTable({
+  schedules,
+  onView,
+  onEdit,
+  onToggleLock,
+}: ScheduleTableProps) {
   const [searchTerm, setSearchTerm] = useState("");
+  const [selectedDate, setSelectedDate] = useState("");
   const [selectedStatus, setSelectedStatus] = useState("ALL");
-  const [selectedScale, setSelectedScale] = useState("ALL");
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
 
-  const handleReset = () => {
+  const handleShowAll = () => {
     setSearchTerm("");
+    setSelectedDate("");
     setSelectedStatus("ALL");
-    setSelectedScale("ALL");
     setCurrentPage(1);
   };
 
-  const filteredSpecialties = useMemo(() => {
-    return specialties.filter((specialty) => {
+  const filteredSchedules = useMemo(() => {
+    return schedules.filter((sch) => {
       const term = searchTerm.toLowerCase().trim();
       const matchesSearch =
         !term ||
-        specialty.name.toLowerCase().includes(term) ||
-        specialty.description.toLowerCase().includes(term);
+        sch.scheduleCode.toLowerCase().includes(term) ||
+        sch.doctorName.toLowerCase().includes(term) ||
+        sch.workDate.includes(term);
+
+      const matchesDate = !selectedDate || sch.workDate === selectedDate;
 
       const matchesStatus =
-        selectedStatus === "ALL" || specialty.status === selectedStatus;
+        selectedStatus === "ALL" || sch.status === selectedStatus;
 
-      let matchesScale = true;
-      if (selectedScale === "HAS_DOCTORS") {
-        matchesScale = specialty.doctorCount > 0;
-      } else if (selectedScale === "NO_DOCTORS") {
-        matchesScale = specialty.doctorCount === 0;
-      }
-
-      return matchesSearch && matchesStatus && matchesScale;
+      return matchesSearch && matchesDate && matchesStatus;
     });
-  }, [specialties, searchTerm, selectedStatus, selectedScale]);
+  }, [schedules, searchTerm, selectedDate, selectedStatus]);
 
   // Pagination calculation
-  const totalPages = Math.ceil(filteredSpecialties.length / itemsPerPage) || 1;
-  const paginatedSpecialties = useMemo(() => {
+  const totalPages = Math.ceil(filteredSchedules.length / itemsPerPage) || 1;
+  const paginatedSchedules = useMemo(() => {
     const start = (currentPage - 1) * itemsPerPage;
-    return filteredSpecialties.slice(start, start + itemsPerPage);
-  }, [filteredSpecialties, currentPage]);
+    return filteredSchedules.slice(start, start + itemsPerPage);
+  }, [filteredSchedules, currentPage]);
 
   return (
     <div className="bg-white rounded-2xl border border-gray-100/80 shadow-sm p-6">
-      <SpecialtySearch
+      <ScheduleSearch
         searchTerm={searchTerm}
         onSearchChange={(val) => {
           setSearchTerm(val);
+          setCurrentPage(1);
+        }}
+        selectedDate={selectedDate}
+        onDateChange={(val) => {
+          setSelectedDate(val);
           setCurrentPage(1);
         }}
         selectedStatus={selectedStatus}
@@ -70,43 +73,41 @@ export default function SpecialtyTable({
           setSelectedStatus(val);
           setCurrentPage(1);
         }}
-        selectedScale={selectedScale}
-        onScaleChange={(val) => {
-          setSelectedScale(val);
-          setCurrentPage(1);
-        }}
-        onReset={handleReset}
+        onShowAll={handleShowAll}
       />
 
       <div className="overflow-x-auto">
-        <table className="w-full text-left border-collapse min-w-[850px]">
+        <table className="w-full text-left border-collapse min-w-[1000px]">
           <thead>
             <tr className="bg-gray-200/70 text-gray-800 font-bold text-base">
-              <th className="py-4 px-4 text-center rounded-l-xl">STT</th>
-              <th className="py-4 px-4">Tên chuyên khoa</th>
-              <th className="py-4 px-4">Mô tả</th>
-              <th className="py-4 px-4 text-center">Số lượng bác sĩ</th>
-              <th className="py-4 px-4">Trạng thái</th>
+              <th className="py-4 px-4 text-center rounded-l-xl">Mã lịch làm việc</th>
+              <th className="py-4 px-4">Họ và tên</th>
+              <th className="py-4 px-4 text-center">Ngày làm việc</th>
+              <th className="py-4 px-4 text-center">Thời gian bắt đầu</th>
+              <th className="py-4 px-4 text-center">Thời gian kết thúc</th>
+              <th className="py-4 px-4 text-center">Trạng thái</th>
               <th className="py-4 px-4 text-center rounded-r-xl">Chỉnh sửa</th>
             </tr>
           </thead>
           <tbody>
-            {paginatedSpecialties.length > 0 ? (
-              paginatedSpecialties.map((specialty) => (
-                <SpecialtyRow
-                  key={specialty.id}
-                  specialty={specialty}
-                  onEdit={onEditSpecialty}
-                  onLock={onLockSpecialty}
+            {paginatedSchedules.length > 0 ? (
+              paginatedSchedules.map((schedule) => (
+                <ScheduleRow
+                  key={schedule.scheduleId}
+                  schedule={schedule}
+                  defaultExpanded={false}
+                  onView={onView}
+                  onEdit={onEdit}
+                  onToggleLock={onToggleLock}
                 />
               ))
             ) : (
               <tr>
                 <td
-                  colSpan={6}
+                  colSpan={7}
                   className="text-center py-10 text-gray-500 font-medium text-lg"
                 >
-                  Không tìm thấy chuyên khoa nào khớp với từ khóa.
+                  Không tìm thấy lịch làm việc nào khớp với điều kiện lọc.
                 </td>
               </tr>
             )}
@@ -115,14 +116,14 @@ export default function SpecialtyTable({
       </div>
 
       {/* Pagination Footer */}
-      {filteredSpecialties.length > 0 && (
+      {filteredSchedules.length > 0 && (
         <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mt-6 pt-4 border-t border-gray-100 text-base text-gray-600">
           <div>
             Hiển thị <span className="font-bold text-gray-900">{(currentPage - 1) * itemsPerPage + 1}</span> -{" "}
             <span className="font-bold text-gray-900">
-              {Math.min(currentPage * itemsPerPage, filteredSpecialties.length)}
+              {Math.min(currentPage * itemsPerPage, filteredSchedules.length)}
             </span>{" "}
-            trên <span className="font-bold text-gray-900">{filteredSpecialties.length}</span> chuyên khoa
+            trên <span className="font-bold text-gray-900">{filteredSchedules.length}</span> lịch làm việc
           </div>
 
           <div className="flex items-center gap-2">
