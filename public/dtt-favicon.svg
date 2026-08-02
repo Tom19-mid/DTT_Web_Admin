@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 500" width="100%" height="100%">
+  <!-- Nền màu xanh bo góc mềm (Squircle phong cách ChatGPT / iOS) -->
+  <rect width="500" height="500" rx="120" fill="#0f62fe" />
+
+  <!-- Chữ DTT màu trắng siêu nét, nổi bật chính giữa -->
+  <text
+    x="250"
+    y="318"
+    fill="#ffffff"
+    font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif"
+    font-size="190"
+    font-weight="900"
+    text-anchor="middle"
+    letter-spacing="8"
+  >DTT</text>
+</svg>

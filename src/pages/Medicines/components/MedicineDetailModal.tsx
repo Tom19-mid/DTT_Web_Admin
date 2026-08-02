@@ -20,6 +20,10 @@ export default function MedicineDetailModal({
   if (!isOpen || !medicine) return null;
 
   const category = categories.find((c) => c.categoryId === medicine.categoryId);
+  const status = medicine.status || "Đang hoạt động";
+  const unitPrice = medicine.unitPrice ?? 0;
+  const stockQuantity = medicine.stockQuantity ?? 0;
+  const expiryDate = medicine.expiryDate || "";
 
   const formatDate = (dateStr: string) => {
     if (!dateStr) return "-";
@@ -46,7 +50,7 @@ export default function MedicineDetailModal({
                   Mã thuốc: #{medicine.medicineId}
                 </span>
                 <span className="text-gray-300">•</span>
-                <StatusBadge status={medicine.status} />
+                <StatusBadge status={status} />
               </div>
             </div>
           </div>
@@ -97,7 +101,7 @@ export default function MedicineDetailModal({
                 Đơn giá
               </div>
               <p className="font-bold text-emerald-600 text-lg">
-                {medicine.unitPrice.toLocaleString("vi-VN")} VNĐ
+                {unitPrice.toLocaleString("vi-VN")} VNĐ
               </p>
             </div>
           </div>
@@ -128,7 +132,7 @@ export default function MedicineDetailModal({
                 Số lượng tồn kho
               </div>
               <p className="text-xl font-bold text-gray-900">
-                {medicine.stockQuantity.toLocaleString("vi-VN")} {medicine.unit}
+                {stockQuantity.toLocaleString("vi-VN")}
               </p>
             </div>
 
@@ -137,7 +141,7 @@ export default function MedicineDetailModal({
                 <Calendar size={16} className="text-gray-400" />
                 Hạn sử dụng
               </div>
-              <p className="text-lg font-bold text-gray-900">{formatDate(medicine.expiryDate)}</p>
+              <p className="text-lg font-bold text-gray-900">{formatDate(expiryDate)}</p>
             </div>
           </div>
         </div>

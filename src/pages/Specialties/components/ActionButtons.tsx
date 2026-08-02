@@ -10,7 +10,7 @@ export default function ActionButtons({
   onLock,
 }: ActionButtonsProps) {
   return (
-    <div className="flex items-center gap-2">
+    <div className="flex items-center justify-center gap-1.5">
       <button
         onClick={onEdit}
         title="Chỉnh sửa chuyên khoa"
@@ -20,8 +20,8 @@ export default function ActionButtons({
       </button>
       <button
         onClick={onLock}
-        title="Khóa chuyên khoa"
-        className="p-2 text-rose-500 hover:text-rose-700 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
+        title="Đổi trạng thái (Đang / Ngưng hoạt động)"
+        className="p-2 text-amber-500 hover:text-amber-700 hover:bg-amber-50 rounded-lg transition-colors cursor-pointer"
       >
         <LockKeyhole size={20} />
       </button>

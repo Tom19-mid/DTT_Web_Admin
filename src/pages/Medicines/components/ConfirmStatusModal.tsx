@@ -18,6 +18,8 @@ export default function ConfirmStatusModal({
 
   const isOperating = medicine.status === "Đang hoạt động";
   const targetStatus = isOperating ? "Ngưng hoạt động" : "Đang hoạt động";
+  const targetStatusClass =
+    targetStatus === "Đang hoạt động" ? "text-emerald-600" : "text-amber-600";
 
   return (
     <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-xs flex items-center justify-center p-4">
@@ -39,7 +41,7 @@ export default function ConfirmStatusModal({
             <p className="text-base text-gray-600 mt-2">
               Bạn có muốn thay đổi trạng thái của thuốc{" "}
               <span className="font-bold text-gray-900">"{medicine.medicineName}"</span> sang{" "}
-              <span className="font-bold text-amber-600">"{targetStatus}"</span>?
+              <span className={`font-bold ${targetStatusClass}`}>"{targetStatus}"</span>?
             </p>
           </div>
 

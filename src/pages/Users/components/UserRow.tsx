@@ -12,22 +12,11 @@ interface UserRowProps {
 export default function UserRow({ user, onEdit, onLock }: UserRowProps) {
   return (
     <tr className="border-b border-gray-100 hover:bg-gray-50/60 transition-colors">
-      <td className="py-4 px-4 text-center font-medium text-gray-500 text-base">
-        {user.stt}
-      </td>
-      <td className="py-4 px-4 font-bold text-gray-900 text-base">
-        {user.fullName}
-      </td>
-      <td className="py-4 px-4 text-base">
-        <a
-          href={`mailto:${user.email}`}
-          className="text-gray-600 underline font-medium hover:text-blue-600 transition-colors"
-        >
-          {user.email}
-        </a>
+      <td className="py-4 px-4 text-base text-gray-900 font-bold">
+        {user.email}
       </td>
       <td className="py-4 px-4 text-gray-700 font-medium text-base">
-        {user.phone}
+        {user.phoneNumber || user.phone}
       </td>
       <td className="py-4 px-4">
         <RoleBadge role={user.role} />
@@ -36,12 +25,12 @@ export default function UserRow({ user, onEdit, onLock }: UserRowProps) {
         {user.createdAt}
       </td>
       <td className="py-4 px-4 text-gray-600 font-medium text-base">
-        {user.lastLogin}
+        {user.updatedAt || user.lastLogin || "—"}
       </td>
       <td className="py-4 px-4">
         <StatusBadge status={user.status} />
       </td>
-      <td className="py-4 px-4">
+      <td className="py-4 px-4 text-center">
         <ActionButtons
           onEdit={() => onEdit && onEdit(user)}
           onLock={() => onLock && onLock(user)}

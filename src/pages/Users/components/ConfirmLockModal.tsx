@@ -37,8 +37,8 @@ export default function ConfirmLockModal({
 
           <p className="text-base text-gray-600 mb-6">
             Bạn có chắc chắn muốn khóa tài khoản{" "}
-            <span className="font-bold text-gray-900">{user.fullName}</span> (
-            <span className="text-blue-600">{user.email}</span>) không?
+            <span className="font-bold text-gray-900">{user.email}</span> (SĐT:{" "}
+            <span className="text-blue-600 font-bold">{user.phoneNumber || user.phone}</span>) không?
           </p>
 
           <div className="flex items-center justify-center gap-3 w-full">

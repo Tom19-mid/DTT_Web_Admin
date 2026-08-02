@@ -1,19 +1,44 @@
-export type MedicineStatus = "Đang hoạt động" | "Ngưng hoạt động";
+export type MedicineStatus =
+  | "Active"
+  | "Inactive"
+  | "Đang hoạt động"
+  | "Ngưng hoạt động";
+
+export type MedicinesCategory =
+  | "Active"
+  | "Inactive"
+  | "Đang hoạt động"
+  | "Ngưng hoạt động";
 
 export interface MedicineCategory {
-  categoryId: number;
+  categoryId?: number;
+  id?: number;
   categoryName: string;
+  description?: string;
+  status?: MedicinesCategory;
 }
 
 export interface Medicine {
-  medicineId: number;       // Mã thuốc
-  categoryId: number;       // Mã nhóm thuốc
-  medicineName: string;     // Tên thuốc
-  unit: string;             // Đơn vị tính
-  description: string;      // Mô tả
-  defaultUsage: string;     // Hướng dẫn sử dụng
-  unitPrice: number;        // Đơn giá
-  stockQuantity: number;    // Số lượng tồn kho
-  expiryDate: string;       // Hạn sử dụng (YYYY-MM-DD)
-  status: MedicineStatus;   // Trạng thái ("Đang hoạt động" | "Ngưng hoạt động")
+  medicineId?: number;
+  categoryId?: number;
+  medicineName?: string;
+  unit?: string;
+  description?: string;
+  defaultUsage?: string;
+  unitPrice?: number;
+  status?: MedicineStatus;
+  stockQuantity?: number;
+  expiryDate?: string;
+  createdAt?: string;
+  updatedAt?: string;
+
+  // Joined / UI fields for backward-compatibility
+  id?: number;
+  stt?: number;
+  name?: string;
+  category?: string;
+  categoryName?: string;
+  price?: number;
+  usage?: string;
+  stock?: number;
 }

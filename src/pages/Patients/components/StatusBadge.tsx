@@ -1,30 +1,58 @@
-import type { PatientStatus } from "../types";
+import type { PatientStatus, VerificationStatus } from "../types";
 
 interface StatusBadgeProps {
-  status: PatientStatus;
+  status: PatientStatus | VerificationStatus | string;
 }
 
 export default function StatusBadge({ status }: StatusBadgeProps) {
-  const getStatusStyle = (status: PatientStatus) => {
+  const getStatusStyle = (status: string) => {
     switch (status) {
+      case "verified":
+      case "Đã duyệt":
+      case "Active":
       case "Đang hoạt động":
-        return "bg-emerald-100 text-emerald-600 border border-emerald-200/50";
+        return "bg-emerald-100 text-emerald-700 border border-emerald-200/60";
+      case "pending":
+      case "Chờ duyệt":
+      case "Inactive":
       case "Ngưng hoạt động":
-        return "bg-amber-100 text-amber-600 border border-amber-200/50";
+        return "bg-amber-100 text-amber-700 border border-amber-200/60";
+      case "rejected":
+      case "Từ chối":
+      case "Locked":
       case "Đã khóa":
-        return "bg-rose-100 text-rose-600 border border-rose-200/50";
+        return "bg-rose-100 text-rose-700 border border-rose-200/60";
       default:
-        return "bg-gray-100 text-gray-600";
+        return "bg-gray-100 text-gray-700 border border-gray-200";
+    }
+  };
+
+  const getStatusText = (status: string) => {
+    switch (status) {
+      case "verified":
+        return "Đã xác thực";
+      case "pending":
+        return "Chờ xác thực";
+      case "rejected":
+        return "Từ chối";
+      case "Active":
+        return "Đang hoạt động";
+      case "Inactive":
+        return "Ngưng hoạt động";
+      case "Locked":
+        return "Đã khóa";
+      default:
+        return status;
     }
   };
 
   return (
     <span
-      className={`inline-flex items-center justify-center px-3 py-1 rounded-full text-sm font-bold whitespace-nowrap ${getStatusStyle(
+      className={`inline-flex items-center justify-center px-3.5 py-1 rounded-full text-sm font-bold whitespace-nowrap ${getStatusStyle(
         status
       )}`}
     >
-      {status}
+      {getStatusText(status)}
     </span>
   );
 }
