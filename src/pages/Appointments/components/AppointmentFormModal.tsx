@@ -431,6 +431,9 @@ export default function AppointmentFormModal({
     }
 
     onSave({
+      appointmentId: initialData?.appointmentId ?? initialData?.id ?? nextAppointmentId,
+      patientId: initialData?.patientId ?? 1,
+      doctorId: initialData?.doctorId ?? 1,
       id: initialData?.id ?? nextAppointmentId,
       patientName: patientName.trim(),
       doctorName,

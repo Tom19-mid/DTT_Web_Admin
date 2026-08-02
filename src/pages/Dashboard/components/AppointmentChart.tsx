@@ -10,6 +10,17 @@ import {
 } from "recharts";
 import { appointmentData } from "../chartData";
 
+interface TooltipPayloadItem {
+  name?: string;
+  value?: number | string;
+  color?: string;
+}
+
+interface LegendPayloadItem {
+  value?: string;
+  color?: string;
+}
+
 export default function AppointmentChart() {
   return (
     <div className="bg-white rounded-2xl border border-gray-100/80 shadow-sm p-6 h-full">
@@ -24,14 +35,14 @@ export default function AppointmentChart() {
             content={({ active, payload, label }) => {
               if (active && payload && payload.length) {
                 const desiredOrder = ["Lịch hẹn", "Hoàn thành", "Chưa giải quyết"];
-                const sortedPayload = [...payload].sort(
-                  (a: any, b: any) =>
-                    desiredOrder.indexOf(a.name) - desiredOrder.indexOf(b.name)
+                const sortedPayload = ([...payload] as unknown as TooltipPayloadItem[]).sort(
+                  (a, b) =>
+                    desiredOrder.indexOf(a.name || "") - desiredOrder.indexOf(b.name || "")
                 );
                 return (
                   <div className="bg-white p-3.5 border border-gray-200 shadow-lg rounded-xl text-base">
                     <p className="font-bold text-gray-900 mb-1.5">{label}</p>
-                    {sortedPayload.map((entry: any, index: number) => (
+                    {sortedPayload.map((entry, index) => (
                       <p key={index} style={{ color: entry.color }} className="font-semibold text-sm py-0.5">
                         {entry.name} : {entry.value}
                       </p>
@@ -47,14 +58,14 @@ export default function AppointmentChart() {
               const { payload } = props;
               const desiredOrder = ["Lịch hẹn", "Hoàn thành", "Chưa giải quyết"];
               const sortedPayload = payload
-                ? [...payload].sort(
-                    (a: any, b: any) =>
-                      desiredOrder.indexOf(a.value) - desiredOrder.indexOf(b.value)
+                ? ([...payload] as unknown as LegendPayloadItem[]).sort(
+                    (a, b) =>
+                      desiredOrder.indexOf(a.value || "") - desiredOrder.indexOf(b.value || "")
                   )
                 : [];
               return (
                 <ul className="flex flex-row items-center justify-center gap-7 mt-5" dir="ltr">
-                  {sortedPayload.map((entry: any, index: number) => (
+                  {sortedPayload.map((entry, index) => (
                     <li key={`item-${index}`} className="flex items-center gap-2.5 text-base">
                       <span
                         className="w-3 h-3 rounded-full inline-block"

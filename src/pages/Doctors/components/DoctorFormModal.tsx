@@ -79,10 +79,14 @@ function CustomLeaveDatePicker({
   };
 
   const [viewDate, setViewDate] = useState<Date>(() => parseDate(value));
+  const [prevValue, setPrevValue] = useState(value);
+  const [prevIsOpen, setPrevIsOpen] = useState(isOpen);
 
-  useEffect(() => {
+  if (prevValue !== value || prevIsOpen !== isOpen) {
+    setPrevValue(value);
+    setPrevIsOpen(isOpen);
     setViewDate(parseDate(value));
-  }, [value, isOpen]);
+  }
 
   // Auto scroll modal scrollbar to the bottom when calendar opens so it's 100% visible
   useEffect(() => {
@@ -322,12 +326,12 @@ export default function DoctorFormModal({
     setPrevInitialData(initialData);
     setPrevIsOpen(isOpen);
     if (initialData) {
-      setFullName(initialData.fullName);
+      setFullName(initialData.fullName || "");
       setAvatar(initialData.avatar || "");
-      setSpecialty(initialData.specialty);
-      setQualifications(initialData.qualifications);
-      setExperience(initialData.experience);
-      setEmail(initialData.email);
+      setSpecialty(initialData.specialty || "");
+      setQualifications(initialData.qualifications || "");
+      setExperience(String(initialData.experience ?? ""));
+      setEmail(initialData.email || "");
       setClinicRoom(initialData.clinicRoom || "");
       setStatus(initialData.status);
       setLeaveStartDate(initialData.leaveStartDate || getTodayFormatted());
@@ -368,6 +372,7 @@ export default function DoctorFormModal({
 
   const doSave = () => {
     onSave({
+      doctorId: initialData?.doctorId ?? initialData?.id,
       id: initialData?.id,
       fullName: fullName.trim(),
       avatar: avatar.trim() || undefined,

@@ -6,7 +6,7 @@ import ConfirmLockModal from "./ConfirmLockModal";
 interface UserFormModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSave: (userData: Omit<User, "id" | "stt"> & { id?: number }) => void;
+  onSave: (userData: Omit<User, "id" | "stt"> & { id?: string | number }) => void;
   initialData?: User | null;
 }
 
@@ -16,29 +16,31 @@ export default function UserFormModal({
   onSave,
   initialData,
 }: UserFormModalProps) {
-  const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
-  const [role, setRole] = useState<UserRole>("Admin");
-  const [status, setStatus] = useState<UserStatus>("Đang hoạt động");
+  const [role, setRole] = useState<UserRole | string>("Admin");
+  const [status, setStatus] = useState<UserStatus | string>("Đang hoạt động");
   const [isConfirmLockOpen, setIsConfirmLockOpen] = useState(false);
 
-  useEffect(() => {
+  const [prevInitialData, setPrevInitialData] = useState<User | null | undefined>(undefined);
+  const [prevIsOpen, setPrevIsOpen] = useState(false);
+
+  if (initialData !== prevInitialData || isOpen !== prevIsOpen) {
+    setPrevInitialData(initialData);
+    setPrevIsOpen(isOpen);
     if (initialData) {
-      setFullName(initialData.fullName);
-      setEmail(initialData.email);
-      setPhone(initialData.phone);
-      setRole(initialData.role);
-      setStatus(initialData.status);
+      setEmail(initialData.email || "");
+      setPhone(initialData.phone || initialData.phoneNumber || "");
+      setRole(initialData.role || "Admin");
+      setStatus(initialData.status || "Đang hoạt động");
     } else {
-      setFullName("");
       setEmail("");
       setPhone("");
       setRole("Admin");
       setStatus("Đang hoạt động");
     }
     setIsConfirmLockOpen(false);
-  }, [initialData, isOpen]);
+  }
 
   if (!isOpen) return null;
 
@@ -66,13 +68,14 @@ export default function UserFormModal({
 
     onSave({
       id: initialData?.id,
-      fullName: fullName.trim(),
+      userId: initialData?.userId,
       email: email.trim(),
       phone: phone.trim(),
+      phoneNumber: phone.trim(),
       role,
       status,
       createdAt: initialData?.createdAt || formattedDate,
-      lastLogin: initialData?.lastLogin || formattedDate,
+      updatedAt: initialData?.updatedAt || formattedDate,
     });
 
     setIsConfirmLockOpen(false);
@@ -200,12 +203,11 @@ export default function UserFormModal({
         user={{
           id: initialData?.id || 0,
           stt: initialData?.stt || 0,
-          fullName: fullName || "Tài khoản",
           email: email || "",
           phone,
           role,
           createdAt: initialData?.createdAt || "",
-          lastLogin: initialData?.lastLogin || "",
+          updatedAt: initialData?.updatedAt || "",
           status: "Đã khóa",
         }}
         onClose={() => setIsConfirmLockOpen(false)} // Bấm Hủy -> Quay về form chỉnh sửa!

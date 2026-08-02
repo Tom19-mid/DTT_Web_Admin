@@ -6,6 +6,7 @@ import PatientTable from "./components/PatientTable";
 import PatientFormModal from "./components/PatientFormModal";
 import PatientDetailModal from "./components/PatientDetailModal";
 import ConfirmLockModal from "./components/ConfirmLockModal";
+import { getPatientAccountStatus } from "./components/PatientRow";
 
 export default function Patients() {
   const [patients, setPatients] = useState<Patient[]>(initialPatients);
@@ -14,11 +15,11 @@ export default function Patients() {
   const [viewingPatient, setViewingPatient] = useState<Patient | null>(null);
   const [lockingPatient, setLockingPatient] = useState<Patient | null>(null);
 
-  // Statistics based on verification status and status
+  // Statistics based on account status
   const totalPatients = patients.length;
-  const activeCount = patients.filter((p) => (p.verificationStatus || p.status) === "Đã duyệt" || p.status === "Đang hoạt động").length;
-  const inactiveCount = patients.filter((p) => (p.verificationStatus || p.status) === "Chờ duyệt" || p.status === "Ngưng hoạt động").length;
-  const lockedCount = patients.filter((p) => (p.verificationStatus || p.status) === "Từ chối" || p.status === "Đã khóa").length;
+  const activeCount = patients.filter((p) => getPatientAccountStatus(p) === "Đang hoạt động").length;
+  const inactiveCount = patients.filter((p) => getPatientAccountStatus(p) === "Ngưng hoạt động").length;
+  const lockedCount = patients.filter((p) => getPatientAccountStatus(p) === "Đã khóa").length;
 
   // Open modal for adding new patient
   const handleOpenAddModal = () => {

@@ -37,8 +37,10 @@ export default function ConfirmLockModal({
 
           <p className="text-base text-gray-600 mb-6">
             Bạn có chắc chắn muốn khóa hồ sơ của bệnh nhân{" "}
-            <span className="font-bold text-gray-900">{patient.fullName}</span> (
-            <span className="text-blue-600 font-bold">{patient.code}</span>) không?
+            <span className="font-bold text-gray-900">{patient.fullName || `Bệnh nhân #${patient.patientId || patient.id}`}</span>
+            {(patient.code || patient.healthInsuranceNumber || patient.phoneNumber) && (
+              <> (<span className="text-blue-600 font-bold">{patient.code || patient.healthInsuranceNumber || patient.phoneNumber}</span>)</>
+            )} không?
           </p>
 
           <div className="flex items-center justify-center gap-3 w-full">

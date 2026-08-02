@@ -68,7 +68,7 @@ export default function WorkSchedules() {
 
           // ONLY "Chưa đặt lịch" slots get closed. "Đã đặt lịch" slots remain UNCHANGED!
           const updatedSlots = item.timeSlots.map((slot) => {
-            if (slot.status === "Đã đặt lịch" || slot.patientName) {
+            if (slot.status === "Đã đặt lịch") {
               return { ...slot, status: "Đã đặt lịch" as const };
             }
             if (!isCurrentlyLocked) {
@@ -85,7 +85,7 @@ export default function WorkSchedules() {
           });
 
           // Determine parent status when unlocking
-          let newStatus = item.status;
+          let newStatus: string;
           if (!isCurrentlyLocked) {
             newStatus = "Không hoạt động";
           } else {

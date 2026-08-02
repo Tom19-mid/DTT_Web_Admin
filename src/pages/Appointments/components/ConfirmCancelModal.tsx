@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { AlertTriangle, X } from "lucide-react";
 import type { Appointment } from "../types";
 
@@ -15,21 +15,25 @@ export default function ConfirmCancelModal({
   onClose,
   onConfirmCancel,
 }: ConfirmCancelModalProps) {
+  const [prevAppointment, setPrevAppointment] = useState<Appointment | null>(null);
   const [cancelReason, setCancelReason] = useState("Bệnh nhân yêu cầu hủy lịch");
   const [cancelledBy, setCancelledBy] = useState("Lễ tân");
 
-  useEffect(() => {
-    if (appointment) {
-      setCancelReason("Bệnh nhân yêu cầu hủy lịch");
-      setCancelledBy("Lễ tân");
-    }
-  }, [appointment]);
+  if (appointment !== prevAppointment) {
+    setPrevAppointment(appointment);
+    setCancelReason("Bệnh nhân yêu cầu hủy lịch");
+    setCancelledBy("Lễ tân");
+  }
 
   if (!isOpen || !appointment) return null;
 
   const handleConfirm = (e: React.FormEvent) => {
     e.preventDefault();
-    onConfirmCancel(appointment.id, cancelReason.trim() || "Lễ tân hủy lịch", cancelledBy.trim() || "Lễ tân");
+    onConfirmCancel(
+      appointment.appointmentId ?? appointment.id,
+      cancelReason.trim() || "Lễ tân hủy lịch",
+      cancelledBy.trim() || "Lễ tân"
+    );
     onClose();
   };
 

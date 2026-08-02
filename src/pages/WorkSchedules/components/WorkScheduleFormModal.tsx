@@ -43,6 +43,74 @@ const generateTimeOptions8to22 = (): string[] => {
 
 const TIME_OPTIONS_8_TO_22 = generateTimeOptions8to22();
 
+const SLOT_DURATION = 30;
+
+const timeToMinutes = (time: string): number => {
+  const [h, m] = time.split(":").map(Number);
+  return h * 60 + m;
+};
+
+const minutesToTime = (total: number): string => {
+  const h = String(Math.floor(total / 60)).padStart(2, "0");
+  const m = String(total % 60).padStart(2, "0");
+  return `${h}:${m}`;
+};
+
+const generateTimeSlots = (
+  startTime: string,
+  endTime: string,
+  scheduleCode: string,
+  existingSlots: TimeSlot[] = []
+): TimeSlot[] => {
+  const startTotal = timeToMinutes(startTime);
+  const endTotal = timeToMinutes(endTime);
+
+  const existingMap = new Map<string, TimeSlot>();
+  for (const slot of existingSlots) {
+    if (slot.startTime && slot.endTime) {
+      existingMap.set(`${slot.startTime}-${slot.endTime}`, slot);
+    }
+  }
+
+  let order = 1;
+  const newSlots: TimeSlot[] = [];
+  let nextSlotId =
+    existingSlots.reduce((max, s) => Math.max(max, s.slotId || 0), 0) + 1;
+
+  let currTotal = startTotal;
+  while (currTotal + SLOT_DURATION <= endTotal) {
+    const nextTotal = currTotal + SLOT_DURATION;
+    const slotStart = minutesToTime(currTotal);
+    const slotEnd = minutesToTime(nextTotal);
+    const key = `${slotStart}-${slotEnd}`;
+
+    const existing = existingMap.get(key);
+    if (existing) {
+      newSlots.push({
+        ...existing,
+        scheduleCode,
+        slotOrder: order,
+        slotCode: String(order),
+      });
+    } else {
+      newSlots.push({
+        slotId: nextSlotId++,
+        slotCode: String(order),
+        scheduleCode,
+        slotOrder: order,
+        startTime: slotStart,
+        endTime: slotEnd,
+        status: "Chưa đặt lịch",
+      });
+    }
+
+    currTotal = nextTotal;
+    order++;
+  }
+
+  return newSlots;
+};
+
 function CustomDatePicker({
   value,
   onChange,
@@ -361,12 +429,17 @@ export default function WorkScheduleFormModal({
   const [endTime, setEndTime] = useState("12:00");
   const modalScrollRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
+  const [prevInitialData, setPrevInitialData] = useState<WorkSchedule | null | undefined>(undefined);
+  const [prevIsOpen, setPrevIsOpen] = useState(false);
+
+  if (initialData !== prevInitialData || isOpen !== prevIsOpen) {
+    setPrevInitialData(initialData);
+    setPrevIsOpen(isOpen);
     if (initialData) {
-      setDoctorName(initialData.doctorName);
-      setWorkDate(initialData.workDate);
-      setStartTime(initialData.startTime);
-      setEndTime(initialData.endTime);
+      setDoctorName(initialData.doctorName || doctorsList[0]);
+      setWorkDate(initialData.workDate || "");
+      setStartTime(initialData.startTime || "08:00");
+      setEndTime(initialData.endTime || "12:00");
     } else {
       const today = new Date();
       const dStr = String(today.getDate()).padStart(2, "0");
@@ -377,7 +450,7 @@ export default function WorkScheduleFormModal({
       setStartTime("08:00");
       setEndTime("12:00");
     }
-  }, [initialData, isOpen]);
+  }
 
   const handleDropdownOpened = (open: boolean) => {
     if (open && modalScrollRef.current) {
@@ -402,46 +475,37 @@ export default function WorkScheduleFormModal({
     const targetScheduleId = initialData?.scheduleId ?? nextScheduleId;
     const scheduleCodeStr = String(targetScheduleId);
 
-    let generatedSlots: TimeSlot[] = initialData?.timeSlots || [];
-
-    if (!initialData) {
-      const slotDuration = 30; // Default 30-minute interval
-      const [startH, startM] = startTime.split(":").map(Number);
-      const [endH, endM] = endTime.split(":").map(Number);
-      let currTotal = startH * 60 + startM;
-      const endTotal = endH * 60 + endM;
-
-      let order = 1;
-      const newSlots: TimeSlot[] = [];
-
-      while (currTotal + slotDuration <= endTotal) {
-        const nextTotal = currTotal + slotDuration;
-        const sH = String(Math.floor(currTotal / 60)).padStart(2, "0");
-        const sM = String(currTotal % 60).padStart(2, "0");
-        const eH = String(Math.floor(nextTotal / 60)).padStart(2, "0");
-        const eM = String(nextTotal % 60).padStart(2, "0");
-
-        newSlots.push({
-          slotId: Math.floor(Math.random() * 9000) + 1000,
-          slotCode: String(order),
-          scheduleCode: scheduleCodeStr,
-          slotOrder: order,
-          startTime: `${sH}:${sM}`,
-          endTime: `${eH}:${eM}`,
-          status: "Chưa đặt lịch",
-        });
-
-        currTotal = nextTotal;
-        order++;
-      }
-      generatedSlots = newSlots;
-    } else {
-      // If editing, ensure timeSlots scheduleCode matches parent scheduleCode
-      generatedSlots = generatedSlots.map((slot) => ({
-        ...slot,
-        scheduleCode: scheduleCodeStr,
-      }));
+    if (timeToMinutes(startTime) >= timeToMinutes(endTime)) {
+      alert("Thời gian kết thúc phải lớn hơn thời gian bắt đầu!");
+      return;
     }
+
+    if (initialData?.timeSlots) {
+      const newStart = timeToMinutes(startTime);
+      const newEnd = timeToMinutes(endTime);
+      const hasBookedOutsideRange = initialData.timeSlots.some((slot) => {
+        if (slot.status !== "Đã đặt lịch" || !slot.startTime || !slot.endTime) {
+          return false;
+        }
+        const slotStart = timeToMinutes(slot.startTime);
+        const slotEnd = timeToMinutes(slot.endTime);
+        return slotStart < newStart || slotEnd > newEnd;
+      });
+
+      if (hasBookedOutsideRange) {
+        alert(
+          "Không thể thu hẹp khung giờ vì có khung giờ đã được đặt lịch nằm ngoài phạm vi mới."
+        );
+        return;
+      }
+    }
+
+    const generatedSlots = generateTimeSlots(
+      startTime,
+      endTime,
+      scheduleCodeStr,
+      initialData?.timeSlots || []
+    );
 
     onSave({
       scheduleId: targetScheduleId,

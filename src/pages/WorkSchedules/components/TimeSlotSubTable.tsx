@@ -45,49 +45,53 @@ export default function TimeSlotSubTable({
           </thead>
           <tbody>
             {timeSlots.length > 0 ? (
-              timeSlots.map((slot) => (
-                <tr
-                  key={slot.slotId}
-                  className="border-b border-slate-100 hover:bg-blue-50/40 transition-colors text-base font-medium"
-                >
-                  {/* Mã khung giờ (Chữ màu đen) */}
-                  <td className="py-3.5 px-4 text-center font-medium text-gray-800 text-base">
-                    {slot.slotCode}
-                  </td>
+              timeSlots.map((slot) => {
+                const slotScheduleCode = slot.scheduleCode || scheduleCode;
 
-                  {/* Số thứ tự (Dạng chữ xanh lam in đậm theo ảnh mẫu) */}
-                  <td className="py-3.5 px-4 text-center font-bold text-blue-600 text-base">
-                    {slot.slotOrder}
-                  </td>
+                return (
+                  <tr
+                    key={slot.slotId}
+                    className="border-b border-slate-100 hover:bg-blue-50/40 transition-colors text-base font-medium"
+                  >
+                    {/* Mã khung giờ (Chữ màu đen) */}
+                    <td className="py-3.5 px-4 text-center font-medium text-gray-800 text-base">
+                      {slotScheduleCode}
+                    </td>
 
-                  {/* Mã lịch làm việc (Huy hiệu tròn màu xanh nước biển) */}
-                  <td className="py-3.5 px-4 text-center">
-                    <div className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-blue-100/90 text-blue-600 font-bold text-sm shadow-2xs">
-                      {slot.scheduleCode}
-                    </div>
-                  </td>
+                    {/* Số thứ tự (Dạng chữ xanh lam in đậm theo ảnh mẫu) */}
+                    <td className="py-3.5 px-4 text-center font-bold text-blue-600 text-base">
+                      {slot.slotOrder}
+                    </td>
 
-                  {/* Thời gian bắt đầu */}
-                  <td className="py-3.5 px-4 text-center font-medium text-gray-700 text-base">
-                    {slot.startTime}
-                  </td>
+                    {/* Mã lịch làm việc (Huy hiệu tròn màu xanh nước biển) */}
+                    <td className="py-3.5 px-4 text-center">
+                      <div className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-blue-100/90 text-blue-600 font-bold text-sm shadow-2xs">
+                        {slotScheduleCode}
+                      </div>
+                    </td>
 
-                  {/* Thời gian kết thúc */}
-                  <td className="py-3.5 px-4 text-center font-medium text-gray-700 text-base">
-                    {slot.endTime}
-                  </td>
+                    {/* Thời gian bắt đầu */}
+                    <td className="py-3.5 px-4 text-center font-medium text-gray-700 text-base">
+                      {slot.startTime}
+                    </td>
 
-                  {/* Trạng thái */}
-                  <td className="py-3.5 px-4 text-center">
-                    <SlotStatusBadge status={slot.status} />
-                    {slot.patientName && (
-                      <span className="block text-xs text-emerald-700 font-semibold mt-0.5">
-                        (BN: {slot.patientName})
-                      </span>
-                    )}
-                  </td>
-                </tr>
-              ))
+                    {/* Thời gian kết thúc */}
+                    <td className="py-3.5 px-4 text-center font-medium text-gray-700 text-base">
+                      {slot.endTime}
+                    </td>
+
+                    {/* Trạng thái */}
+                    <td className="py-3.5 px-4 text-center">
+                      <SlotStatusBadge status={slot.status || "Chưa đặt lịch"} />
+                      {slot.patientName && (
+                        <span className="block text-xs text-emerald-700 font-semibold mt-0.5">
+                          (BN: {slot.patientName})
+                        </span>
+                      )}
+                    </td>
+                  </tr>
+                );
+              })
             ) : (
               <tr>
                 <td

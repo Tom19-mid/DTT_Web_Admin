@@ -9,6 +9,22 @@ interface PatientRowProps {
   onLock?: (patient: Patient) => void;
 }
 
+export const getPatientAccountStatus = (patient: Patient) => {
+  switch (patient.status) {
+    case "Đã duyệt":
+    case "Chờ duyệt":
+    case "Active":
+      return "Đang hoạt động";
+    case "Inactive":
+      return "Ngưng hoạt động";
+    case "Từ chối":
+    case "Locked":
+      return "Đã khóa";
+    default:
+      return patient.status || "Đang hoạt động";
+  }
+};
+
 export default function PatientRow({
   patient,
   onViewDetail,
@@ -52,12 +68,17 @@ export default function PatientRow({
         {patient.gender || "Nam"}
       </td>
 
-      {/* 6. Trạng thái xác thực hồ sơ */}
+      {/* 6. Trạng thái */}
       <td className="py-4 px-4 text-center">
-        <StatusBadge status={patient.verificationStatus || patient.status} />
+        <StatusBadge status={getPatientAccountStatus(patient)} />
       </td>
 
-      {/* 7. Chỉnh sửa */}
+      {/* 7. Trạng thái xác thực hồ sơ */}
+      <td className="py-4 px-4 text-center">
+        <StatusBadge status={patient.verificationStatus || "Chờ duyệt"} />
+      </td>
+
+      {/* 8. Chỉnh sửa */}
       <td className="py-4 px-4 text-center">
         <ActionButtons
           onViewDetail={() => onViewDetail && onViewDetail(patient)}

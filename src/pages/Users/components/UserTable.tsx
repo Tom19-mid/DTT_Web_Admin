@@ -39,9 +39,8 @@ export default function UserTable({
       const term = searchTerm.toLowerCase().trim();
       const matchesSearch =
         !term ||
-        user.fullName.toLowerCase().includes(term) ||
-        user.email.toLowerCase().includes(term) ||
-        user.phone.includes(term);
+        (user.email || "").toLowerCase().includes(term) ||
+        (user.phone || user.phoneNumber || "").includes(term);
 
       const matchesStatus =
         selectedStatus === "ALL" || user.status === selectedStatus;

@@ -3,10 +3,8 @@ import type { WorkSchedule } from "./types";
 export const initialWorkSchedules: WorkSchedule[] = [
   {
     scheduleId: 1,
-    scheduleCode: "1",
     doctorId: 1,
     doctorName: "BS. Nguyễn Văn Bình",
-    specialty: "Tim mạch",
     workDate: "31/07/2026",
     startTime: "08:00",
     endTime: "12:00",
@@ -14,17 +12,16 @@ export const initialWorkSchedules: WorkSchedule[] = [
     timeSlots: [
       {
         slotId: 101,
-        slotCode: "1",
+        scheduleId: 1,
         scheduleCode: "1",
         slotOrder: 1,
         startTime: "08:00",
         endTime: "08:30",
         status: "Đã đặt lịch",
-        patientName: "Nguyễn Văn An",
       },
       {
         slotId: 102,
-        slotCode: "2",
+        scheduleId: 2,
         scheduleCode: "1",
         slotOrder: 2,
         startTime: "08:30",
@@ -33,7 +30,7 @@ export const initialWorkSchedules: WorkSchedule[] = [
       },
       {
         slotId: 103,
-        slotCode: "3",
+        scheduleId: 3,
         scheduleCode: "1",
         slotOrder: 3,
         startTime: "09:00",
@@ -42,17 +39,16 @@ export const initialWorkSchedules: WorkSchedule[] = [
       },
       {
         slotId: 104,
-        slotCode: "4",
+        scheduleId: 4,
         scheduleCode: "1",
         slotOrder: 4,
         startTime: "09:30",
         endTime: "10:00",
         status: "Đã đặt lịch",
-        patientName: "Phạm Thị Dung",
       },
       {
         slotId: 105,
-        slotCode: "5",
+        scheduleId: 5,
         scheduleCode: "1",
         slotOrder: 5,
         startTime: "10:00",
@@ -61,7 +57,7 @@ export const initialWorkSchedules: WorkSchedule[] = [
       },
       {
         slotId: 106,
-        slotCode: "6",
+        scheduleId: 6,
         scheduleCode: "1",
         slotOrder: 6,
         startTime: "10:30",
@@ -70,7 +66,7 @@ export const initialWorkSchedules: WorkSchedule[] = [
       },
       {
         slotId: 107,
-        slotCode: "7",
+        scheduleId: 7,
         scheduleCode: "1",
         slotOrder: 7,
         startTime: "11:00",
@@ -79,7 +75,7 @@ export const initialWorkSchedules: WorkSchedule[] = [
       },
       {
         slotId: 108,
-        slotCode: "8",
+        scheduleId: 8,
         scheduleCode: "1",
         slotOrder: 8,
         startTime: "11:30",
@@ -90,10 +86,8 @@ export const initialWorkSchedules: WorkSchedule[] = [
   },
   {
     scheduleId: 2,
-    scheduleCode: "2",
     doctorId: 2,
     doctorName: "BS. Trần Thị Lan",
-    specialty: "Thần kinh học",
     workDate: "31/07/2026",
     startTime: "13:30",
     endTime: "17:00",
@@ -101,82 +95,73 @@ export const initialWorkSchedules: WorkSchedule[] = [
     timeSlots: [
       {
         slotId: 201,
-        slotCode: "1",
+        scheduleId: 1,
         scheduleCode: "2",
         slotOrder: 1,
         startTime: "13:30",
         endTime: "14:00",
         status: "Đã đặt lịch",
-        patientName: "Trần Thị Bình",
       },
       {
         slotId: 202,
-        slotCode: "2",
+        scheduleId: 2,
         scheduleCode: "2",
         slotOrder: 2,
         startTime: "14:00",
         endTime: "14:30",
         status: "Đã đặt lịch",
-        patientName: "Lê Minh Cường",
       },
       {
         slotId: 203,
-        slotCode: "3",
+        scheduleId: 3,
         scheduleCode: "2",
         slotOrder: 3,
         startTime: "14:30",
         endTime: "15:00",
         status: "Đã đặt lịch",
-        patientName: "Hoàng Văn Em",
       },
       {
         slotId: 204,
-        slotCode: "4",
+        scheduleId: 4,
         scheduleCode: "2",
         slotOrder: 4,
         startTime: "15:00",
         endTime: "15:30",
         status: "Đã đặt lịch",
-        patientName: "Võ Thị Giang",
       },
       {
         slotId: 205,
-        slotCode: "5",
+        scheduleId: 5,
         scheduleCode: "2",
         slotOrder: 5,
         startTime: "15:30",
         endTime: "16:00",
         status: "Đã đặt lịch",
-        patientName: "Nguyễn Thị Hoa",
       },
       {
         slotId: 206,
-        slotCode: "6",
+        scheduleId: 6,
         scheduleCode: "2",
         slotOrder: 6,
         startTime: "16:00",
         endTime: "16:30",
         status: "Đã đặt lịch",
-        patientName: "Đặng Văn Kiên",
       },
       {
         slotId: 207,
-        slotCode: "7",
+        scheduleId: 7,
         scheduleCode: "2",
         slotOrder: 7,
         startTime: "16:30",
         endTime: "17:00",
         status: "Đã đặt lịch",
-        patientName: "Bùi Thị Mai",
       },
     ],
   },
   {
     scheduleId: 3,
-    scheduleCode: "3",
     doctorId: 3,
     doctorName: "BS. Lê Văn Phúc",
-    specialty: "Nội khoa",
     workDate: "01/08/2026",
     startTime: "08:00",
     endTime: "11:30",
@@ -184,7 +169,7 @@ export const initialWorkSchedules: WorkSchedule[] = [
     timeSlots: [
       {
         slotId: 301,
-        slotCode: "1",
+        scheduleId: 1,
         scheduleCode: "3",
         slotOrder: 1,
         startTime: "08:00",
@@ -193,7 +178,7 @@ export const initialWorkSchedules: WorkSchedule[] = [
       },
       {
         slotId: 302,
-        slotCode: "2",
+        scheduleId: 2,
         scheduleCode: "3",
         slotOrder: 2,
         startTime: "08:30",
@@ -202,7 +187,7 @@ export const initialWorkSchedules: WorkSchedule[] = [
       },
       {
         slotId: 303,
-        slotCode: "3",
+        scheduleId: 3,
         scheduleCode: "3",
         slotOrder: 3,
         startTime: "09:00",
@@ -211,7 +196,7 @@ export const initialWorkSchedules: WorkSchedule[] = [
       },
       {
         slotId: 304,
-        slotCode: "4",
+        scheduleId: 4,
         scheduleCode: "3",
         slotOrder: 4,
         startTime: "09:30",
@@ -220,7 +205,7 @@ export const initialWorkSchedules: WorkSchedule[] = [
       },
       {
         slotId: 305,
-        slotCode: "5",
+        scheduleId: 5,
         scheduleCode: "3",
         slotOrder: 5,
         startTime: "10:00",
@@ -229,7 +214,7 @@ export const initialWorkSchedules: WorkSchedule[] = [
       },
       {
         slotId: 306,
-        slotCode: "6",
+        scheduleId: 6,
         scheduleCode: "3",
         slotOrder: 6,
         startTime: "10:30",
@@ -238,7 +223,7 @@ export const initialWorkSchedules: WorkSchedule[] = [
       },
       {
         slotId: 307,
-        slotCode: "7",
+        scheduleId: 7,
         scheduleCode: "3",
         slotOrder: 7,
         startTime: "11:00",
@@ -249,10 +234,8 @@ export const initialWorkSchedules: WorkSchedule[] = [
   },
   {
     scheduleId: 4,
-    scheduleCode: "4",
     doctorId: 4,
     doctorName: "BS. Hoàng Minh Tuấn",
-    specialty: "Da liễu",
     workDate: "01/08/2026",
     startTime: "08:00",
     endTime: "12:00",
@@ -260,7 +243,7 @@ export const initialWorkSchedules: WorkSchedule[] = [
     timeSlots: [
       {
         slotId: 401,
-        slotCode: "1",
+        scheduleId: 1,
         scheduleCode: "4",
         slotOrder: 1,
         startTime: "08:00",
@@ -269,7 +252,7 @@ export const initialWorkSchedules: WorkSchedule[] = [
       },
       {
         slotId: 402,
-        slotCode: "2",
+        scheduleId: 2,
         scheduleCode: "4",
         slotOrder: 2,
         startTime: "08:30",
@@ -278,7 +261,7 @@ export const initialWorkSchedules: WorkSchedule[] = [
       },
       {
         slotId: 403,
-        slotCode: "3",
+        scheduleId: 3,
         scheduleCode: "4",
         slotOrder: 3,
         startTime: "09:00",
@@ -287,7 +270,7 @@ export const initialWorkSchedules: WorkSchedule[] = [
       },
       {
         slotId: 404,
-        slotCode: "4",
+        scheduleId: 4,
         scheduleCode: "4",
         slotOrder: 4,
         startTime: "09:30",
@@ -296,7 +279,7 @@ export const initialWorkSchedules: WorkSchedule[] = [
       },
       {
         slotId: 405,
-        slotCode: "5",
+        scheduleId: 5,
         scheduleCode: "4",
         slotOrder: 5,
         startTime: "10:00",
@@ -305,7 +288,7 @@ export const initialWorkSchedules: WorkSchedule[] = [
       },
       {
         slotId: 406,
-        slotCode: "6",
+        scheduleId: 6,
         scheduleCode: "4",
         slotOrder: 6,
         startTime: "10:30",
@@ -314,7 +297,7 @@ export const initialWorkSchedules: WorkSchedule[] = [
       },
       {
         slotId: 407,
-        slotCode: "7",
+        scheduleId: 7,
         scheduleCode: "4",
         slotOrder: 7,
         startTime: "11:00",
@@ -323,7 +306,7 @@ export const initialWorkSchedules: WorkSchedule[] = [
       },
       {
         slotId: 408,
-        slotCode: "8",
+        scheduleId: 8,
         scheduleCode: "4",
         slotOrder: 8,
         startTime: "11:30",
@@ -334,10 +317,8 @@ export const initialWorkSchedules: WorkSchedule[] = [
   },
   {
     scheduleId: 5,
-    scheduleCode: "5",
     doctorId: 5,
     doctorName: "BS. Phạm Thanh Thảo",
-    specialty: "Nhi khoa",
     workDate: "02/08/2026",
     startTime: "14:00",
     endTime: "18:00",
@@ -345,7 +326,7 @@ export const initialWorkSchedules: WorkSchedule[] = [
     timeSlots: [
       {
         slotId: 501,
-        slotCode: "1",
+        scheduleId: 1,
         scheduleCode: "5",
         slotOrder: 1,
         startTime: "14:00",
@@ -354,7 +335,7 @@ export const initialWorkSchedules: WorkSchedule[] = [
       },
       {
         slotId: 502,
-        slotCode: "2",
+        scheduleId: 2,
         scheduleCode: "5",
         slotOrder: 2,
         startTime: "14:30",
@@ -363,7 +344,7 @@ export const initialWorkSchedules: WorkSchedule[] = [
       },
       {
         slotId: 503,
-        slotCode: "3",
+        scheduleId: 3,
         scheduleCode: "5",
         slotOrder: 3,
         startTime: "15:00",
@@ -372,7 +353,7 @@ export const initialWorkSchedules: WorkSchedule[] = [
       },
       {
         slotId: 504,
-        slotCode: "4",
+        scheduleId: 4,
         scheduleCode: "5",
         slotOrder: 4,
         startTime: "15:30",
@@ -381,7 +362,7 @@ export const initialWorkSchedules: WorkSchedule[] = [
       },
       {
         slotId: 505,
-        slotCode: "5",
+        scheduleId: 5,
         scheduleCode: "5",
         slotOrder: 5,
         startTime: "16:00",
@@ -390,7 +371,7 @@ export const initialWorkSchedules: WorkSchedule[] = [
       },
       {
         slotId: 506,
-        slotCode: "6",
+        scheduleId: 6,
         scheduleCode: "5",
         slotOrder: 6,
         startTime: "16:30",
@@ -399,7 +380,7 @@ export const initialWorkSchedules: WorkSchedule[] = [
       },
       {
         slotId: 507,
-        slotCode: "7",
+        scheduleId: 7,
         scheduleCode: "5",
         slotOrder: 7,
         startTime: "17:00",
@@ -408,7 +389,7 @@ export const initialWorkSchedules: WorkSchedule[] = [
       },
       {
         slotId: 508,
-        slotCode: "8",
+        scheduleId: 8,
         scheduleCode: "5",
         slotOrder: 8,
         startTime: "17:30",

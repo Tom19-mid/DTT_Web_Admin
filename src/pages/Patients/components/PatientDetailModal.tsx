@@ -17,6 +17,24 @@ export default function PatientDetailModal({
 }: PatientDetailModalProps) {
   if (!isOpen || !patient) return null;
 
+  const getPatientStatus = (patient: Patient) => {
+    switch (patient.status) {
+      case "Đã duyệt":
+      case "Chờ duyệt":
+      case "Active":
+        return "Đang hoạt động";
+      case "Inactive":
+        return "Ngưng hoạt động";
+      case "Từ chối":
+      case "Locked":
+        return "Đã khóa";
+      default:
+        return patient.status || "Đang hoạt động";
+    }
+  };
+
+  const patientStatus = getPatientStatus(patient);
+
   // Format YYYY-MM-DD or string
   const formatDate = (dateStr?: string | null) => {
     if (!dateStr) return "-";
@@ -41,7 +59,7 @@ export default function PatientDetailModal({
                 <h2 className="text-2xl font-bold text-gray-900">
                   {patient.fullName}
                 </h2>
-                <StatusBadge status={patient.verificationStatus || patient.status} />
+                <StatusBadge status={patientStatus} />
               </div>
               <p className="text-base text-gray-500 mt-0.5">
                 Mã bệnh nhân: <span className="font-bold text-gray-800">{patient.code || `#${patient.id}`}</span>
@@ -99,6 +117,11 @@ export default function PatientDetailModal({
                   <ShieldCheck size={15} /> Số thẻ BHYT:
                 </span>
                 <p className="font-bold text-blue-600 text-base">{patient.healthInsuranceNumber || "-"}</p>
+              </div>
+
+              <div>
+                <span className="text-gray-500 font-semibold text-sm block mb-1">Trạng thái:</span>
+                <StatusBadge status={patientStatus} />
               </div>
 
               <div className="sm:col-span-2">

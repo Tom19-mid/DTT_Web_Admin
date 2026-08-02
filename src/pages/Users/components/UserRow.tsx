@@ -16,7 +16,7 @@ export default function UserRow({ user, onEdit, onLock }: UserRowProps) {
         {user.email}
       </td>
       <td className="py-4 px-4 text-gray-700 font-medium text-base">
-        {user.phone}
+        {user.phoneNumber || user.phone}
       </td>
       <td className="py-4 px-4">
         <RoleBadge role={user.role} />
@@ -25,7 +25,7 @@ export default function UserRow({ user, onEdit, onLock }: UserRowProps) {
         {user.createdAt}
       </td>
       <td className="py-4 px-4 text-gray-600 font-medium text-base">
-        {user.lastLogin}
+        {user.updatedAt || user.lastLogin || "—"}
       </td>
       <td className="py-4 px-4">
         <StatusBadge status={user.status} />

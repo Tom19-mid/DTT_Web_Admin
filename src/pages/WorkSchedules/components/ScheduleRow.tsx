@@ -21,6 +21,7 @@ export default function ScheduleRow({
 }: ScheduleRowProps) {
   const [isExpanded, setIsExpanded] = useState(defaultExpanded);
   const isLocked = schedule.status === "Không hoạt động";
+  const scheduleCode = schedule.scheduleCode || String(schedule.scheduleId || "");
 
   return (
     <>
@@ -37,7 +38,7 @@ export default function ScheduleRow({
               {isExpanded ? <ChevronDown size={18} /> : <ChevronRight size={18} />}
             </button>
             <div className="w-8 h-8 rounded-full bg-blue-100/90 text-blue-600 font-bold flex items-center justify-center text-sm shadow-2xs">
-              {schedule.scheduleCode}
+              {scheduleCode}
             </div>
           </div>
         </td>
@@ -58,7 +59,7 @@ export default function ScheduleRow({
           {schedule.endTime}
         </td>
         <td className="py-4 px-4 text-center">
-          <ScheduleStatusBadge status={schedule.status} />
+          <ScheduleStatusBadge status={schedule.status || "Trống lịch"} />
         </td>
         {/* Action Column: Eye (Gray), Pencil (Blue), Lock (Rose) matching Appointments page */}
         <td className="py-4 px-4 text-center">
@@ -105,8 +106,8 @@ export default function ScheduleRow({
         <tr>
           <td colSpan={7} className="p-0 bg-slate-50/50">
             <TimeSlotSubTable
-              scheduleCode={schedule.scheduleCode}
-              timeSlots={schedule.timeSlots}
+              scheduleCode={scheduleCode}
+              timeSlots={schedule.timeSlots || []}
             />
           </td>
         </tr>

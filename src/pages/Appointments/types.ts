@@ -11,9 +11,9 @@ export type AppointmentStatusName =
   | string;
 
 export interface Appointment {
-  appointmentId: number;
-  patientId: number;
-  doctorId: number;
+  appointmentId?: number;
+  patientId?: number;
+  doctorId?: number;
   reason?: string;
   status_id?: number;
   status?: AppointmentStatusName;

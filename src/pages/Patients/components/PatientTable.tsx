@@ -1,7 +1,7 @@
 import { useState, useMemo } from "react";
 import type { Patient } from "../types";
 import PatientSearch from "./PatientSearch";
-import PatientRow from "./PatientRow";
+import PatientRow, { getPatientAccountStatus } from "./PatientRow";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
 interface PatientTableProps {
@@ -18,14 +18,16 @@ export default function PatientTable({
   onLockPatient,
 }: PatientTableProps) {
   const [searchTerm, setSearchTerm] = useState("");
-  const [selectedStatus, setSelectedStatus] = useState("ALL");
+  const [selectedAccountStatus, setSelectedAccountStatus] = useState("ALL");
+  const [selectedVerificationStatus, setSelectedVerificationStatus] = useState("ALL");
   const [selectedGender, setSelectedGender] = useState("ALL");
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
 
   const handleReset = () => {
     setSearchTerm("");
-    setSelectedStatus("ALL");
+    setSelectedAccountStatus("ALL");
+    setSelectedVerificationStatus("ALL");
     setSelectedGender("ALL");
     setCurrentPage(1);
   };
@@ -41,16 +43,20 @@ export default function PatientTable({
         (patient.healthInsuranceNumber && patient.healthInsuranceNumber.toLowerCase().includes(term)) ||
         (patient.cccdNumber && patient.cccdNumber.includes(term));
 
-      const currentStatus = patient.verificationStatus || patient.status;
-      const matchesStatus =
-        selectedStatus === "ALL" || currentStatus === selectedStatus || patient.status === selectedStatus;
+      const matchesAccountStatus =
+        selectedAccountStatus === "ALL" ||
+        getPatientAccountStatus(patient) === selectedAccountStatus;
+
+      const matchesVerificationStatus =
+        selectedVerificationStatus === "ALL" ||
+        (patient.verificationStatus || "Chờ duyệt") === selectedVerificationStatus;
 
       const matchesGender =
         selectedGender === "ALL" || patient.gender === selectedGender;
 
-      return matchesSearch && matchesStatus && matchesGender;
+      return matchesSearch && matchesAccountStatus && matchesVerificationStatus && matchesGender;
     });
-  }, [patients, searchTerm, selectedStatus, selectedGender]);
+  }, [patients, searchTerm, selectedAccountStatus, selectedVerificationStatus, selectedGender]);
 
   // Pagination calculation
   const totalPages = Math.ceil(filteredPatients.length / itemsPerPage) || 1;
@@ -67,9 +73,14 @@ export default function PatientTable({
           setSearchTerm(val);
           setCurrentPage(1);
         }}
-        selectedStatus={selectedStatus}
-        onStatusChange={(val) => {
-          setSelectedStatus(val);
+        selectedAccountStatus={selectedAccountStatus}
+        onAccountStatusChange={(val) => {
+          setSelectedAccountStatus(val);
+          setCurrentPage(1);
+        }}
+        selectedVerificationStatus={selectedVerificationStatus}
+        onVerificationStatusChange={(val) => {
+          setSelectedVerificationStatus(val);
           setCurrentPage(1);
         }}
         selectedGender={selectedGender}
@@ -81,7 +92,7 @@ export default function PatientTable({
       />
 
       <div className="overflow-x-auto">
-        <table className="w-full text-left border-collapse min-w-[900px]">
+        <table className="w-full text-left border-collapse min-w-[1000px]">
           <thead>
             <tr className="bg-gray-200/70 text-gray-800 font-bold text-base">
               <th className="py-4 px-4 text-center rounded-l-xl">Mã bệnh nhân</th>
@@ -89,6 +100,7 @@ export default function PatientTable({
               <th className="py-4 px-4 text-center">Ngày sinh</th>
               <th className="py-4 px-4 text-center">Số điện thoại</th>
               <th className="py-4 px-4 text-center">Giới tính</th>
+              <th className="py-4 px-4 text-center">Trạng thái</th>
               <th className="py-4 px-4 text-center">Trạng thái xác thực hồ sơ</th>
               <th className="py-4 px-4 text-center rounded-r-xl">Chỉnh sửa</th>
             </tr>
@@ -107,7 +119,7 @@ export default function PatientTable({
             ) : (
               <tr>
                 <td
-                  colSpan={7}
+                  colSpan={8}
                   className="text-center py-10 text-gray-500 font-medium text-lg"
                 >
                   Không tìm thấy bệnh nhân nào khớp với từ khóa.

@@ -4,7 +4,7 @@ interface StatusBadgeProps {
   status: AppointmentStatusName;
 }
 
-export function formatStatusText(status: AppointmentStatusName): string {
+function formatStatusText(status: AppointmentStatusName): string {
   switch (status) {
     case "Scheduled":
     case "Đã đặt lịch":

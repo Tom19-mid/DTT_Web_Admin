@@ -50,6 +50,8 @@ export default function SpecialtyFormModal({
 
     onSave({
       id: initialData?.id,
+      specialtyId: initialData?.specialtyId ?? initialData?.id,
+      specialtyName: name.trim(),
       name: name.trim(),
       description: description.trim(),
       doctorCount: Number(doctorCount) || 0,
@@ -117,7 +119,7 @@ export default function SpecialtyFormModal({
                 Trạng thái <span className="text-rose-500">*</span>
               </label>
               <select
-                value={status}
+                value={String(status)}
                 onChange={(e) => setStatus(e.target.value as SpecialtyStatus)}
                 className="w-full border border-gray-300 rounded-xl px-4 py-2.5 text-base text-gray-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 bg-white transition-all cursor-pointer font-medium"
               >

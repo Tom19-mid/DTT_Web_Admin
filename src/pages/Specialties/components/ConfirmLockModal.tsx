@@ -16,7 +16,7 @@ export default function ConfirmLockModal({
 }: ConfirmLockModalProps) {
   if (!isOpen || !specialty) return null;
 
-  const isCurrentlyActive = specialty.status === "Đang hoạt động";
+  const isCurrentlyActive = specialty.status === true || specialty.status === "Đang hoạt động" || specialty.status === "Active";
 
   return (
     <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-xs flex items-center justify-center p-4">
@@ -39,7 +39,7 @@ export default function ConfirmLockModal({
 
           <p className="text-base text-gray-600 mb-6">
             Bạn có chắc chắn muốn chuyển trạng thái chuyên khoa{" "}
-            <span className="font-bold text-gray-900">{specialty.name}</span> thành{" "}
+            <span className="font-bold text-gray-900">{specialty.specialtyName || specialty.name}</span> thành{" "}
             <span className="font-bold text-blue-600">
               {isCurrentlyActive ? "Ngưng hoạt động" : "Đang hoạt động"}
             </span>{" "}

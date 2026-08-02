@@ -17,7 +17,7 @@ export default function DoctorDetailModal({
 }: DoctorDetailModalProps) {
   if (!isOpen || !doctor) return null;
 
-  const renderLeaveStatusBadge = (status?: LeaveStatus) => {
+  const renderLeaveStatusBadge = (status?: LeaveStatus | string) => {
     switch (status) {
       case "Chờ duyệt":
         return (

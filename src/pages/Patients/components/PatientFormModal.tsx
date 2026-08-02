@@ -60,10 +60,14 @@ function CustomDatePicker({
   };
 
   const [viewDate, setViewDate] = useState<Date>(() => parseDate(value));
+  const [prevValue, setPrevValue] = useState(value);
+  const [prevIsOpen, setPrevIsOpen] = useState(isOpen);
 
-  useEffect(() => {
+  if (prevValue !== value || prevIsOpen !== isOpen) {
+    setPrevValue(value);
+    setPrevIsOpen(isOpen);
     setViewDate(parseDate(value));
-  }, [value, isOpen]);
+  }
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
@@ -254,27 +258,36 @@ export default function PatientFormModal({
   const [code, setCode] = useState("");
   const [fullName, setFullName] = useState("");
   const [dob, setDob] = useState("");
-  const [gender, setGender] = useState<Gender>("Nam");
+  const [gender, setGender] = useState<Gender | string>("Nam");
   const [phone, setPhone] = useState("");
   const [address, setAddress] = useState("");
   const [healthInsuranceNumber, setHealthInsuranceNumber] = useState("");
   const [cccdNumber, setCccdNumber] = useState("");
-  const [verificationStatus, setVerificationStatus] = useState<VerificationStatus>("Chờ duyệt");
-  const [status, setStatus] = useState<PatientStatus>("Đang hoạt động");
+  const [verificationStatus, setVerificationStatus] = useState<VerificationStatus | string>("Chờ duyệt");
+  const [verifiedBy, setVerifiedBy] = useState("");
+  const [verificationNote, setVerificationNote] = useState("");
+  const [status, setStatus] = useState<PatientStatus | string>("Đang hoạt động");
   const [isConfirmLockOpen, setIsConfirmLockOpen] = useState(false);
 
-  useEffect(() => {
+  const [prevInitialData, setPrevInitialData] = useState<Patient | null | undefined>(undefined);
+  const [prevIsOpen, setPrevIsOpen] = useState(false);
+
+  if (initialData !== prevInitialData || isOpen !== prevIsOpen) {
+    setPrevInitialData(initialData);
+    setPrevIsOpen(isOpen);
     if (initialData) {
-      setCode(initialData.code);
-      setFullName(initialData.fullName);
-      setDob(initialData.dob);
+      setCode(initialData.code || "");
+      setFullName(initialData.fullName || "");
+      setDob(initialData.dob || initialData.dateOfBirth || "");
       setGender(initialData.gender || "Nam");
-      setPhone(initialData.phone);
+      setPhone(initialData.phone || initialData.phoneNumber || "");
       setAddress(initialData.address || "");
       setHealthInsuranceNumber(initialData.healthInsuranceNumber || "");
       setCccdNumber(initialData.cccdNumber || "");
       setVerificationStatus(initialData.verificationStatus || "Chờ duyệt");
-      setStatus(initialData.status);
+      setVerifiedBy(initialData.verifiedBy || "");
+      setVerificationNote("");
+      setStatus(initialData.status || "Đang hoạt động");
     } else {
       setCode("");
       setFullName("");
@@ -285,10 +298,12 @@ export default function PatientFormModal({
       setHealthInsuranceNumber("");
       setCccdNumber("");
       setVerificationStatus("Chờ duyệt");
+      setVerifiedBy("");
+      setVerificationNote("");
       setStatus("Đang hoạt động");
     }
     setIsConfirmLockOpen(false);
-  }, [initialData, isOpen]);
+  }
 
   if (!isOpen) return null;
 
@@ -304,6 +319,18 @@ export default function PatientFormModal({
       return;
     }
 
+    if (verificationStatus === "Từ chối") {
+      if (!verifiedBy.trim()) {
+        alert("Vui lòng nhập Người thực hiện xác thực!");
+        return;
+      }
+
+      if (!verificationNote.trim()) {
+        alert("Vui lòng nhập Ghi chú xác thực!");
+        return;
+      }
+    }
+
     doSave();
   };
 
@@ -311,7 +338,7 @@ export default function PatientFormModal({
     const nowStr = new Date().toISOString().replace("T", " ").substring(0, 19);
     onSave({
       id: initialData?.id,
-      patient_id: initialData?.patient_id || initialData?.id,
+      patientId: initialData?.patientId ?? initialData?.id,
       code: code.trim() || `#00000${Math.floor(Math.random() * 90) + 10}`,
       fullName: fullName.trim(),
       dob: dob.trim(),
@@ -324,8 +351,8 @@ export default function PatientFormModal({
       status: verificationStatus === "Từ chối" ? "Đã khóa" : status,
       verificationStatus,
       verifiedAt: verificationStatus === "Chờ duyệt" ? null : (initialData?.verifiedAt || nowStr),
-      verifiedBy: verificationStatus === "Chờ duyệt" ? null : (initialData?.verifiedBy || "Lễ tân"),
-      verificationNote: initialData?.verificationNote || (verificationStatus === "Đã duyệt" ? "Đã xác minh đầy đủ thông tin." : verificationStatus === "Từ chối" ? "Thông tin chưa hợp lệ." : null),
+      verifiedBy: verificationStatus === "Chờ duyệt" ? null : (verifiedBy.trim() || initialData?.verifiedBy || "Lễ tân"),
+      verificationNote: verificationStatus === "Chờ duyệt" ? null : (verificationStatus === "Từ chối" ? verificationNote.trim() : (verificationNote.trim() || "Đã xác minh đầy đủ thông tin.")),
       createdAt: initialData?.createdAt || nowStr,
       updatedAt: nowStr,
     });
@@ -480,7 +507,13 @@ export default function PatientFormModal({
               </label>
               <select
                 value={verificationStatus}
-                onChange={(e) => setVerificationStatus(e.target.value as VerificationStatus)}
+                onChange={(e) => {
+                  const nextStatus = e.target.value as VerificationStatus;
+                  setVerificationStatus(nextStatus);
+                  if (nextStatus === "Từ chối") {
+                    setVerificationNote("");
+                  }
+                }}
                 className="w-full border border-gray-300 rounded-xl px-4 py-2.5 text-base text-gray-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 bg-white transition-all cursor-pointer font-medium"
               >
                 <option value="Chờ duyệt">Chờ duyệt</option>
@@ -488,6 +521,38 @@ export default function PatientFormModal({
                 <option value="Từ chối">Từ chối</option>
               </select>
             </div>
+
+            {verificationStatus === "Từ chối" && (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-1">
+                    Người thực hiện xác thực <span className="text-rose-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={verifiedBy}
+                    onChange={(e) => setVerifiedBy(e.target.value)}
+                    placeholder="Nhập người thực hiện xác thực..."
+                    required
+                    className="w-full border border-gray-300 rounded-xl px-4 py-2.5 text-base text-gray-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-1">
+                    Ghi chú xác thực <span className="text-rose-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={verificationNote}
+                    onChange={(e) => setVerificationNote(e.target.value)}
+                    placeholder="Nhập ghi chú xác thực..."
+                    required
+                    className="w-full border border-gray-300 rounded-xl px-4 py-2.5 text-base text-gray-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all"
+                  />
+                </div>
+              </div>
+            )}
 
             {/* Action Buttons */}
             <div className="flex items-center justify-end gap-3 pt-5 border-t border-gray-100">
@@ -527,8 +592,8 @@ export default function PatientFormModal({
           status: "Đã khóa",
           verificationStatus: "Từ chối",
           verifiedAt: initialData?.verifiedAt || null,
-          verifiedBy: initialData?.verifiedBy || null,
-          verificationNote: initialData?.verificationNote || null,
+          verifiedBy: verifiedBy || initialData?.verifiedBy || null,
+          verificationNote: verificationNote || null,
           createdAt: initialData?.createdAt || "",
           updatedAt: initialData?.updatedAt || "",
         }}

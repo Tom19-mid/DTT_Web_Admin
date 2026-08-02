@@ -1,8 +1,22 @@
+export type SpecialtyStatus =
+  | "Active"
+  | "Inactive"
+  | "Đang hoạt động"
+  | "Ngưng hoạt động"
+  | "Đã khóa"
+  | boolean;
+
 export interface Specialty {
-  specialtyId: number;
-  specialtyName: string;
+  specialtyId?: number;
+  specialtyName?: string;
   description?: string | null;
-  status?: boolean;
+  status?: SpecialtyStatus;
   createdAt?: string;
   updatedAt?: string;
+
+  // Joined / UI fields for backward-compatibility
+  id?: number;
+  stt?: number;
+  name?: string;
+  doctorCount?: number;
 }
