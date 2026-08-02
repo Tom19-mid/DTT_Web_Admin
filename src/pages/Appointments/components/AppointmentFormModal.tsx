@@ -357,8 +357,11 @@ function CustomTimePicker({
 
 const statusOptions: { value: AppointmentStatusName; label: string }[] = [
   { value: "Scheduled", label: "Đã đặt lịch" },
+  { value: "CheckedIn", label: "Đã check in" },
   { value: "Waiting", label: "Đang chờ khám" },
+  { value: "WaitingDoctor", label: "Đang chờ bác sĩ" },
   { value: "InProgress", label: "Đang khám" },
+  { value: "WaitingTestResults", label: "Đang chờ kết quả xét nghiệm" },
   { value: "Completed", label: "Đã hoàn thành" },
   { value: "Cancelled", label: "Đã hủy" },
   { value: "NoShow", label: "Không đến khám" },

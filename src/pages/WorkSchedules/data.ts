@@ -331,7 +331,7 @@ export const initialWorkSchedules: WorkSchedule[] = [
         status: "Chưa đặt lịch",
       },
     ],
-  },,
+  },
   {
     scheduleId: 5,
     scheduleCode: "5",
