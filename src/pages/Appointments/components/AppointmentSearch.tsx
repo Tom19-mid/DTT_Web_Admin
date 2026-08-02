@@ -16,8 +16,11 @@ interface AppointmentSearchProps {
 const statusOptions: { value: string; label: string; dotColor: string }[] = [
   { value: "ALL", label: "Tất cả trạng thái", dotColor: "bg-gray-400" },
   { value: "Scheduled", label: "Đã đặt lịch", dotColor: "bg-blue-500" },
+  { value: "CheckedIn", label: "Đã check in", dotColor: "bg-teal-500" },
   { value: "Waiting", label: "Đang chờ khám", dotColor: "bg-amber-500" },
+  { value: "WaitingDoctor", label: "Đang chờ bác sĩ", dotColor: "bg-sky-500" },
   { value: "InProgress", label: "Đang khám", dotColor: "bg-indigo-500" },
+  { value: "WaitingTestResults", label: "Đang chờ kết quả xét nghiệm", dotColor: "bg-purple-500" },
   { value: "Completed", label: "Đã hoàn thành", dotColor: "bg-emerald-500" },
   { value: "Cancelled", label: "Đã hủy", dotColor: "bg-rose-500" },
   { value: "NoShow", label: "Không đến khám", dotColor: "bg-gray-500" },
@@ -58,8 +61,11 @@ export default function AppointmentSearch({
       (s) =>
         s.value === selectedStatus ||
         (s.value === "Scheduled" && selectedStatus === "Đã đặt lịch") ||
+        (s.value === "CheckedIn" && selectedStatus === "Đã check in") ||
         (s.value === "Waiting" && selectedStatus === "Đang chờ khám") ||
+        (s.value === "WaitingDoctor" && selectedStatus === "Đang chờ bác sĩ") ||
         (s.value === "InProgress" && selectedStatus === "Đang khám") ||
+        (s.value === "WaitingTestResults" && selectedStatus === "Đang chờ kết quả xét nghiệm") ||
         (s.value === "Completed" && selectedStatus === "Đã hoàn thành") ||
         (s.value === "Cancelled" && selectedStatus === "Đã hủy") ||
         (s.value === "NoShow" && selectedStatus === "Không đến khám")

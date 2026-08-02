@@ -1,28 +1,38 @@
 export type AppointmentStatusName =
-  | "Scheduled"
-  | "Waiting"
-  | "InProgress"
-  | "Completed"
-  | "Cancelled"
-  | "NoShow"
   | "Đã đặt lịch"
+  | "Đã check in"
   | "Đang chờ khám"
+  | "Đang chờ bác sĩ"
   | "Đang khám"
+  | "Đang chờ kết quả xét nghiệm"
   | "Đã hoàn thành"
   | "Đã hủy"
-  | "Không đến khám";
+  | "Không đến khám"
+  | string;
 
 export interface Appointment {
-  id: number;                   // Mã lịch hẹn
-  patientName: string;          // Bệnh nhân
-  doctorName: string;           // Bác sĩ
-  appointmentDate: string;      // Ngày khám (DD/MM/YYYY)
-  appointmentTime: string;      // Giờ khám (e.g. 08:00 - 08:30)
-  reason: string;               // Lý do khám
-  queueNumber: number;          // Số thứ tự khám
-  status: AppointmentStatusName;// Trạng thái
-  cancelReason?: string | null; // Lý do hủy (nếu có)
-  cancelTime?: string | null;   // Thời gian hủy (nếu có)
-  cancelledBy?: string | null;  // Người hủy (nếu có)
-  notes?: string | null;        // Ghi chú
+  appointmentId: number;
+  patientId: number;
+  doctorId: number;
+  reason?: string;
+  status_id?: number;
+  status?: AppointmentStatusName;
+  is_active?: boolean;
+  queue_number?: number;
+  cancelReason?: string | null;
+  cancelAt?: string | null;
+  cancelledBy?: string | null;
+  notes?: string | null;
+  member_id?: number;
+  nurse_note?: string | null;
+  createdAt?: string;
+  updatedAt?: string;
+  appointmentDate?: string;
+  appointmentTime?: string;
+  patientName?: string;
+  doctorName?: string;
+  specialtyName?: string;
+  queueNumber?: number;
+  cancelTime?: string | null;
+  id?: number;
 }

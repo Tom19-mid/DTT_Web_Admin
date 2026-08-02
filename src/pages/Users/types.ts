@@ -1,15 +1,18 @@
-export type UserRole = "Admin" | "Bệnh nhân" | "Bác sĩ";
-
-export type UserStatus = "Đang hoạt động" | "Ngưng hoạt động" | "Đã khóa";
+export type UserStatus = "Active" | "Locked" | "Inactive";
+export type UserRole =
+  | "Admin"
+  | "Doctor"
+  | "Patient"
+  | "Lễ tân tiếp đón"
+  | "Điều dưỡng"
+  | "Kỹ thuật viên CLS"
+  | "Dược sĩ";
 
 export interface User {
-  id: number;
-  stt: number;
-  fullName: string;
+  phoneNumber: string;
   email: string;
-  phone: string;
-  role: UserRole;
+  roleId: number;
+  status?: UserStatus;
   createdAt: string;
-  lastLogin: string;
-  status: UserStatus;
+  updatedAt: string;
 }

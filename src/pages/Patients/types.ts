@@ -1,24 +1,18 @@
-export type VerificationStatus = "Chờ duyệt" | "Đã duyệt" | "Từ chối";
-export type PatientStatus = VerificationStatus | "Đang hoạt động" | "Ngưng hoạt động" | "Đã khóa";
-export type Gender = "Nam" | "Nữ";
+export type VerificationStatus = "pending" | "verified" | "rejected";
+export type Gender = "Male" | "Female" | "Other";
 
 export interface Patient {
-  id: number;
-  patient_id?: number;
-  code: string;
-  fullName: string;
-  dob: string;
-  gender: Gender;
-  address: string;
-  healthInsuranceNumber: string;
-  cccdNumber: string;
-  phone: string;
-  specialty: string;
-  status: PatientStatus;
+  patientId: number;
+  fullName?: string | null;
+  dateOfBirth: string | null;
+  gender?: Gender | null;
+  address?: string;
+  healthInsuranceNumber?: string;
+  phoneNumber?: string | null;
   verificationStatus: VerificationStatus;
-  verifiedAt: string | null;
-  verifiedBy: string | null;
-  verificationNote: string | null;
-  createdAt: string;
-  updatedAt: string;
+  verifiedAt?: string | null;
+  verifiedBy?: string | null;
+  cccdNumber?: string;
+  createdAt?: string;
+  updatedAt?: string;
 }

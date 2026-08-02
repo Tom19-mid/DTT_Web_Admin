@@ -86,8 +86,7 @@ export default function UserTable({
         <table className="w-full text-left border-collapse min-w-[850px]">
           <thead>
             <tr className="bg-gray-200/70 text-gray-800 font-bold text-base">
-              <th className="py-4 px-4 text-center rounded-l-xl">STT</th>
-              <th className="py-4 px-4">Email</th>
+              <th className="py-4 px-4 rounded-l-xl">Email</th>
               <th className="py-4 px-4">Số điện thoại</th>
               <th className="py-4 px-4">Vai trò</th>
               <th className="py-4 px-4">Ngày tham gia</th>
@@ -109,7 +108,7 @@ export default function UserTable({
             ) : (
               <tr>
                 <td
-                  colSpan={8}
+                  colSpan={7}
                   className="text-center py-10 text-gray-500 font-medium text-lg"
                 >
                   Không tìm thấy tài khoản nào khớp với từ khóa.
