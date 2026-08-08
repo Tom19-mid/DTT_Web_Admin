@@ -9,6 +9,7 @@ interface PatientRowProps {
   onLock?: (patient: Patient) => void;
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 export const getPatientAccountStatus = (patient: Patient) => {
   switch (patient.status) {
     case "Đã duyệt":

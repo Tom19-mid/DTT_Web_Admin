@@ -32,9 +32,10 @@ export default function Login() {
       setIsSubmitting(true);
       await login(phone.trim(), password);
       navigate("/dashboard");
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Login error:", err);
-      const serverMessage = err.response?.data?.message;
+      const axiosErr = err as { response?: { data?: { message?: string } } };
+      const serverMessage = axiosErr.response?.data?.message;
       setErrorMessage(
         serverMessage || "Đăng nhập thất bại. Vui lòng kiểm tra số điện thoại và mật khẩu."
       );

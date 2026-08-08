@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { X, Save as SaveIcon } from "lucide-react";
 import type { User, UserRole, UserStatus } from "../types";
 import ConfirmLockModal from "./ConfirmLockModal";

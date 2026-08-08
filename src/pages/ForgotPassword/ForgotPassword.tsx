@@ -104,10 +104,11 @@ export default function ForgotPassword() {
       } else {
         setErrorMessage(res.message || "Gửi mã OTP thất bại.");
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Send OTP Error:", err);
+      const axiosErr = err as { response?: { data?: { message?: string } } };
       setErrorMessage(
-        err.response?.data?.message ||
+        axiosErr.response?.data?.message ||
           "Số điện thoại chưa được đăng ký hoặc không tồn tại trong hệ thống.",
       );
     } finally {
@@ -140,10 +141,11 @@ export default function ForgotPassword() {
       } else {
         setErrorMessage(res.message || "Mã OTP không chính xác.");
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Verify OTP Error:", err);
+      const axiosErr = err as { response?: { data?: { message?: string } } };
       setErrorMessage(
-        err.response?.data?.message || "Mã OTP không hợp lệ hoặc đã hết hạn.",
+        axiosErr.response?.data?.message || "Mã OTP không hợp lệ hoặc đã hết hạn.",
       );
     } finally {
       setIsSubmitting(false);
@@ -184,10 +186,11 @@ export default function ForgotPassword() {
       } else {
         setErrorMessage(res.message || "Đặt lại mật khẩu thất bại.");
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Reset Password Error:", err);
+      const axiosErr = err as { response?: { data?: { message?: string } } };
       setErrorMessage(
-        err.response?.data?.message ||
+        axiosErr.response?.data?.message ||
           "Không thể đặt lại mật khẩu. Vui lòng thử lại.",
       );
     } finally {

@@ -1,6 +1,5 @@
 import { useState, useRef, useEffect } from "react";
 import { Search, Filter, RotateCcw, ChevronDown, Check, UserCheck } from "lucide-react";
-import type { AppointmentStatusName } from "../types";
 
 interface AppointmentSearchProps {
   searchTerm: string;
