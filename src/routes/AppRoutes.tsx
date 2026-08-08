@@ -1,7 +1,10 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { AuthProvider } from "../context/AuthContext";
+import ProtectedRoute from "./ProtectedRoute";
 import AdminLayout from "../components/layout/AdminLayout";
 
 import Login from "../pages/Login/Login";
+import ForgotPassword from "../pages/ForgotPassword/ForgotPassword";
 import Dashboard from "../pages/Dashboard/Dashboard";
 import Users from "../pages/Users/Users";
 import Patients from "../pages/Patients/Patients";
@@ -15,22 +18,28 @@ import Notifications from "../pages/Notifications/Notifications";
 export default function AppRoutes() {
   return (
     <BrowserRouter>
-      <Routes>
-        <Route path="/" element={<Navigate to="/login" />} />
-        <Route path="/login" element={<Login />} />
+      <AuthProvider>
+        <Routes>
+          <Route path="/" element={<Navigate to="/dashboard" replace />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/forgot-password" element={<ForgotPassword />} />
 
-        <Route element={<AdminLayout />}>
-          <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/users" element={<Users />} />
-          <Route path="/patients" element={<Patients />} />
-          <Route path="/doctors" element={<Doctors />} />
-          <Route path="/specialties" element={<Specialties />} />
-          <Route path="/medicines" element={<Medicines />} />
-          <Route path="/appointments" element={<Appointments />} />
-          <Route path="/work-schedules" element={<WorkSchedules />} />
-          <Route path="/notifications" element={<Notifications />} />
-        </Route>
-      </Routes>
+          {/* Các Route cần bảo vệ bởi Quyền Đăng nhập Admin */}
+          <Route element={<ProtectedRoute />}>
+            <Route element={<AdminLayout />}>
+              <Route path="/dashboard" element={<Dashboard />} />
+              <Route path="/users" element={<Users />} />
+              <Route path="/patients" element={<Patients />} />
+              <Route path="/doctors" element={<Doctors />} />
+              <Route path="/specialties" element={<Specialties />} />
+              <Route path="/medicines" element={<Medicines />} />
+              <Route path="/appointments" element={<Appointments />} />
+              <Route path="/work-schedules" element={<WorkSchedules />} />
+              <Route path="/notifications" element={<Notifications />} />
+            </Route>
+          </Route>
+        </Routes>
+      </AuthProvider>
     </BrowserRouter>
   );
 }
