@@ -1,5 +1,6 @@
 import { NavLink, useNavigate } from "react-router-dom";
 import DTT_Healthcare from "../../assets/images/DTT_Healthcare.jpg";
+import { useAuth } from "../../context/AuthContext";
 import {
   LayoutDashboard,
   Users,
@@ -64,8 +65,10 @@ const menus = [
 
 export default function Sidebar() {
   const navigate = useNavigate();
+  const { logout } = useAuth();
 
   const handleLogout = () => {
+    logout();
     navigate("/login");
   };
 

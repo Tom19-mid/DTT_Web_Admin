@@ -1,9 +1,11 @@
 import { Bell, Search } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import Avarta from "../../assets/images/Avarta.png";
+import { useAuth } from "../../context/AuthContext";
 
 export default function Navbar() {
   const navigate = useNavigate();
+  const { user } = useAuth();
 
   return (
     <header className="h-20 bg-white flex items-center justify-between px-8 shadow-sm border-b border-gray-200/80 sticky top-0 z-10">
@@ -36,8 +38,12 @@ export default function Navbar() {
           </div>
 
           <div>
-            <p className="font-bold text-base text-gray-900 leading-tight">Quản trị</p>
-            <p className="text-sm text-gray-500 mt-0.5 font-medium">Quản trị viên</p>
+            <p className="font-bold text-base text-gray-900 leading-tight">
+              {user?.fullName || "Admin"}
+            </p>
+            <p className="text-sm text-gray-500 mt-0.5 font-medium">
+              {user?.roleName || "Quản trị viên"}
+            </p>
           </div>
         </div>
       </div>
