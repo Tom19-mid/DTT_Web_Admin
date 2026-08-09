@@ -39,6 +39,7 @@ export default function UserTable({
       const term = searchTerm.toLowerCase().trim();
       const matchesSearch =
         !term ||
+        (user.fullName || "").toLowerCase().includes(term) ||
         (user.email || "").toLowerCase().includes(term) ||
         (user.phone || user.phoneNumber || "").includes(term);
 
@@ -82,10 +83,11 @@ export default function UserTable({
       />
 
       <div className="overflow-x-auto">
-        <table className="w-full text-left border-collapse min-w-[850px]">
+        <table className="w-full text-left border-collapse min-w-[950px]">
           <thead>
             <tr className="bg-gray-200/70 text-gray-800 font-bold text-base">
-              <th className="py-4 px-4 rounded-l-xl">Email</th>
+              <th className="py-4 px-4 rounded-l-xl">Họ và tên</th>
+              <th className="py-4 px-4">Email</th>
               <th className="py-4 px-4">Số điện thoại</th>
               <th className="py-4 px-4">Vai trò</th>
               <th className="py-4 px-4">Ngày tham gia</th>
@@ -107,7 +109,7 @@ export default function UserTable({
             ) : (
               <tr>
                 <td
-                  colSpan={7}
+                  colSpan={8}
                   className="text-center py-10 text-gray-500 font-medium text-lg"
                 >
                   Không tìm thấy tài khoản nào khớp với từ khóa.

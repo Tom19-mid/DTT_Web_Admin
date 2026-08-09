@@ -37,7 +37,8 @@ export default function Login() {
       const axiosErr = err as { response?: { data?: { message?: string } } };
       const serverMessage = axiosErr.response?.data?.message;
       setErrorMessage(
-        serverMessage || "Đăng nhập thất bại. Vui lòng kiểm tra số điện thoại và mật khẩu."
+        serverMessage ||
+          "Đăng nhập thất bại. Vui lòng kiểm tra số điện thoại và mật khẩu.",
       );
     } finally {
       setIsSubmitting(false);
@@ -58,11 +59,16 @@ export default function Login() {
             className="w-24 h-24 bg-white rounded-2xl p-2 object-contain shadow-sm"
           />
           <h1 className="text-white text-3xl font-bold mt-3">DTT Medical</h1>
-          <p className="text-blue-200 mt-1 font-bold text-sm">Trang quản trị (Admin)</p>
+          <p className="text-blue-200 mt-1 font-bold text-sm">
+            Trang quản trị (Admin)
+          </p>
         </div>
 
         {/* Body */}
-        <form onSubmit={handleLogin} className="p-8 flex-1 flex flex-col justify-between">
+        <form
+          onSubmit={handleLogin}
+          className="p-8 flex-1 flex flex-col justify-between"
+        >
           <div>
             {errorMessage && (
               <div className="mb-5 p-3 bg-red-50 border border-red-300 text-red-700 text-sm font-medium rounded-xl leading-relaxed">
@@ -108,7 +114,7 @@ export default function Login() {
               />
               <button
                 type="button"
-                className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition"
+                className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition cursor-pointer"
                 onClick={() => setShowPassword(!showPassword)}
               >
                 {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}

@@ -13,6 +13,9 @@ export default function UserRow({ user, onEdit, onLock }: UserRowProps) {
   return (
     <tr className="border-b border-gray-100 hover:bg-gray-50/60 transition-colors">
       <td className="py-4 px-4 text-base text-gray-900 font-bold">
+        {user.fullName || "—"}
+      </td>
+      <td className="py-4 px-4 text-base text-gray-700 font-medium">
         {user.email}
       </td>
       <td className="py-4 px-4 text-gray-700 font-medium text-base">
