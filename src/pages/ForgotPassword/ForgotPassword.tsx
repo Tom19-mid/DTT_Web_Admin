@@ -23,6 +23,7 @@ export default function ForgotPassword() {
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   // Status & timing states
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -145,7 +146,8 @@ export default function ForgotPassword() {
       console.error("Verify OTP Error:", err);
       const axiosErr = err as { response?: { data?: { message?: string } } };
       setErrorMessage(
-        axiosErr.response?.data?.message || "Mã OTP không hợp lệ hoặc đã hết hạn.",
+        axiosErr.response?.data?.message ||
+          "Mã OTP không hợp lệ hoặc đã hết hạn.",
       );
     } finally {
       setIsSubmitting(false);
@@ -459,7 +461,7 @@ export default function ForgotPassword() {
                   />
                   <button
                     type="button"
-                    className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                    className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 cursor-pointer"
                     onClick={() => setShowPassword(!showPassword)}
                   >
                     {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
@@ -475,13 +477,20 @@ export default function ForgotPassword() {
                     className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400"
                   />
                   <input
-                    type={showPassword ? "text" : "password"}
+                    type={showConfirmPassword ? "text" : "password"}
                     placeholder="Nhập lại mật khẩu mới"
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
                     disabled={isSubmitting}
-                    className="w-full border border-gray-300 rounded-xl py-3 pl-11 pr-4 text-base focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all disabled:bg-gray-100"
+                    className="w-full border border-gray-300 rounded-xl py-3 pl-11 pr-11 text-base focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all disabled:bg-gray-100"
                   />
+                  <button
+                    type="button"
+                    className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 cursor-pointer"
+                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                  >
+                    {showConfirmPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                  </button>
                 </div>
               </div>
 

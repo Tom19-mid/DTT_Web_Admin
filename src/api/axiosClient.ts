@@ -23,14 +23,15 @@ axiosClient.interceptors.request.use(
   }
 );
 
-// Response Interceptor: Bắt lỗi 401 Unauthorized và tự động đăng xuất
+// Response Interceptor: Bắt lỗi 401 Unauthorized và tự động đăng xuất (không chuyển hướng khi đang ở trang Quên mật khẩu)
 axiosClient.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response && error.response.status === 401) {
       localStorage.removeItem("token");
       localStorage.removeItem("user");
-      if (window.location.pathname !== "/login") {
+      const currentPath = window.location.pathname.toLowerCase();
+      if (currentPath !== "/login" && !currentPath.includes("forgot-password")) {
         window.location.href = "/login";
       }
     }
