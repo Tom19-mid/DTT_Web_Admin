@@ -1,25 +1,63 @@
-import { useState } from "react";
-import { initialPatients } from "./data";
+import { useState, useEffect, useCallback } from "react";
+import patientApi from "../../api/patientApi";
 import type { Patient } from "./types";
 import PatientToolbar from "./components/PatientToolbar";
 import PatientTable from "./components/PatientTable";
 import PatientFormModal from "./components/PatientFormModal";
 import PatientDetailModal from "./components/PatientDetailModal";
-import ConfirmLockModal from "./components/ConfirmLockModal";
 import { getPatientAccountStatus } from "./components/PatientRow";
+import { Loader2 } from "lucide-react";
 
 export default function Patients() {
-  const [patients, setPatients] = useState<Patient[]>(initialPatients);
+  const [patients, setPatients] = useState<Patient[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
   const [isFormModalOpen, setIsFormModalOpen] = useState(false);
   const [editingPatient, setEditingPatient] = useState<Patient | null>(null);
   const [viewingPatient, setViewingPatient] = useState<Patient | null>(null);
-  const [lockingPatient, setLockingPatient] = useState<Patient | null>(null);
+
+  const reloadPatients = useCallback(async () => {
+    try {
+      const data = await patientApi.getAll();
+      setPatients(data);
+    } catch (err) {
+      console.warn("Lỗi khi tải danh sách bệnh nhân:", err);
+    }
+  }, []);
+
+  useEffect(() => {
+    let isMounted = true;
+    const loadData = async () => {
+      try {
+        const data = await patientApi.getAll();
+        if (isMounted) {
+          setPatients(data);
+          setLoading(false);
+        }
+      } catch (err) {
+        console.warn("Lỗi khi tải danh sách bệnh nhân:", err);
+        if (isMounted) {
+          setLoading(false);
+        }
+      }
+    };
+
+    loadData();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   // Statistics based on account status
   const totalPatients = patients.length;
-  const activeCount = patients.filter((p) => getPatientAccountStatus(p) === "Đang hoạt động").length;
-  const inactiveCount = patients.filter((p) => getPatientAccountStatus(p) === "Ngưng hoạt động").length;
-  const lockedCount = patients.filter((p) => getPatientAccountStatus(p) === "Đã khóa").length;
+  const activeCount = patients.filter(
+    (p) => getPatientAccountStatus(p) === "Đang hoạt động",
+  ).length;
+  const inactiveCount = patients.filter(
+    (p) => getPatientAccountStatus(p) === "Ngưng hoạt động",
+  ).length;
+  const lockedCount = patients.filter(
+    (p) => getPatientAccountStatus(p) === "Đã khóa",
+  ).length;
 
   // Open modal for adding new patient
   const handleOpenAddModal = () => {
@@ -40,55 +78,63 @@ export default function Patients() {
   };
 
   // Save (Add or Edit) patient
-  const handleSavePatient = (patientData: Omit<Patient, "id"> & { id?: number }) => {
-    if (patientData.id) {
-      // Edit mode
-      setPatients((prev) =>
-        prev.map((p) =>
-          p.id === patientData.id
-            ? { ...p, ...patientData, updatedAt: new Date().toISOString().replace("T", " ").substring(0, 19) }
-            : p
-        )
-      );
-    } else {
-      // Add mode
-      const newId = patients.length > 0 ? Math.max(...patients.map((p) => p.id)) + 1 : 1;
-      const nowStr = new Date().toISOString().replace("T", " ").substring(0, 19);
-      const newPatient: Patient = {
-        gender: "Nam",
-        address: "Chưa cập nhật",
-        healthInsuranceNumber: `BHYT00000${newId}`,
-        cccdNumber: `07920000000${newId}`,
-        verificationStatus: "Chờ duyệt",
-        verifiedAt: null,
-        verifiedBy: null,
-        verificationNote: null,
-        createdAt: nowStr,
-        updatedAt: nowStr,
-        ...patientData,
-        id: newId,
-        patient_id: newId,
-      };
-      setPatients((prev) => [...prev, newPatient]);
-    }
-  };
+  const handleSavePatient = async (
+    patientData: Omit<Patient, "id"> & { id?: number },
+  ): Promise<void> => {
+    const targetId =
+      patientData.id || patientData.patientId || patientData.patient_id;
 
-  // Open lock confirmation modal
-  const handleOpenLockModal = (patient: Patient) => {
-    setLockingPatient(patient);
-  };
+    try {
+      if (targetId) {
+        // Edit mode
+        // [BUG FIX] Thêm dateOfBirth vào payload — trước đây bị thiếu hoàn toàn nên ngày sinh không bao giờ được lưu.
+        // Form gửi dob dạng "DD/MM/YYYY" (ví dụ: "15/03/1990") — cần convert sang "YYYY-MM-DD" để C# DateTime? parse được.
+        const rawDob = patientData.dob || patientData.dateOfBirth || "";
+        let isoDateOfBirth: string | undefined = undefined;
+        if (rawDob && rawDob.includes("/")) {
+          const parts = rawDob.split("/");
+          if (parts.length === 3) {
+            const [d, m, y] = parts;
+            isoDateOfBirth = `${y}-${m.padStart(2, "0")}-${d.padStart(2, "0")}`; // "1990-03-15"
+          }
+        } else if (rawDob && rawDob.includes("-")) {
+          isoDateOfBirth = rawDob; // đã là ISO format, giữ nguyên
+        }
 
-  // Confirm lock patient action
-  const handleConfirmLock = () => {
-    if (lockingPatient) {
-      setPatients((prev) =>
-        prev.map((p) =>
-          p.id === lockingPatient.id
-            ? { ...p, status: "Đã khóa", verificationStatus: "Từ chối", updatedAt: new Date().toISOString().replace("T", " ").substring(0, 19) }
-            : p
-        )
-      );
-      setLockingPatient(null);
+        await patientApi.update(targetId, {
+          fullName: patientData.fullName || "",
+          phone: patientData.phone || patientData.phoneNumber,
+          // [BUG FIX] Không dùng fallback "Nam" khi gender rỗng/null —
+          // nếu gửi "Nam" lên API thì backend sẽ ghi đè gender=NULL trong DB thành "Nam"
+          // dù người dùng không thay đổi giới tính.
+          // Gửi undefined để backend bỏ qua field này khi gender chưa được chọn.
+          gender: patientData.gender || undefined,
+          address: patientData.address,
+          cccdNumber: patientData.cccdNumber,
+          healthInsuranceNumber: patientData.healthInsuranceNumber,
+          dateOfBirth: isoDateOfBirth, // [BUG FIX] đã thêm — "YYYY-MM-DD" hoặc undefined
+          verificationStatus: patientData.verificationStatus,
+          verifiedBy: "Lễ tân",
+          verificationNote: patientData.verificationNote || undefined,
+          verifiedAt: patientData.verifiedAt || undefined,
+        });
+      } else {
+        // Add mode
+        await patientApi.create({
+          fullName: patientData.fullName || "Bệnh nhân mới",
+          phone: patientData.phone || patientData.phoneNumber || "",
+          gender: patientData.gender || "Nam",
+          address: patientData.address || "",
+          cccdNumber: patientData.cccdNumber || "",
+          healthInsuranceNumber: patientData.healthInsuranceNumber || "",
+        });
+      }
+
+      await reloadPatients();
+    } catch (err) {
+      console.error("handleSavePatient error:", err);
+      // [BUG FIX] Phải throw err để doSave() trong PatientFormModal bắt được và alert() thông báo lỗi rõ ràng.
+      throw err;
     }
   };
 
@@ -101,12 +147,21 @@ export default function Patients() {
         inactiveCount={inactiveCount}
         lockedCount={lockedCount}
       />
-      <PatientTable
-        patients={patients}
-        onViewDetailPatient={handleOpenDetailModal}
-        onEditPatient={handleOpenEditModal}
-        onLockPatient={handleOpenLockModal}
-      />
+
+      {loading ? (
+        <div className="py-24 flex flex-col justify-center items-center">
+          <Loader2 className="animate-spin text-blue-700 mb-3" size={36} />
+          <p className="text-gray-600 font-medium text-base">
+            Đang tải danh sách hồ sơ bệnh nhân...
+          </p>
+        </div>
+      ) : (
+        <PatientTable
+          patients={patients}
+          onViewDetailPatient={handleOpenDetailModal}
+          onEditPatient={handleOpenEditModal}
+        />
+      )}
 
       {/* Detail Modal */}
       <PatientDetailModal
@@ -122,14 +177,6 @@ export default function Patients() {
         onClose={() => setIsFormModalOpen(false)}
         onSave={handleSavePatient}
         initialData={editingPatient}
-      />
-
-      {/* Lock Confirmation Modal */}
-      <ConfirmLockModal
-        isOpen={!!lockingPatient}
-        patient={lockingPatient}
-        onClose={() => setLockingPatient(null)}
-        onConfirm={handleConfirmLock}
       />
     </div>
   );

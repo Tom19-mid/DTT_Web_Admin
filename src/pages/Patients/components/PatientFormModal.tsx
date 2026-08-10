@@ -1,7 +1,19 @@
 import { useState, useEffect, useRef } from "react";
-import { X, Calendar, ChevronLeft, ChevronRight, Save } from "lucide-react";
-import type { Patient, PatientStatus, Gender, VerificationStatus } from "../types";
-import ConfirmLockModal from "./ConfirmLockModal";
+import {
+  X,
+  Calendar,
+  ChevronLeft,
+  ChevronRight,
+  Save,
+  AlertCircle,
+} from "lucide-react";
+import type {
+  Patient,
+  PatientStatus,
+  Gender,
+  VerificationStatus,
+} from "../types";
+import { formatGenderVi } from "../../../api/patientApi";
 
 interface PatientFormModalProps {
   isOpen: boolean;
@@ -127,7 +139,6 @@ function CustomDatePicker({
 
       {isOpen && (
         <div className="absolute top-full left-0 mt-2 z-50 bg-white rounded-2xl shadow-2xl border border-gray-200 p-5 w-88 animation-fadeIn select-none">
-          {/* Header Month/Year Selector */}
           <div className="flex items-center justify-between mb-4 gap-2">
             <div className="flex items-center gap-2">
               <select
@@ -179,21 +190,17 @@ function CustomDatePicker({
             </div>
           </div>
 
-          {/* Days of week header */}
           <div className="grid grid-cols-7 gap-1 text-center font-bold text-gray-500 text-base mb-2">
             {dayNames.map((d) => (
               <div key={d}>{d}</div>
             ))}
           </div>
 
-          {/* Calendar Days Grid */}
           <div className="grid grid-cols-7 gap-1.5">
-            {/* Empty slots before first day */}
             {Array.from({ length: firstDayOfWeek }).map((_, idx) => (
               <div key={`empty-${idx}`} />
             ))}
 
-            {/* Days of current month */}
             {Array.from({ length: daysInMonth }).map((_, idx) => {
               const day = idx + 1;
               const isSelected =
@@ -219,7 +226,6 @@ function CustomDatePicker({
             })}
           </div>
 
-          {/* Footer Quick Action */}
           <div className="flex items-center justify-between pt-4 mt-3 border-t border-gray-100 text-base">
             <button
               type="button"
@@ -255,7 +261,6 @@ export default function PatientFormModal({
   onSave,
   initialData,
 }: PatientFormModalProps) {
-  const [code, setCode] = useState("");
   const [fullName, setFullName] = useState("");
   const [dob, setDob] = useState("");
   const [gender, setGender] = useState<Gender | string>("Nam");
@@ -263,46 +268,59 @@ export default function PatientFormModal({
   const [address, setAddress] = useState("");
   const [healthInsuranceNumber, setHealthInsuranceNumber] = useState("");
   const [cccdNumber, setCccdNumber] = useState("");
-  const [verificationStatus, setVerificationStatus] = useState<VerificationStatus | string>("Chờ duyệt");
-  const [verifiedBy, setVerifiedBy] = useState("");
+  const [verificationStatus, setVerificationStatus] = useState<
+    VerificationStatus | string
+  >("Chờ duyệt");
+  // [FIX] Giá trị mặc định phải khớp với option value trong dropdown ("Admin" hoặc "Lễ tân")
+  const [verifiedBy, setVerifiedBy] = useState("Lễ tân");
   const [verificationNote, setVerificationNote] = useState("");
-  const [status, setStatus] = useState<PatientStatus | string>("Đang hoạt động");
-  const [isConfirmLockOpen, setIsConfirmLockOpen] = useState(false);
+  const [status, setStatus] = useState<PatientStatus | string>(
+    "Đang hoạt động",
+  );
 
-  const [prevInitialData, setPrevInitialData] = useState<Patient | null | undefined>(undefined);
+  // Confirmation Modal state for Approve or Reject verification
+  const [confirmType, setConfirmType] = useState<"approve" | "reject" | null>(
+    null,
+  );
+
+  const [prevInitialData, setPrevInitialData] = useState<
+    Patient | null | undefined
+  >(undefined);
   const [prevIsOpen, setPrevIsOpen] = useState(false);
 
   if (initialData !== prevInitialData || isOpen !== prevIsOpen) {
     setPrevInitialData(initialData);
     setPrevIsOpen(isOpen);
     if (initialData) {
-      setCode(initialData.code || "");
       setFullName(initialData.fullName || "");
       setDob(initialData.dob || initialData.dateOfBirth || "");
-      setGender(initialData.gender || "Nam");
+      setGender(formatGenderVi(initialData.gender) || "");
       setPhone(initialData.phone || initialData.phoneNumber || "");
-      setAddress(initialData.address || "");
+
+      // Address: If "Chưa cập nhật" or empty, set to "" so placeholder shows
+      const rawAddr = initialData.address || "";
+      setAddress(rawAddr === "Chưa cập nhật" ? "" : rawAddr);
+
       setHealthInsuranceNumber(initialData.healthInsuranceNumber || "");
       setCccdNumber(initialData.cccdNumber || "");
       setVerificationStatus(initialData.verificationStatus || "Chờ duyệt");
-      setVerifiedBy(initialData.verifiedBy || "");
-      setVerificationNote("");
+      setVerifiedBy("Lễ tân");
+      setVerificationNote(initialData.verificationNote || "");
       setStatus(initialData.status || "Đang hoạt động");
     } else {
-      setCode("");
       setFullName("");
       setDob("");
-      setGender("Nam");
+      setGender("");
       setPhone("");
       setAddress("");
       setHealthInsuranceNumber("");
       setCccdNumber("");
       setVerificationStatus("Chờ duyệt");
-      setVerifiedBy("");
+      setVerifiedBy("Lễ tân");
       setVerificationNote("");
       setStatus("Đang hoạt động");
     }
-    setIsConfirmLockOpen(false);
+    setConfirmType(null);
   }
 
   if (!isOpen) return null;
@@ -313,10 +331,40 @@ export default function PatientFormModal({
       alert("Vui lòng nhập Họ tên bệnh nhân!");
       return;
     }
-
-    if (status === "Đã khóa" && initialData?.status !== "Đã khóa") {
-      setIsConfirmLockOpen(true);
+    if (phone.trim().length > 10) {
+      alert("Số điện thoại không được vượt quá 10 chữ số!");
       return;
+    }
+    if (cccdNumber.trim().length > 12) {
+      alert("Số CCCD / CMND không được vượt quá 12 chữ số!");
+      return;
+    }
+
+    const wasApproved =
+      initialData?.verificationStatus === "Đã duyệt" ||
+      initialData?.verificationStatus === "verified";
+    const wasRejected =
+      initialData?.verificationStatus === "Từ chối" ||
+      initialData?.verificationStatus === "rejected";
+
+    if (verificationStatus === "Đã duyệt") {
+      if (!cccdNumber.trim()) {
+        alert(
+          "Vui lòng nhập số CCCD / CMND để duyệt xác thực hồ sơ bệnh nhân!",
+        );
+        return;
+      }
+      if (!verifiedBy.trim()) {
+        alert("Vui lòng nhập Người thực hiện xác thực!");
+        return;
+      }
+
+      // Nếu trạng thái vừa được đổi sang "Đã duyệt" mới hiện Popup xác nhận.
+      // Nếu đã "Đã duyệt" từ trước thì lưu thẳng thông tin cập nhật không hiện Popup.
+      if (!wasApproved) {
+        setConfirmType("approve");
+        return;
+      }
     }
 
     if (verificationStatus === "Từ chối") {
@@ -324,9 +372,14 @@ export default function PatientFormModal({
         alert("Vui lòng nhập Người thực hiện xác thực!");
         return;
       }
-
       if (!verificationNote.trim()) {
         alert("Vui lòng nhập Ghi chú xác thực!");
+        return;
+      }
+
+      // Nếu trạng thái vừa được đổi sang "Từ chối" mới hiện Popup xác nhận.
+      if (!wasRejected) {
+        setConfirmType("reject");
         return;
       }
     }
@@ -334,30 +387,61 @@ export default function PatientFormModal({
     doSave();
   };
 
+  /* [OLD CODE COMMENTED OUT — doSave không async, không await onSave, không try/catch]
   const doSave = () => {
     const nowStr = new Date().toISOString().replace("T", " ").substring(0, 19);
-    onSave({
-      id: initialData?.id,
-      patientId: initialData?.patientId ?? initialData?.id,
-      code: code.trim() || `#00000${Math.floor(Math.random() * 90) + 10}`,
-      fullName: fullName.trim(),
-      dob: dob.trim(),
-      gender,
-      address: address.trim(),
-      healthInsuranceNumber: healthInsuranceNumber.trim(),
-      cccdNumber: cccdNumber.trim(),
-      phone: phone.trim(),
-      specialty: initialData?.specialty || "Nội khoa",
-      status: verificationStatus === "Từ chối" ? "Đã khóa" : status,
-      verificationStatus,
-      verifiedAt: verificationStatus === "Chờ duyệt" ? null : (initialData?.verifiedAt || nowStr),
-      verifiedBy: verificationStatus === "Chờ duyệt" ? null : (verifiedBy.trim() || initialData?.verifiedBy || "Lễ tân"),
-      verificationNote: verificationStatus === "Chờ duyệt" ? null : (verificationStatus === "Từ chối" ? verificationNote.trim() : (verificationNote.trim() || "Đã xác minh đầy đủ thông tin.")),
-      createdAt: initialData?.createdAt || nowStr,
-      updatedAt: nowStr,
-    });
-    setIsConfirmLockOpen(false);
+    onSave({...});
+    setConfirmType(null);
     onClose();
+  };
+  */
+
+  // [BUG FIX] doSave phải là async để await onSave() — nếu không await thì lỗi API bị nuốt im lặng,
+  // modal đóng mà không biết cập nhật đã thất bại hay chưa.
+  // [BUG FIX] nowStr phải dùng .toISOString() chuẩn ISO 8601 (có chữ T, không dấu space).
+  //   Trước đây: new Date().toISOString().replace("T", " ") → "2026-08-10 11:54:23"
+  //   → C# System.Text.Json KHÔNG parse được DateTime? → 400 Bad Request → update thất bại hoàn toàn.
+  const doSave = async () => {
+    // ISO 8601 chuẩn: "2026-08-10T11:54:23.000Z" — C# DateTime? chấp nhận format này
+    const nowStr = new Date().toISOString();
+    try {
+      await onSave({
+        id: initialData?.id,
+        patientId: initialData?.patientId ?? initialData?.id,
+        fullName: fullName.trim(),
+        dob: dob.trim(),
+        gender,
+        address: address.trim(),
+        healthInsuranceNumber: healthInsuranceNumber.trim(),
+        cccdNumber: cccdNumber.trim(),
+        phone: phone.trim(),
+        specialty: initialData?.specialty || "Nội khoa",
+        status: verificationStatus === "Từ chối" ? "Đã khóa" : status,
+        verificationStatus,
+        // [BUG FIX] Gửi null khi "Chờ duyệt" để backend xóa verifiedAt; gửi ISO string khi duyệt/từ chối
+        verifiedAt: verificationStatus === "Chờ duyệt" ? null : nowStr,
+        verifiedBy:
+          verificationStatus === "Chờ duyệt"
+            ? null
+            : verifiedBy.trim() || "Lễ Tân",
+        verificationNote:
+          verificationStatus === "Chờ duyệt"
+            ? null
+            : verificationNote.trim() ||
+              (verificationStatus === "Đã duyệt"
+                ? "Đã đối chiếu thẻ CCCD thực tế"
+                : "Hủy do không đủ giấy tờ"),
+        createdAt: initialData?.createdAt || nowStr,
+        updatedAt: nowStr,
+      });
+      setConfirmType(null);
+      onClose();
+    } catch (err) {
+      alert(
+        "Cập nhật thất bại: " +
+          (err instanceof Error ? err.message : String(err)),
+      );
+    }
   };
 
   return (
@@ -384,35 +468,31 @@ export default function PatientFormModal({
 
           {/* Form */}
           <form onSubmit={handleFormSubmit} className="space-y-4">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {/* Mã bệnh nhân */}
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-1">
-                  Mã bệnh nhân
-                </label>
-                <input
-                  type="text"
-                  value={code}
-                  onChange={(e) => setCode(e.target.value)}
-                  placeholder="VD: #000009 (Để trống tự tạo)"
-                  className="w-full border border-gray-300 rounded-xl px-4 py-2.5 text-base text-gray-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all"
-                />
+            {/* Error Banner */}
+            {(cccdNumber.trim().length > 12 || phone.trim().length > 10) && (
+              <div className="p-3.5 bg-rose-50 border border-rose-200 rounded-xl text-rose-700 text-sm flex items-center gap-2.5">
+                <AlertCircle size={18} className="shrink-0 text-rose-600" />
+                <span className="font-medium">
+                  {cccdNumber.trim().length > 12
+                    ? "Số CCCD / CMND không được vượt quá 12 chữ số."
+                    : "Số điện thoại không được vượt quá 10 chữ số."}
+                </span>
               </div>
+            )}
 
-              {/* Họ và tên */}
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-1">
-                  Họ và tên <span className="text-rose-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  value={fullName}
-                  onChange={(e) => setFullName(e.target.value)}
-                  placeholder="Nhập họ và tên bệnh nhân..."
-                  required
-                  className="w-full border border-gray-300 rounded-xl px-4 py-2.5 text-base text-gray-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all"
-                />
-              </div>
+            {/* Họ và tên */}
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-1">
+                Họ và tên <span className="text-rose-500">*</span>
+              </label>
+              <input
+                type="text"
+                value={fullName}
+                onChange={(e) => setFullName(e.target.value)}
+                placeholder="Nhập họ và tên bệnh nhân..."
+                required
+                className="w-full border border-gray-300 rounded-xl px-4 py-2.5 text-base text-gray-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all"
+              />
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -434,8 +514,10 @@ export default function PatientFormModal({
                   onChange={(e) => setGender(e.target.value as Gender)}
                   className="w-full border border-gray-300 rounded-xl px-4 py-2.5 text-base text-gray-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 bg-white transition-all cursor-pointer font-medium"
                 >
+                  <option value="">-- Chọn giới tính --</option>
                   <option value="Nam">Nam</option>
                   <option value="Nữ">Nữ</option>
+                  <option value="Khác">Khác</option>
                 </select>
               </div>
             </div>
@@ -451,8 +533,17 @@ export default function PatientFormModal({
                   value={phone}
                   onChange={(e) => setPhone(e.target.value)}
                   placeholder="Nhập số điện thoại..."
-                  className="w-full border border-gray-300 rounded-xl px-4 py-2.5 text-base text-gray-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all"
+                  className={`w-full border rounded-xl px-4 py-2.5 text-base text-gray-900 outline-none transition-all ${
+                    phone.trim().length > 10
+                      ? "border-rose-500 ring-2 ring-rose-500/20"
+                      : "border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+                  }`}
                 />
+                {phone.trim().length > 10 && (
+                  <p className="text-xs text-rose-500 mt-1 font-medium">
+                    Số điện thoại không được vượt quá 10 chữ số.
+                  </p>
+                )}
               </div>
 
               {/* Số thẻ BHYT */}
@@ -481,8 +572,17 @@ export default function PatientFormModal({
                   value={cccdNumber}
                   onChange={(e) => setCccdNumber(e.target.value)}
                   placeholder="VD: 079200000001..."
-                  className="w-full border border-gray-300 rounded-xl px-4 py-2.5 text-base text-gray-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all"
+                  className={`w-full border rounded-xl px-4 py-2.5 text-base text-gray-900 outline-none transition-all ${
+                    cccdNumber.trim().length > 12
+                      ? "border-rose-500 ring-2 ring-rose-500/20"
+                      : "border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+                  }`}
                 />
+                {cccdNumber.trim().length > 12 && (
+                  <p className="text-xs text-rose-500 mt-1 font-medium">
+                    Số CCCD / CMND không được vượt quá 12 chữ số.
+                  </p>
+                )}
               </div>
 
               {/* Địa chỉ */}
@@ -494,7 +594,7 @@ export default function PatientFormModal({
                   type="text"
                   value={address}
                   onChange={(e) => setAddress(e.target.value)}
-                  placeholder="VD: Quận 1, TP. Hồ Chí Minh..."
+                  placeholder="Nhập địa chỉ thường trú"
                   className="w-full border border-gray-300 rounded-xl px-4 py-2.5 text-base text-gray-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all"
                 />
               </div>
@@ -503,14 +603,15 @@ export default function PatientFormModal({
             {/* Trạng thái xác thực */}
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-1">
-                Trạng thái xác thực hồ sơ <span className="text-rose-500">*</span>
+                Trạng thái xác thực hồ sơ{" "}
+                <span className="text-rose-500">*</span>
               </label>
               <select
                 value={verificationStatus}
                 onChange={(e) => {
                   const nextStatus = e.target.value as VerificationStatus;
                   setVerificationStatus(nextStatus);
-                  if (nextStatus === "Từ chối") {
+                  if (nextStatus === "Chờ duyệt") {
                     setVerificationNote("");
                   }
                 }}
@@ -522,12 +623,16 @@ export default function PatientFormModal({
               </select>
             </div>
 
-            {verificationStatus === "Từ chối" && (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {/* Khi là "Đã duyệt" hoặc "Từ chối" -> Hiện 2 ô Người thực hiện xác thực & Ghi chú xác thực */}
+            {(verificationStatus === "Đã duyệt" ||
+              verificationStatus === "Từ chối") && (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 animate-in fade-in duration-200">
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 mb-1">
-                    Người thực hiện xác thực <span className="text-rose-500">*</span>
+                    Người thực hiện xác thực{" "}
+                    <span className="text-rose-500">*</span>
                   </label>
+                  {/* [OLD CODE COMMENTED OUT — input text tự do, dễ nhập sai]
                   <input
                     type="text"
                     value={verifiedBy}
@@ -536,18 +641,31 @@ export default function PatientFormModal({
                     required
                     className="w-full border border-gray-300 rounded-xl px-4 py-2.5 text-base text-gray-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all"
                   />
+                  */}
+                  {/* [NEW] Dropdown cố định: chỉ có lựa chọn Lễ tân */}
+                  <select
+                    value="Lễ tân"
+                    onChange={(e) => setVerifiedBy(e.target.value)}
+                    required
+                    className="w-full border border-gray-300 rounded-xl px-4 py-2.5 text-base text-gray-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 bg-white transition-all cursor-pointer font-medium"
+                  >
+                    <option value="Lễ tân">Lễ tân</option>
+                  </select>
                 </div>
 
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 mb-1">
-                    Ghi chú xác thực <span className="text-rose-500">*</span>
+                    Ghi chú xác thực{" "}
+                    {verificationStatus === "Từ chối" && (
+                      <span className="text-rose-500">*</span>
+                    )}
                   </label>
                   <input
                     type="text"
                     value={verificationNote}
                     onChange={(e) => setVerificationNote(e.target.value)}
                     placeholder="Nhập ghi chú xác thực..."
-                    required
+                    required={verificationStatus === "Từ chối"}
                     className="w-full border border-gray-300 rounded-xl px-4 py-2.5 text-base text-gray-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all"
                   />
                 </div>
@@ -575,31 +693,64 @@ export default function PatientFormModal({
         </div>
       </div>
 
-      {/* Lock Confirmation Modal overlay over Edit form */}
-      <ConfirmLockModal
-        isOpen={isConfirmLockOpen}
-        patient={{
-          id: initialData?.id || 0,
-          code: code || initialData?.code || "#000000",
-          fullName: fullName || "Bệnh nhân",
-          dob,
-          gender,
-          address,
-          healthInsuranceNumber,
-          cccdNumber,
-          phone,
-          specialty: initialData?.specialty || "Nội khoa",
-          status: "Đã khóa",
-          verificationStatus: "Từ chối",
-          verifiedAt: initialData?.verifiedAt || null,
-          verifiedBy: verifiedBy || initialData?.verifiedBy || null,
-          verificationNote: verificationNote || null,
-          createdAt: initialData?.createdAt || "",
-          updatedAt: initialData?.updatedAt || "",
-        }}
-        onClose={() => setIsConfirmLockOpen(false)}
-        onConfirm={doSave}
-      />
+      {/* Confirmation Modal for Verification (Approve or Reject) */}
+      {confirmType && (
+        <div className="fixed inset-0 z-60 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 relative animate-in fade-in zoom-in duration-200">
+            <button
+              onClick={() => setConfirmType(null)}
+              className="absolute top-4 right-4 p-1 text-gray-400 hover:text-gray-600 rounded-lg transition cursor-pointer"
+            >
+              <X size={20} />
+            </button>
+
+            <div className="flex flex-col items-center text-center py-2">
+              <div
+                className={`w-14 h-14 rounded-full flex items-center justify-center mb-4 shrink-0 ${
+                  confirmType === "approve"
+                    ? "bg-emerald-100 text-emerald-600"
+                    : "bg-rose-100 text-rose-600"
+                }`}
+              >
+                <AlertCircle size={30} />
+              </div>
+
+              <h3 className="text-xl font-bold text-gray-900 mb-2">
+                {confirmType === "approve"
+                  ? "Xác nhận duyệt hồ sơ"
+                  : "Xác nhận từ chối hồ sơ"}
+              </h3>
+
+              <p className="text-base text-gray-600 mb-6 leading-relaxed">
+                {confirmType === "approve"
+                  ? "Bạn có chắc chắn muốn duyệt bệnh nhân này không?"
+                  : "Bạn có chắc chắn muốn Từ chối duyệt bệnh nhân này không?"}
+              </p>
+
+              <div className="flex items-center justify-center gap-3 w-full">
+                <button
+                  type="button"
+                  onClick={() => setConfirmType(null)}
+                  className="w-1/2 py-2.5 border border-gray-300 rounded-xl text-gray-700 font-bold hover:bg-gray-50 transition cursor-pointer text-base"
+                >
+                  Hủy
+                </button>
+                <button
+                  type="button"
+                  onClick={doSave}
+                  className={`w-1/2 py-2.5 text-white font-bold rounded-xl shadow-sm transition cursor-pointer text-base ${
+                    confirmType === "approve"
+                      ? "bg-emerald-600 hover:bg-emerald-700"
+                      : "bg-rose-600 hover:bg-rose-700"
+                  }`}
+                >
+                  Đồng ý
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }
