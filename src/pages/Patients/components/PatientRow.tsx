@@ -1,12 +1,12 @@
 import type { Patient } from "../types";
 import StatusBadge from "./StatusBadge";
 import ActionButtons from "./ActionButtons";
+import { formatGenderVi } from "../../../api/patientApi";
 
 interface PatientRowProps {
   patient: Patient;
   onViewDetail?: (patient: Patient) => void;
   onEdit?: (patient: Patient) => void;
-  onLock?: (patient: Patient) => void;
 }
 
 // eslint-disable-next-line react-refresh/only-export-components
@@ -30,7 +30,6 @@ export default function PatientRow({
   patient,
   onViewDetail,
   onEdit,
-  onLock,
 }: PatientRowProps) {
   return (
     <tr className="border-b border-gray-100 hover:bg-gray-50/60 transition-colors">
@@ -66,7 +65,7 @@ export default function PatientRow({
 
       {/* 5. Giới tính */}
       <td className="py-4 px-4 text-gray-700 font-medium text-base text-center">
-        {patient.gender || "Nam"}
+        {formatGenderVi(patient.gender) || "-"}
       </td>
 
       {/* 6. Trạng thái */}
@@ -84,7 +83,6 @@ export default function PatientRow({
         <ActionButtons
           onViewDetail={() => onViewDetail && onViewDetail(patient)}
           onEdit={() => onEdit && onEdit(patient)}
-          onLock={() => onLock && onLock(patient)}
         />
       </td>
     </tr>

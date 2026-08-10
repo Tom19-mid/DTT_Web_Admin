@@ -1,6 +1,18 @@
-import { X, Pencil, User, FileText, Clock, ShieldCheck, MapPin, Phone, CreditCard, Calendar } from "lucide-react";
+import {
+  X,
+  Pencil,
+  User,
+  FileText,
+  Clock,
+  ShieldCheck,
+  MapPin,
+  Phone,
+  CreditCard,
+  Calendar,
+} from "lucide-react";
 import type { Patient } from "../types";
 import StatusBadge from "./StatusBadge";
+import { formatGenderVi } from "../../../api/patientApi";
 
 interface PatientDetailModalProps {
   isOpen: boolean;
@@ -35,14 +47,59 @@ export default function PatientDetailModal({
 
   const patientStatus = getPatientStatus(patient);
 
-  // Format YYYY-MM-DD or string
-  const formatDate = (dateStr?: string | null) => {
-    if (!dateStr) return "-";
-    if (dateStr.includes("-") && dateStr.length === 10) {
-      const parts = dateStr.split("-");
-      return `${parts[2]}/${parts[1]}/${parts[0]}`;
+  /* [OLD CODE COMMENTED OUT — dùng getHours() theo timezone máy client, không cố định UTC+7]
+  const formatDateTime = (dateStr?: string | null) => {
+    if (!dateStr || dateStr === "-" || dateStr === "null") return "-";
+    if (dateStr.includes("T")) {
+      const d = new Date(dateStr);
+      if (!isNaN(d.getTime())) {
+        const day = String(d.getDate()).padStart(2, "0");
+        const month = String(d.getMonth() + 1).padStart(2, "0");
+        const year = d.getFullYear();
+        const hours = String(d.getHours()).padStart(2, "0");
+        const minutes = String(d.getMinutes()).padStart(2, "0");
+        const seconds = String(d.getSeconds()).padStart(2, "0");
+        return `${day}/${month}/${year} ${hours}:${minutes}:${seconds}`;
+      }
     }
     return dateStr;
+  };
+  */
+
+  // [FIX] Format hiển thị ngày giờ Việt Nam (DD/MM/YYYY HH:mm:ss)
+  const formatDateTime = (dateStr?: string | null, showTime = true) => {
+    if (
+      !dateStr ||
+      dateStr === "-" ||
+      dateStr === "null" ||
+      dateStr === "undefined"
+    )
+      return "-";
+
+    // Nếu đã là chuỗi dạng "DD/MM/YYYY HH:mm:ss" hoặc "DD/MM/YYYY" (backend đã format sẵn giờ VN) -> giữ nguyên!
+    if (dateStr.includes("/") && !dateStr.includes("T")) {
+      return dateStr;
+    }
+
+    const d = new Date(dateStr);
+    if (isNaN(d.getTime())) return dateStr;
+
+    // Convert sang múi giờ Việt Nam Asia/Ho_Chi_Minh (UTC+7)
+    const vnDate = new Date(
+      d.toLocaleString("en-US", { timeZone: "Asia/Ho_Chi_Minh" }),
+    );
+    const day = String(vnDate.getDate()).padStart(2, "0");
+    const month = String(vnDate.getMonth() + 1).padStart(2, "0");
+    const year = vnDate.getFullYear();
+
+    if (showTime) {
+      const hours = String(vnDate.getHours()).padStart(2, "0");
+      const minutes = String(vnDate.getMinutes()).padStart(2, "0");
+      const seconds = String(vnDate.getSeconds()).padStart(2, "0");
+      return `${day}/${month}/${year} ${hours}:${minutes}:${seconds}`;
+    }
+
+    return `${day}/${month}/${year}`;
   };
 
   return (
@@ -62,7 +119,10 @@ export default function PatientDetailModal({
                 <StatusBadge status={patientStatus} />
               </div>
               <p className="text-base text-gray-500 mt-0.5">
-                Mã bệnh nhân: <span className="font-bold text-gray-800">{patient.code || `#${patient.id}`}</span>
+                Mã bệnh nhân:{" "}
+                <span className="font-bold text-gray-800">
+                  {patient.code || `#${patient.id}`}
+                </span>
               </p>
             </div>
           </div>
@@ -85,16 +145,29 @@ export default function PatientDetailModal({
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-base">
               <div>
-                <span className="text-gray-500 font-semibold text-sm">Họ và tên:</span>
-                <p className="font-bold text-gray-900 text-lg">{patient.fullName}</p>
+                <span className="text-gray-500 font-semibold text-sm">
+                  Họ và tên:
+                </span>
+                <p className="font-bold text-gray-900 text-lg">
+                  {patient.fullName}
+                </p>
               </div>
 
               <div>
                 <span className="text-gray-500 font-semibold text-sm flex items-center gap-1">
-                  <Calendar size={15} /> Ngày sinh & Giới tính:
+                  <Calendar size={15} /> Ngày sinh:
                 </span>
                 <p className="font-bold text-gray-900 text-base">
-                  {formatDate(patient.dob)} ({patient.gender || "Chưa cập nhật"})
+                  {formatDateTime(patient.dob)}
+                </p>
+              </div>
+
+              <div>
+                <span className="text-gray-500 font-semibold text-sm flex items-center gap-1">
+                  <User size={15} /> Giới tính:
+                </span>
+                <p className="font-bold text-gray-900 text-base">
+                  {patient.gender ? formatGenderVi(patient.gender) : "-"}
                 </p>
               </div>
 
@@ -102,25 +175,33 @@ export default function PatientDetailModal({
                 <span className="text-gray-500 font-semibold text-sm flex items-center gap-1">
                   <Phone size={15} /> Số điện thoại:
                 </span>
-                <p className="font-bold text-gray-900 text-base">{patient.phone || "-"}</p>
+                <p className="font-bold text-gray-900 text-base">
+                  {patient.phone || "-"}
+                </p>
               </div>
 
               <div>
                 <span className="text-gray-500 font-semibold text-sm flex items-center gap-1">
                   <CreditCard size={15} /> Số CCCD / CMND:
                 </span>
-                <p className="font-bold text-gray-900 text-base">{patient.cccdNumber || "-"}</p>
+                <p className="font-bold text-gray-900 text-base">
+                  {patient.cccdNumber || "-"}
+                </p>
               </div>
 
               <div>
                 <span className="text-gray-500 font-semibold text-sm flex items-center gap-1">
                   <ShieldCheck size={15} /> Số thẻ BHYT:
                 </span>
-                <p className="font-bold text-blue-600 text-base">{patient.healthInsuranceNumber || "-"}</p>
+                <p className="font-bold text-blue-600 text-base">
+                  {patient.healthInsuranceNumber || "-"}
+                </p>
               </div>
 
               <div>
-                <span className="text-gray-500 font-semibold text-sm block mb-1">Trạng thái:</span>
+                <span className="text-gray-500 font-semibold text-sm block mb-1">
+                  Trạng thái:
+                </span>
                 <StatusBadge status={patientStatus} />
               </div>
 
@@ -128,7 +209,11 @@ export default function PatientDetailModal({
                 <span className="text-gray-500 font-semibold text-sm flex items-center gap-1">
                   <MapPin size={15} /> Địa chỉ thường trú:
                 </span>
-                <p className="font-bold text-gray-900 text-base">{patient.address || "-"}</p>
+                <p className="font-bold text-gray-900 text-base">
+                  {patient.address && patient.address !== "Chưa cập nhật"
+                    ? patient.address
+                    : "-"}
+                </p>
               </div>
             </div>
           </div>
@@ -142,9 +227,13 @@ export default function PatientDetailModal({
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-base">
               <div>
-                <span className="text-gray-500 font-semibold text-sm block mb-1">Trạng thái xác thực:</span>
+                <span className="text-gray-500 font-semibold text-sm block mb-1">
+                  Trạng thái xác thực:
+                </span>
                 <div className="flex items-center justify-start">
-                  <StatusBadge status={patient.verificationStatus || patient.status} />
+                  <StatusBadge
+                    status={patient.verificationStatus || patient.status}
+                  />
                 </div>
               </div>
 
@@ -152,17 +241,27 @@ export default function PatientDetailModal({
                 <span className="text-gray-500 font-semibold text-sm flex items-center gap-1">
                   <Clock size={15} /> Thời điểm xác thực:
                 </span>
-                <p className="font-bold text-gray-900 text-base mt-1">{patient.verifiedAt || "-"}</p>
+                <p className="font-bold text-gray-900 text-base mt-1">
+                  {formatDateTime(patient.verifiedAt)}
+                </p>
               </div>
 
               <div>
-                <span className="text-gray-500 font-semibold text-sm">Người thực hiện xác thực:</span>
-                <p className="font-bold text-gray-900 text-base">{patient.verifiedBy || "-"}</p>
+                <span className="text-gray-500 font-semibold text-sm">
+                  Người thực hiện xác thực:
+                </span>
+                <p className="font-bold text-gray-900 text-base">
+                  {patient.verifiedBy ? "Lễ tân" : "-"}
+                </p>
               </div>
 
               <div>
-                <span className="text-gray-500 font-semibold text-sm">Ghi chú xác thực:</span>
-                <p className="font-bold text-gray-900 text-base">{patient.verificationNote || "-"}</p>
+                <span className="text-gray-500 font-semibold text-sm">
+                  Ghi chú xác thực:
+                </span>
+                <p className="font-bold text-gray-900 text-base">
+                  {patient.verificationNote || "-"}
+                </p>
               </div>
             </div>
           </div>
@@ -171,11 +270,15 @@ export default function PatientDetailModal({
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm text-gray-500 pt-3 border-t border-gray-100">
             <div>
               <span>Ngày tạo hồ sơ: </span>
-              <span className="font-bold text-gray-800">{patient.createdAt || "-"}</span>
+              <span className="font-bold text-gray-800">
+                {formatDateTime(patient.createdAt)}
+              </span>
             </div>
             <div>
               <span>Cập nhật lần cuối: </span>
-              <span className="font-bold text-gray-800">{patient.updatedAt || "-"}</span>
+              <span className="font-bold text-gray-800">
+                {formatDateTime(patient.updatedAt)}
+              </span>
             </div>
           </div>
         </div>

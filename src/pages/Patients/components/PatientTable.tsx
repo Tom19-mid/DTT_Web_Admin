@@ -8,14 +8,12 @@ interface PatientTableProps {
   patients: Patient[];
   onViewDetailPatient?: (patient: Patient) => void;
   onEditPatient?: (patient: Patient) => void;
-  onLockPatient?: (patient: Patient) => void;
 }
 
 export default function PatientTable({
   patients,
   onViewDetailPatient,
   onEditPatient,
-  onLockPatient,
 }: PatientTableProps) {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedAccountStatus, setSelectedAccountStatus] = useState("ALL");
@@ -113,7 +111,6 @@ export default function PatientTable({
                   patient={patient}
                   onViewDetail={onViewDetailPatient}
                   onEdit={onEditPatient}
-                  onLock={onLockPatient}
                 />
               ))
             ) : (
