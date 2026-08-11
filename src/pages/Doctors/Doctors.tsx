@@ -1,25 +1,87 @@
-import { useState } from "react";
-import { initialDoctors } from "./data";
+import { useState, useEffect, useCallback } from "react";
 import type { Doctor } from "./types";
 import DoctorToolbar from "./components/DoctorToolbar";
 import DoctorTable from "./components/DoctorTable";
 import DoctorFormModal from "./components/DoctorFormModal";
 import DoctorDetailModal from "./components/DoctorDetailModal";
 import ConfirmLockModal from "./components/ConfirmLockModal";
+import { doctorApi } from "../../api/doctorApi";
+import { specialtyApi } from "../../api/specialtyApi";
 
 export default function Doctors() {
-  const [doctors, setDoctors] = useState<Doctor[]>(initialDoctors);
+  const [doctors, setDoctors] = useState<Doctor[]>([]);
+  const [specialties, setSpecialties] = useState<Array<{ specialtyId: number; specialtyName: string }>>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [isFormModalOpen, setIsFormModalOpen] = useState(false);
   const [editingDoctor, setEditingDoctor] = useState<Doctor | null>(null);
   const [viewingDoctor, setViewingDoctor] = useState<Doctor | null>(null);
   const [lockingDoctor, setLockingDoctor] = useState<Doctor | null>(null);
 
+  // Fetch doctors list from Backend API
+  const fetchDoctors = useCallback(async () => {
+    try {
+      setIsLoading(true);
+      const data = await doctorApi.getAll();
+      const mapped: Doctor[] = data.map((d: any, index: number) => {
+        const rawStatus = String(d.status || "Active").trim();
+        let formattedStatus: any = "Đang hoạt động";
+        const lower = rawStatus.toLowerCase();
+        if (lower === "active" || lower === "đang hoạt động") formattedStatus = "Đang hoạt động";
+        else if (lower === "inactive" || lower === "ngưng hoạt động") formattedStatus = "Ngưng hoạt động";
+        else if (lower === "onleave" || lower === "nghỉ phép") formattedStatus = "Nghỉ phép";
+        else if (lower === "locked" || lower === "đã khóa") formattedStatus = "Đã khóa";
+
+        const rVal = Number(d.rating ?? d.ratingAverage ?? 5.0);
+        const revVal = Number(d.reviewCount ?? d.totalReviews ?? 0);
+
+        return {
+          ...d,
+          doctorId: d.doctorId || d.id || index + 1,
+          id: d.doctorId || d.id || index + 1,
+          stt: index + 1,
+          avatar: d.avatarUrl || d.avatar || "",
+          avatarUrl: d.avatarUrl || d.avatar || "",
+          specialty: d.specialtyName || d.specialty || "Nội tổng quát",
+          qualifications: d.degree || d.qualifications || "Chuyên khoa Bác sĩ",
+          experience: d.experienceYears ?? d.experience ?? 0,
+          status: formattedStatus,
+          rating: rVal,
+          ratingAverage: rVal,
+          reviewCount: revVal,
+          totalReviews: revVal,
+        };
+      });
+      setDoctors(mapped);
+    } catch (error) {
+      console.error("Lỗi khi tải danh sách bác sĩ:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  // Fetch specialties list from Backend API
+  const fetchSpecialties = useCallback(async () => {
+    try {
+      const data = await specialtyApi.getAll();
+      if (Array.isArray(data)) {
+        setSpecialties(data);
+      }
+    } catch (error) {
+      console.warn("Lỗi khi tải danh sách chuyên khoa:", error);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchDoctors();
+    fetchSpecialties();
+  }, [fetchDoctors, fetchSpecialties]);
+
   // Statistics
   const totalDoctors = doctors.length;
-  const activeCount = doctors.filter((d) => d.status === "Đang hoạt động").length;
-  const inactiveCount = doctors.filter((d) => d.status === "Ngưng hoạt động").length;
-  const onLeaveCount = doctors.filter((d) => d.status === "Nghỉ phép").length;
-  const lockedCount = doctors.filter((d) => d.status === "Đã khóa").length;
+  const activeCount = doctors.filter((d) => d.status === "Đang hoạt động" || d.status === "Active").length;
+  const inactiveCount = doctors.filter((d) => d.status === "Ngưng hoạt động" || d.status === "Inactive").length;
+  const onLeaveCount = doctors.filter((d) => d.status === "Nghỉ phép" || d.status === "OnLeave").length;
+  const lockedCount = doctors.filter((d) => d.status === "Đã khóa" || d.status === "Locked").length;
 
   // Open modal for adding new doctor
   const handleOpenAddModal = () => {
@@ -38,28 +100,61 @@ export default function Doctors() {
     setViewingDoctor(doctor);
   };
 
-  // Save (Add or Edit) doctor
-  const handleSaveDoctor = (doctorData: Omit<Doctor, "id" | "stt"> & { id?: number }) => {
-    if (doctorData.id) {
-      // Edit mode
-      setDoctors((prev) =>
-        prev.map((d) =>
-          d.id === doctorData.id
-            ? { ...d, ...doctorData }
-            : d
-        )
+  // Save (Add or Edit) doctor via API
+  const handleSaveDoctor = async (doctorData: any) => {
+    const targetId = doctorData.doctorId || doctorData.id;
+
+    // Find specialtyId by matched name
+    let selectedSpecId = doctorData.specialtyId;
+    if (doctorData.specialty) {
+      const matchedSpec = specialties.find(
+        (s) => s.specialtyName.toLowerCase().trim() === doctorData.specialty.toLowerCase().trim()
       );
+      if (matchedSpec) selectedSpecId = matchedSpec.specialtyId;
+    }
+
+    const avatarValue = doctorData.avatar || doctorData.avatarUrl || "";
+
+    if (targetId) {
+      // Edit mode
+      await doctorApi.update(targetId, {
+        fullName: doctorData.fullName,
+        degree: doctorData.degree || doctorData.qualifications,
+        experienceYears: Number(doctorData.experienceYears || doctorData.experience) || 0,
+        clinicRoom: doctorData.clinicRoom,
+        specialtyId: selectedSpecId,
+        phone: doctorData.phone,
+        email: doctorData.email,
+        status: doctorData.status,
+        avatar: avatarValue,
+        avatarUrl: avatarValue,
+        leaveStartDate: doctorData.leaveStartDate,
+        leaveEndDate: doctorData.leaveEndDate,
+        leaveReason: doctorData.leaveReason,
+        leaveStatus: doctorData.leaveStatus,
+      });
     } else {
       // Add mode
-      const newId = doctors.length > 0 ? Math.max(...doctors.map((d) => d.id)) + 1 : 1;
-      const newStt = doctors.length + 1;
-      const newDoctor: Doctor = {
-        ...doctorData,
-        id: newId,
-        stt: newStt,
-      };
-      setDoctors((prev) => [...prev, newDoctor]);
+      await doctorApi.create({
+        fullName: doctorData.fullName,
+        degree: doctorData.degree || doctorData.qualifications,
+        experienceYears: Number(doctorData.experienceYears || doctorData.experience) || 0,
+        clinicRoom: doctorData.clinicRoom,
+        specialtyId: selectedSpecId || 1,
+        phone: doctorData.phone || "",
+        email: doctorData.email,
+        status: doctorData.status || "Active",
+        avatar: avatarValue,
+        avatarUrl: avatarValue,
+        leaveStartDate: doctorData.leaveStartDate,
+        leaveEndDate: doctorData.leaveEndDate,
+        leaveReason: doctorData.leaveReason,
+        leaveStatus: doctorData.leaveStatus,
+      });
     }
+
+    // Refresh list from Backend
+    await fetchDoctors();
   };
 
   // Open lock confirmation modal
@@ -67,14 +162,18 @@ export default function Doctors() {
     setLockingDoctor(doctor);
   };
 
-  // Confirm lock doctor action
-  const handleConfirmLock = () => {
+  // Confirm lock doctor action via API
+  const handleConfirmLock = async () => {
     if (lockingDoctor) {
-      setDoctors((prev) =>
-        prev.map((d) =>
-          d.id === lockingDoctor.id ? { ...d, status: "Đã khóa" } : d
-        )
-      );
+      const targetId = lockingDoctor.doctorId || lockingDoctor.id;
+      if (targetId) {
+        try {
+          await doctorApi.updateStatus(targetId, "Đã khóa");
+          await fetchDoctors();
+        } catch (error) {
+          console.error("Lỗi khi khóa tài khoản bác sĩ:", error);
+        }
+      }
       setLockingDoctor(null);
     }
   };
@@ -89,12 +188,22 @@ export default function Doctors() {
         onLeaveCount={onLeaveCount}
         lockedCount={lockedCount}
       />
-      <DoctorTable
-        doctors={doctors}
-        onViewDoctorDetail={handleOpenDetailModal}
-        onEditDoctor={handleOpenEditModal}
-        onLockDoctor={handleOpenLockModal}
-      />
+
+      {isLoading ? (
+        <div className="flex items-center justify-center p-12 bg-white rounded-2xl shadow-xs">
+          <div className="flex flex-col items-center gap-3">
+            <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+            <p className="text-sm font-medium text-gray-500">Đang tải danh sách bác sĩ...</p>
+          </div>
+        </div>
+      ) : (
+        <DoctorTable
+          doctors={doctors}
+          onViewDoctorDetail={handleOpenDetailModal}
+          onEditDoctor={handleOpenEditModal}
+          onLockDoctor={handleOpenLockModal}
+        />
+      )}
 
       {/* Add / Edit Form Modal */}
       <DoctorFormModal
@@ -102,6 +211,7 @@ export default function Doctors() {
         onClose={() => setIsFormModalOpen(false)}
         onSave={handleSaveDoctor}
         initialData={editingDoctor}
+        specialtiesOptions={specialties}
       />
 
       {/* Doctor Detail Modal */}

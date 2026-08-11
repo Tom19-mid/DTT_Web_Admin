@@ -97,10 +97,12 @@ export default function DoctorDetailModal({
               <div className="flex flex-wrap items-center justify-center sm:justify-start gap-3 pt-1">
                 <div className="inline-flex items-center gap-1.5 bg-amber-400/20 backdrop-blur-sm px-3 py-1 rounded-full border border-amber-300/40 text-amber-200 text-sm font-bold">
                   <Star size={16} className="fill-amber-300 text-amber-300" />
-                  <span>{doctor.ratingAverage ? doctor.ratingAverage.toFixed(1) : "5.0"} / 5.0</span>
+                  <span>
+                    {(doctor.ratingAverage ?? doctor.rating ?? 5.0).toFixed(1)} / 5.0
+                  </span>
                 </div>
                 <span className="text-xs text-blue-100 font-medium">
-                  ({doctor.totalReviews || 0} lượt đánh giá từ bệnh nhân)
+                  ({doctor.totalReviews ?? doctor.reviewCount ?? 0} lượt đánh giá từ bệnh nhân)
                 </span>
               </div>
             </div>

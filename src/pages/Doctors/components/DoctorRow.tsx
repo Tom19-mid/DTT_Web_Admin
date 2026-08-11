@@ -20,8 +20,8 @@ export default function DoctorRow({
 
   return (
     <tr className="border-b border-gray-100 hover:bg-gray-50/60 transition-colors">
-      <td className="py-4 px-4 text-center font-medium text-gray-500 text-base">
-        {doctor.stt}
+      <td className="py-4 px-4 text-center font-bold text-gray-700 text-base">
+        {doctor.doctorId || doctor.id}
       </td>
       <td className="py-4 px-4 font-bold text-gray-900 text-base">
         <button

@@ -88,7 +88,7 @@ export default function DoctorTable({
         <table className="w-full text-left border-collapse min-w-[1000px]">
           <thead>
             <tr className="bg-gray-200/70 text-gray-800 font-bold text-base">
-              <th className="py-4 px-4 text-center rounded-l-xl">STT</th>
+              <th className="py-4 px-4 text-center rounded-l-xl">Mã BS</th>
               <th className="py-4 px-4">Họ và tên</th>
               <th className="py-4 px-4">Chuyên khoa</th>
               <th className="py-4 px-4">Chức danh / Trình độ</th>

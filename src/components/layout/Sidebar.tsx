@@ -10,6 +10,7 @@ import {
   Pill,
   CalendarDays,
   CalendarClock,
+  CalendarX,
   Bell,
   LogOut,
   ChevronRight,
@@ -35,6 +36,11 @@ const menus = [
     title: "Quản lý bác sĩ",
     icon: Stethoscope,
     path: "/doctors",
+  },
+  {
+    title: "Quản lý nghỉ phép bác sĩ",
+    icon: CalendarX,
+    path: "/doctor-leaves",
   },
   {
     title: "Quản lý chuyên khoa",
