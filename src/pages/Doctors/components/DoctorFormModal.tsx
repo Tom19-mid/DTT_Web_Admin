@@ -6,8 +6,9 @@ import ConfirmLockModal from "./ConfirmLockModal";
 interface DoctorFormModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSave: (doctorData: Omit<Doctor, "id" | "stt"> & { id?: number }) => void;
+  onSave: (doctorData: any) => Promise<void> | void;
   initialData?: Doctor | null;
+  specialtiesOptions?: Array<{ specialtyId: number; specialtyName: string }>;
 }
 
 const specialtiesList = [
@@ -302,12 +303,15 @@ export default function DoctorFormModal({
   onClose,
   onSave,
   initialData,
+  specialtiesOptions,
 }: DoctorFormModalProps) {
   const [fullName, setFullName] = useState("");
   const [avatar, setAvatar] = useState("");
-  const [specialty, setSpecialty] = useState("Tim mạch");
+  const [specialty, setSpecialty] = useState("Nội tổng quát");
+  const [specialtyId, setSpecialtyId] = useState<number | undefined>(undefined);
   const [qualifications, setQualifications] = useState("");
   const [experience, setExperience] = useState("");
+  const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
   const [clinicRoom, setClinicRoom] = useState("");
   const [status, setStatus] = useState<DoctorStatus>("Đang hoạt động");
@@ -318,6 +322,7 @@ export default function DoctorFormModal({
   const [leaveReason, setLeaveReason] = useState("");
 
   const [isConfirmLockOpen, setIsConfirmLockOpen] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const [prevInitialData, setPrevInitialData] = useState<Doctor | null | undefined>(undefined);
   const [prevIsOpen, setPrevIsOpen] = useState(false);
@@ -327,11 +332,13 @@ export default function DoctorFormModal({
     setPrevIsOpen(isOpen);
     if (initialData) {
       setFullName(initialData.fullName || "");
-      setAvatar(initialData.avatar || "");
-      setSpecialty(initialData.specialty || "");
-      setQualifications(initialData.qualifications || "");
-      setExperience(String(initialData.experience ?? ""));
-      setEmail(initialData.email || "");
+      setAvatar(initialData.avatar || initialData.avatarUrl || "");
+      setSpecialty(initialData.specialtyName || initialData.specialty || "Nội tổng quát");
+      setSpecialtyId(initialData.specialtyId || undefined);
+      setQualifications(initialData.qualifications || initialData.degree || "");
+      setExperience(String(initialData.experience ?? initialData.experienceYears ?? ""));
+      setPhone(initialData.phone || "");
+      setEmail(initialData.email || initialData.userEmail || "");
       setClinicRoom(initialData.clinicRoom || "");
       setStatus(initialData.status);
       setLeaveStartDate(initialData.leaveStartDate || getTodayFormatted());
@@ -340,9 +347,11 @@ export default function DoctorFormModal({
     } else {
       setFullName("");
       setAvatar("");
-      setSpecialty("Tim mạch");
+      setSpecialty("Nội tổng quát");
+      setSpecialtyId(undefined);
       setQualifications("");
       setExperience("");
+      setPhone("");
       setEmail("");
       setClinicRoom("");
       setStatus("Đang hoạt động");
@@ -370,27 +379,39 @@ export default function DoctorFormModal({
     doSave();
   };
 
-  const doSave = () => {
-    onSave({
-      doctorId: initialData?.doctorId ?? initialData?.id,
-      id: initialData?.id,
-      fullName: fullName.trim(),
-      avatar: avatar.trim() || undefined,
-      specialty,
-      qualifications: qualifications.trim(),
-      experience: experience.trim(),
-      email: email.trim(),
-      clinicRoom: clinicRoom.trim(),
-      status,
-      ratingAverage: initialData?.ratingAverage || 5.0,
-      totalReviews: initialData?.totalReviews || 0,
-      leaveStartDate: status === "Nghỉ phép" ? leaveStartDate : undefined,
-      leaveEndDate: status === "Nghỉ phép" ? leaveEndDate : undefined,
-      leaveReason: status === "Nghỉ phép" ? leaveReason : undefined,
-      leaveStatus: status === "Nghỉ phép" ? (initialData?.leaveStatus || "Chờ duyệt") : undefined,
-    });
-    setIsConfirmLockOpen(false);
-    onClose();
+  const doSave = async () => {
+    try {
+      setIsSubmitting(true);
+      await onSave({
+        doctorId: initialData?.doctorId ?? initialData?.id,
+        id: initialData?.doctorId ?? initialData?.id,
+        fullName: fullName.trim(),
+        avatar: avatar.trim() || undefined,
+        specialty,
+        specialtyName: specialty,
+        specialtyId: specialtyId,
+        qualifications: qualifications.trim(),
+        degree: qualifications.trim(),
+        experience: experience.trim(),
+        experienceYears: Number(experience) || 0,
+        phone: phone.trim(),
+        email: email.trim(),
+        clinicRoom: clinicRoom.trim(),
+        status,
+        ratingAverage: initialData?.ratingAverage || initialData?.rating || 5.0,
+        totalReviews: initialData?.totalReviews || initialData?.reviewCount || 0,
+        leaveStartDate: status === "Nghỉ phép" ? leaveStartDate : undefined,
+        leaveEndDate: status === "Nghỉ phép" ? leaveEndDate : undefined,
+        leaveReason: status === "Nghỉ phép" ? leaveReason : undefined,
+        leaveStatus: status === "Nghỉ phép" ? "Chờ duyệt" : undefined,
+      });
+      setIsConfirmLockOpen(false);
+      onClose();
+    } catch (err: any) {
+      alert(err.message || "Lỗi khi lưu thông tin bác sĩ!");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -440,10 +461,24 @@ export default function DoctorFormModal({
                 </label>
                 <select
                   value={specialty}
-                  onChange={(e) => setSpecialty(e.target.value)}
+                  onChange={(e) => {
+                    const newSpecName = e.target.value;
+                    setSpecialty(newSpecName);
+                    if (specialtiesOptions && specialtiesOptions.length > 0) {
+                      const matched = specialtiesOptions.find(
+                        (s) => s.specialtyName.toLowerCase().trim() === newSpecName.toLowerCase().trim()
+                      );
+                      if (matched) {
+                        setSpecialtyId(matched.specialtyId);
+                      }
+                    }
+                  }}
                   className="w-full border border-gray-300 rounded-xl px-4 py-2.5 text-base text-gray-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 bg-white transition-all cursor-pointer font-medium"
                 >
-                  {specialtiesList.map((item) => (
+                  {((specialtiesOptions && specialtiesOptions.length > 0)
+                    ? specialtiesOptions.map((s) => s.specialtyName)
+                    : specialtiesList
+                  ).map((item) => (
                     <option key={item} value={item}>
                       {item}
                     </option>
@@ -497,34 +532,49 @@ export default function DoctorFormModal({
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {/* Số điện thoại */}
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-1">
+                  Số điện thoại <span className="text-rose-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                  placeholder="VD: 0901234567..."
+                  required
+                  maxLength={10}
+                  className="w-full border border-gray-300 rounded-xl px-4 py-2.5 text-base text-gray-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all"
+                />
+              </div>
+
               {/* Email */}
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-1">
-                  Email <span className="text-rose-500">*</span>
+                  Email
                 </label>
                 <input
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="VD: dr.binh@clinic.com..."
-                  required
                   className="w-full border border-gray-300 rounded-xl px-4 py-2.5 text-base text-gray-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all"
                 />
               </div>
+            </div>
 
-              {/* Phòng khám */}
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-1">
-                  Phòng khám
-                </label>
-                <input
-                  type="text"
-                  value={clinicRoom}
-                  onChange={(e) => setClinicRoom(e.target.value)}
-                  placeholder="VD: P01, Room 102..."
-                  className="w-full border border-gray-300 rounded-xl px-4 py-2.5 text-base text-gray-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all"
-                />
-              </div>
+            {/* Phòng khám */}
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-1">
+                Phòng khám
+              </label>
+              <input
+                type="text"
+                value={clinicRoom}
+                onChange={(e) => setClinicRoom(e.target.value)}
+                placeholder="VD: Phòng 101, Phòng 102..."
+                className="w-full border border-gray-300 rounded-xl px-4 py-2.5 text-base text-gray-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all"
+              />
             </div>
 
             {/* Trạng thái */}

@@ -9,6 +9,7 @@ import Dashboard from "../pages/Dashboard/Dashboard";
 import Users from "../pages/Users/Users";
 import Patients from "../pages/Patients/Patients";
 import Doctors from "../pages/Doctors/Doctors";
+import DoctorLeaves from "../pages/DoctorLeaves/DoctorLeaves";
 import Specialties from "../pages/Specialties/Specialties";
 import Medicines from "../pages/Medicines/Medicines";
 import Appointments from "../pages/Appointments/Appointments";
@@ -31,6 +32,7 @@ export default function AppRoutes() {
               <Route path="/users" element={<Users />} />
               <Route path="/patients" element={<Patients />} />
               <Route path="/doctors" element={<Doctors />} />
+              <Route path="/doctor-leaves" element={<DoctorLeaves />} />
               <Route path="/specialties" element={<Specialties />} />
               <Route path="/medicines" element={<Medicines />} />
               <Route path="/appointments" element={<Appointments />} />
