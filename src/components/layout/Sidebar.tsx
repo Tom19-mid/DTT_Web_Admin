@@ -38,11 +38,6 @@ const menus = [
     path: "/doctors",
   },
   {
-    title: "Quản lý nghỉ phép bác sĩ",
-    icon: CalendarX,
-    path: "/doctor-leaves",
-  },
-  {
     title: "Quản lý chuyên khoa",
     icon: HeartPulse,
     path: "/specialties",

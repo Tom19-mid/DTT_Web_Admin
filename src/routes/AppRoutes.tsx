@@ -32,7 +32,7 @@ export default function AppRoutes() {
               <Route path="/users" element={<Users />} />
               <Route path="/patients" element={<Patients />} />
               <Route path="/doctors" element={<Doctors />} />
-              <Route path="/doctor-leaves" element={<DoctorLeaves />} />
+              <Route path="/doctor-leaves" element={<Doctors defaultTab="leaves" />} />
               <Route path="/specialties" element={<Specialties />} />
               <Route path="/medicines" element={<Medicines />} />
               <Route path="/appointments" element={<Appointments />} />

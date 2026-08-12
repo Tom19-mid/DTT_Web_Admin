@@ -140,12 +140,7 @@ export default function DoctorLeaves() {
   };
 
   return (
-    <div className="p-6 space-y-6 select-none">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-gray-900">Quản lý nghỉ phép bác sĩ</h1>
-      </div>
-
+    <div className="space-y-6 select-none">
       {/* Stat Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="bg-white p-5 rounded-2xl border border-gray-100/80 shadow-xs flex items-center justify-between">
