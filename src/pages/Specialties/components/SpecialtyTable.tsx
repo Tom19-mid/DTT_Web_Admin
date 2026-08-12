@@ -2,16 +2,18 @@ import { useState, useMemo } from "react";
 import type { Specialty } from "../types";
 import SpecialtySearch from "./SpecialtySearch";
 import SpecialtyRow from "./SpecialtyRow";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
 
 interface SpecialtyTableProps {
   specialties: Specialty[];
+  loading?: boolean;
   onEditSpecialty?: (specialty: Specialty) => void;
   onLockSpecialty?: (specialty: Specialty) => void;
 }
 
 export default function SpecialtyTable({
   specialties,
+  loading = false,
   onEditSpecialty,
   onLockSpecialty,
 }: SpecialtyTableProps) {
@@ -31,19 +33,23 @@ export default function SpecialtyTable({
   const filteredSpecialties = useMemo(() => {
     return specialties.filter((specialty) => {
       const term = searchTerm.toLowerCase().trim();
-      const matchesSearch =
-        !term ||
-        specialty.name.toLowerCase().includes(term) ||
-        specialty.description.toLowerCase().includes(term);
+      const name = (
+        specialty.name ||
+        specialty.specialtyName ||
+        ""
+      ).toLowerCase();
+      const desc = (specialty.description || "").toLowerCase();
+
+      const matchesSearch = !term || name.includes(term) || desc.includes(term);
 
       const matchesStatus =
         selectedStatus === "ALL" || specialty.status === selectedStatus;
 
       let matchesScale = true;
       if (selectedScale === "HAS_DOCTORS") {
-        matchesScale = specialty.doctorCount > 0;
+        matchesScale = (specialty.doctorCount || 0) > 0;
       } else if (selectedScale === "NO_DOCTORS") {
-        matchesScale = specialty.doctorCount === 0;
+        matchesScale = (specialty.doctorCount || 0) === 0;
       }
 
       return matchesSearch && matchesStatus && matchesScale;
@@ -91,7 +97,21 @@ export default function SpecialtyTable({
             </tr>
           </thead>
           <tbody>
-            {paginatedSpecialties.length > 0 ? (
+            {loading ? (
+              <tr>
+                <td
+                  colSpan={6}
+                  className="text-center py-12 text-gray-500 font-medium"
+                >
+                  <div className="flex flex-col items-center justify-center gap-3">
+                    <Loader2 className="w-8 h-8 text-blue-600 animate-spin" />
+                    <span className="text-base text-gray-600">
+                      Đang tải danh sách chuyên khoa...
+                    </span>
+                  </div>
+                </td>
+              </tr>
+            ) : paginatedSpecialties.length > 0 ? (
               paginatedSpecialties.map((specialty) => (
                 <SpecialtyRow
                   key={specialty.id}
@@ -118,11 +138,19 @@ export default function SpecialtyTable({
       {filteredSpecialties.length > 0 && (
         <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mt-6 pt-4 border-t border-gray-100 text-base text-gray-600">
           <div>
-            Hiển thị <span className="font-bold text-gray-900">{(currentPage - 1) * itemsPerPage + 1}</span> -{" "}
+            Hiển thị{" "}
+            <span className="font-bold text-gray-900">
+              {(currentPage - 1) * itemsPerPage + 1}
+            </span>{" "}
+            -{" "}
             <span className="font-bold text-gray-900">
               {Math.min(currentPage * itemsPerPage, filteredSpecialties.length)}
             </span>{" "}
-            trên <span className="font-bold text-gray-900">{filteredSpecialties.length}</span> chuyên khoa
+            trên{" "}
+            <span className="font-bold text-gray-900">
+              {filteredSpecialties.length}
+            </span>{" "}
+            chuyên khoa
           </div>
 
           <div className="flex items-center gap-2">

@@ -1,21 +1,38 @@
-import { useState } from "react";
-import { initialSpecialties } from "./data";
+import { useState, useEffect } from "react";
 import type { Specialty } from "./types";
+import specialtyApi from "../../api/specialtyApi";
 import SpecialtyToolbar from "./components/SpecialtyToolbar";
 import SpecialtyTable from "./components/SpecialtyTable";
 import SpecialtyFormModal from "./components/SpecialtyFormModal";
 import ConfirmLockModal from "./components/ConfirmLockModal";
 
 export default function Specialties() {
-  const [specialties, setSpecialties] = useState<Specialty[]>(initialSpecialties);
+  const [specialties, setSpecialties] = useState<Specialty[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
   const [isFormModalOpen, setIsFormModalOpen] = useState(false);
   const [editingSpecialty, setEditingSpecialty] = useState<Specialty | null>(null);
   const [lockingSpecialty, setLockingSpecialty] = useState<Specialty | null>(null);
 
+  const fetchSpecialties = async () => {
+    setLoading(true);
+    try {
+      const data = await specialtyApi.getAll();
+      setSpecialties(data);
+    } catch (err) {
+      console.error("Lỗi lấy danh sách chuyên khoa:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchSpecialties();
+  }, []);
+
   // Statistics
   const totalSpecialties = specialties.length;
-  const activeCount = specialties.filter((s) => s.status === "Đang hoạt động").length;
-  const inactiveCount = specialties.filter((s) => s.status === "Ngưng hoạt động").length;
+  const activeCount = specialties.filter((s) => s.status === "Đang hoạt động" || s.rawStatus === true).length;
+  const inactiveCount = specialties.filter((s) => s.status === "Ngưng hoạt động" || s.rawStatus === false).length;
 
   // Open modal for adding new specialty
   const handleOpenAddModal = () => {
@@ -30,31 +47,30 @@ export default function Specialties() {
   };
 
   // Save (Add or Edit) specialty
-  const handleSaveSpecialty = (
+  const handleSaveSpecialty = async (
     specialtyData: Omit<Specialty, "id" | "stt"> & { id?: number }
   ) => {
-    if (specialtyData.id) {
-      // Edit mode
-      setSpecialties((prev) =>
-        prev.map((s) =>
-          s.id === specialtyData.id
-            ? { ...s, ...specialtyData }
-            : s
-        )
-      );
-    } else {
-      // Add mode
-      const newId =
-        specialties.length > 0
-          ? Math.max(...specialties.map((s) => s.id)) + 1
-          : 1;
-      const newStt = specialties.length + 1;
-      const newSpecialty: Specialty = {
-        ...specialtyData,
-        id: newId,
-        stt: newStt,
-      };
-      setSpecialties((prev) => [...prev, newSpecialty]);
+    try {
+      const targetStatus = specialtyData.status === "Ngưng hoạt động" ? false : true;
+      if (specialtyData.id || specialtyData.specialtyId) {
+        // Edit mode
+        const targetId = specialtyData.specialtyId || specialtyData.id!;
+        await specialtyApi.update(targetId, {
+          specialtyName: specialtyData.specialtyName || specialtyData.name || "",
+          description: specialtyData.description || "",
+          status: targetStatus,
+        });
+      } else {
+        // Add mode
+        await specialtyApi.create({
+          specialtyName: specialtyData.specialtyName || specialtyData.name || "",
+          description: specialtyData.description || "",
+          status: targetStatus,
+        });
+      }
+      await fetchSpecialties();
+    } catch (err: any) {
+      alert(err.message || "Lỗi khi lưu thông tin chuyên khoa!");
     }
   };
 
@@ -64,15 +80,19 @@ export default function Specialties() {
   };
 
   // Confirm lock/toggle specialty status action
-  const handleConfirmLock = () => {
+  const handleConfirmLock = async () => {
     if (lockingSpecialty) {
-      const targetStatus = lockingSpecialty.status === "Đang hoạt động" ? "Ngưng hoạt động" : "Đang hoạt động";
-      setSpecialties((prev) =>
-        prev.map((s) =>
-          s.id === lockingSpecialty.id ? { ...s, status: targetStatus } : s
-        )
-      );
-      setLockingSpecialty(null);
+      try {
+        const targetId = lockingSpecialty.specialtyId || lockingSpecialty.id!;
+        const currentBool = lockingSpecialty.status === "Đang hoạt động" || lockingSpecialty.rawStatus === true;
+        const newBoolStatus = !currentBool;
+        await specialtyApi.toggleStatus(targetId, newBoolStatus);
+        await fetchSpecialties();
+      } catch (err: any) {
+        alert(err.message || "Lỗi khi cập nhật trạng thái chuyên khoa!");
+      } finally {
+        setLockingSpecialty(null);
+      }
     }
   };
 
@@ -86,6 +106,7 @@ export default function Specialties() {
       />
       <SpecialtyTable
         specialties={specialties}
+        loading={loading}
         onEditSpecialty={handleOpenEditModal}
         onLockSpecialty={handleOpenLockModal}
       />
@@ -107,4 +128,4 @@ export default function Specialties() {
       />
     </div>
   );
-}
+}
