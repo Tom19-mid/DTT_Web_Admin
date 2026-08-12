@@ -2,6 +2,7 @@ import { Plus, Pill, CheckCircle, MinusCircle, Boxes } from "lucide-react";
 
 interface MedicineToolbarProps {
   onAddMedicine: () => void;
+  onOpenCategoryManager?: () => void;
   totalMedicines: number;
   activeCount: number;
   inactiveCount: number;
@@ -10,19 +11,19 @@ interface MedicineToolbarProps {
 
 export default function MedicineToolbar({
   onAddMedicine,
+  onOpenCategoryManager,
   totalMedicines,
   activeCount,
   inactiveCount,
   categoriesCount,
 }: MedicineToolbarProps) {
   return (
-    <div className="mb-6 space-y-5">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-gray-900">Quản lý thuốc</h1>
+    <div className="mb-6 space-y-4">
+      {/* Action bar below Tabs */}
+      <div className="flex items-center justify-end">
         <button
           onClick={onAddMedicine}
-          className="bg-blue-600 hover:bg-blue-700 text-white font-bold px-5 py-3 rounded-2xl shadow-sm transition flex items-center gap-2 cursor-pointer active:scale-95 text-base"
+          className="bg-blue-600 hover:bg-blue-700 text-white font-bold px-5 py-2.5 rounded-xl shadow-sm transition flex items-center gap-2 cursor-pointer active:scale-95 text-base"
         >
           <Plus size={20} />
           <span>Thêm thuốc mới</span>
@@ -61,12 +62,15 @@ export default function MedicineToolbar({
           </div>
         </div>
 
-        <div className="bg-white p-5 rounded-2xl border border-gray-100/80 shadow-xs flex items-center justify-between">
+        <div
+          onClick={onOpenCategoryManager}
+          className="bg-white p-5 rounded-2xl border border-purple-100 hover:border-purple-300 shadow-xs flex items-center justify-between cursor-pointer transition group"
+        >
           <div>
-            <p className="text-xs font-bold text-gray-500 uppercase tracking-wider">Nhóm danh mục</p>
+            <p className="text-xs font-bold text-gray-500 uppercase tracking-wider group-hover:text-purple-600 transition">Nhóm danh mục</p>
             <p className="text-2xl font-bold text-purple-600 mt-1">{categoriesCount}</p>
           </div>
-          <div className="p-3 bg-purple-50 text-purple-600 rounded-xl">
+          <div className="p-3 bg-purple-50 group-hover:bg-purple-100 text-purple-600 rounded-xl transition">
             <Boxes size={24} />
           </div>
         </div>
@@ -74,3 +78,4 @@ export default function MedicineToolbar({
     </div>
   );
 }
+

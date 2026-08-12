@@ -1,4 +1,4 @@
-import { X, Edit, Pill, Hash, Layers, Tag, DollarSign, Calendar, Info, FileText } from "lucide-react";
+import { X, Edit, Pill, Hash, Layers, Tag, DollarSign, Calendar, Info, FileText, Clock } from "lucide-react";
 import type { Medicine, MedicineCategory } from "../types";
 import StatusBadge from "./StatusBadge";
 
@@ -34,9 +34,25 @@ export default function MedicineDetailModal({
     return dateStr;
   };
 
+  const formatDateTime = (dateStr?: string) => {
+    if (!dateStr) return "Chưa cập nhật";
+    try {
+      const d = new Date(dateStr);
+      if (isNaN(d.getTime())) return dateStr;
+      const day = String(d.getDate()).padStart(2, "0");
+      const month = String(d.getMonth() + 1).padStart(2, "0");
+      const year = d.getFullYear();
+      const hours = String(d.getHours()).padStart(2, "0");
+      const minutes = String(d.getMinutes()).padStart(2, "0");
+      return `${day}/${month}/${year} ${hours}:${minutes}`;
+    } catch {
+      return dateStr;
+    }
+  };
+
   return (
     <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-xs flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl shadow-xl w-full max-w-xl p-6 relative max-h-[90vh] overflow-y-auto animate-in fade-in zoom-in duration-200">
+      <div className="bg-white rounded-3xl shadow-2xl w-full max-w-2xl p-7 relative max-h-[90vh] overflow-y-auto animate-in fade-in zoom-in duration-200">
         {/* Header */}
         <div className="flex items-center justify-between pb-4 border-b border-gray-100 mb-5">
           <div className="flex items-center gap-3">
@@ -142,6 +158,24 @@ export default function MedicineDetailModal({
                 Hạn sử dụng
               </div>
               <p className="text-lg font-bold text-gray-900">{formatDate(expiryDate)}</p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-gray-50 p-4 rounded-xl border border-gray-100">
+            <div>
+              <div className="flex items-center gap-1.5 text-sm text-gray-500 font-semibold uppercase tracking-wider mb-1">
+                <Clock size={16} className="text-gray-400" />
+                Ngày tạo
+              </div>
+              <p className="font-semibold text-gray-800 text-base">{formatDateTime(medicine.createdAt)}</p>
+            </div>
+
+            <div>
+              <div className="flex items-center gap-1.5 text-sm text-gray-500 font-semibold uppercase tracking-wider mb-1">
+                <Clock size={16} className="text-gray-400" />
+                Ngày cập nhật
+              </div>
+              <p className="font-semibold text-gray-800 text-base">{formatDateTime(medicine.updatedAt)}</p>
             </div>
           </div>
         </div>

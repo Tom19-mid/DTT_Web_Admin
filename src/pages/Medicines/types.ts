@@ -14,8 +14,12 @@ export interface MedicineCategory {
   categoryId?: number;
   id?: number;
   categoryName: string;
+  name?: string;
   description?: string;
   status?: MedicinesCategory;
+  medicineCount?: number;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface Medicine {
