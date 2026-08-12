@@ -1,14 +1,28 @@
 import { useState, useEffect, useCallback } from "react";
+import { Stethoscope, CalendarX } from "lucide-react";
 import type { Doctor } from "./types";
 import DoctorToolbar from "./components/DoctorToolbar";
 import DoctorTable from "./components/DoctorTable";
 import DoctorFormModal from "./components/DoctorFormModal";
 import DoctorDetailModal from "./components/DoctorDetailModal";
 import ConfirmLockModal from "./components/ConfirmLockModal";
+import DoctorLeaves from "../DoctorLeaves/DoctorLeaves";
 import { doctorApi } from "../../api/doctorApi";
 import { specialtyApi } from "../../api/specialtyApi";
 
-export default function Doctors() {
+interface DoctorsProps {
+  defaultTab?: "doctors" | "leaves";
+}
+
+export default function Doctors({ defaultTab = "doctors" }: DoctorsProps) {
+  const [activeTab, setActiveTab] = useState<"doctors" | "leaves">(defaultTab);
+
+  useEffect(() => {
+    if (defaultTab) {
+      setActiveTab(defaultTab);
+    }
+  }, [defaultTab]);
+
   const [doctors, setDoctors] = useState<Doctor[]>([]);
   const [specialties, setSpecialties] = useState<Array<{ specialtyId: number; specialtyName: string }>>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -180,58 +194,103 @@ export default function Doctors() {
 
   return (
     <div className="p-7 bg-[#f4f6f9] min-h-screen">
-      <DoctorToolbar
-        onAddDoctor={handleOpenAddModal}
-        totalDoctors={totalDoctors}
-        activeCount={activeCount}
-        inactiveCount={inactiveCount}
-        onLeaveCount={onLeaveCount}
-        lockedCount={lockedCount}
-      />
-
-      {isLoading ? (
-        <div className="flex items-center justify-center p-12 bg-white rounded-2xl shadow-xs">
-          <div className="flex flex-col items-center gap-3">
-            <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
-            <p className="text-sm font-medium text-gray-500">Đang tải danh sách bác sĩ...</p>
-          </div>
+      {/* Navigation Header & Main 2 Tabs */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">
+            {activeTab === "doctors"
+              ? "Quản lý bác sĩ"
+              : "Quản lý nghỉ phép bác sĩ"}
+          </h1>
         </div>
-      ) : (
-        <DoctorTable
-          doctors={doctors}
-          onViewDoctorDetail={handleOpenDetailModal}
-          onEditDoctor={handleOpenEditModal}
-          onLockDoctor={handleOpenLockModal}
-        />
+
+        {/* 2 Tabs */}
+        <div className="bg-gray-200/80 p-1.5 rounded-2xl flex items-center gap-1.5 self-start md:self-auto shadow-inner select-none">
+          <button
+            onClick={() => setActiveTab("doctors")}
+            className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-sm transition-all cursor-pointer ${
+              activeTab === "doctors"
+                ? "bg-white text-blue-600 shadow-sm"
+                : "text-gray-600 hover:text-gray-900 hover:bg-gray-100/50"
+            }`}
+          >
+            <Stethoscope size={18} />
+            <span>Quản lý bác sĩ</span>
+          </button>
+          <button
+            onClick={() => setActiveTab("leaves")}
+            className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-sm transition-all cursor-pointer ${
+              activeTab === "leaves"
+                ? "bg-white text-purple-600 shadow-sm"
+                : "text-gray-600 hover:text-gray-900 hover:bg-gray-100/50"
+            }`}
+          >
+            <CalendarX size={18} />
+            <span>Quản lý nghỉ phép bác sĩ</span>
+          </button>
+        </div>
+      </div>
+
+      {/* Tab 1: Doctor Management View */}
+      {activeTab === "doctors" && (
+        <>
+          <DoctorToolbar
+            onAddDoctor={handleOpenAddModal}
+            totalDoctors={totalDoctors}
+            activeCount={activeCount}
+            inactiveCount={inactiveCount}
+            onLeaveCount={onLeaveCount}
+            lockedCount={lockedCount}
+          />
+
+          {isLoading ? (
+            <div className="flex items-center justify-center p-12 bg-white rounded-2xl shadow-xs">
+              <div className="flex flex-col items-center gap-3">
+                <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+                <p className="text-sm font-medium text-gray-500">Đang tải danh sách bác sĩ...</p>
+              </div>
+            </div>
+          ) : (
+            <DoctorTable
+              doctors={doctors}
+              onViewDoctorDetail={handleOpenDetailModal}
+              onEditDoctor={handleOpenEditModal}
+              onLockDoctor={handleOpenLockModal}
+            />
+          )}
+
+          {/* Add / Edit Form Modal */}
+          <DoctorFormModal
+            isOpen={isFormModalOpen}
+            onClose={() => setIsFormModalOpen(false)}
+            onSave={handleSaveDoctor}
+            initialData={editingDoctor}
+            specialtiesOptions={specialties}
+          />
+
+          {/* Doctor Detail Modal */}
+          <DoctorDetailModal
+            isOpen={!!viewingDoctor}
+            doctor={viewingDoctor}
+            onClose={() => setViewingDoctor(null)}
+            onEdit={(doc) => {
+              setViewingDoctor(null);
+              handleOpenEditModal(doc);
+            }}
+          />
+
+          {/* Lock Confirmation Modal */}
+          <ConfirmLockModal
+            isOpen={!!lockingDoctor}
+            doctor={lockingDoctor}
+            onClose={() => setLockingDoctor(null)}
+            onConfirm={handleConfirmLock}
+          />
+        </>
       )}
 
-      {/* Add / Edit Form Modal */}
-      <DoctorFormModal
-        isOpen={isFormModalOpen}
-        onClose={() => setIsFormModalOpen(false)}
-        onSave={handleSaveDoctor}
-        initialData={editingDoctor}
-        specialtiesOptions={specialties}
-      />
-
-      {/* Doctor Detail Modal */}
-      <DoctorDetailModal
-        isOpen={!!viewingDoctor}
-        doctor={viewingDoctor}
-        onClose={() => setViewingDoctor(null)}
-        onEdit={(doc) => {
-          setViewingDoctor(null);
-          handleOpenEditModal(doc);
-        }}
-      />
-
-      {/* Lock Confirmation Modal */}
-      <ConfirmLockModal
-        isOpen={!!lockingDoctor}
-        doctor={lockingDoctor}
-        onClose={() => setLockingDoctor(null)}
-        onConfirm={handleConfirmLock}
-      />
+      {/* Tab 2: Doctor Leave Management View */}
+      {activeTab === "leaves" && <DoctorLeaves />}
     </div>
   );
 }
