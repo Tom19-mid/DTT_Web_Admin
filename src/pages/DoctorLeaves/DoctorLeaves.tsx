@@ -297,7 +297,7 @@ export default function DoctorLeaves() {
                   <td colSpan={7} className="text-center py-12 text-gray-500 font-medium">
                     <div className="flex flex-col items-center justify-center gap-3">
                       <Loader2 className="w-8 h-8 text-blue-600 animate-spin" />
-                      <span>Đang tải danh sách đơn nghỉ phép...</span>
+                      <span className="text-gray-600 font-medium text-base">Đang tải danh sách đơn nghỉ phép...</span>
                     </div>
                   </td>
                 </tr>

@@ -81,14 +81,19 @@ export default function ConfirmCancelModal({
               <label className="block text-sm font-semibold text-gray-700 mb-1">
                 Người thực hiện hủy <span className="text-rose-500">*</span>
               </label>
-              <input
-                type="text"
+              <select
                 value={cancelledBy}
                 onChange={(e) => setCancelledBy(e.target.value)}
-                placeholder="Lễ tân, Bác sĩ..."
-                required
-                className="w-full border border-gray-300 rounded-xl px-4 py-2 text-base text-gray-900 outline-none focus:border-rose-500 focus:ring-2 focus:ring-rose-500/20"
-              />
+                className="w-full border border-gray-300 rounded-xl px-4 py-2.5 text-base text-gray-900 font-semibold outline-none focus:border-rose-500 focus:ring-2 focus:ring-rose-500/20 bg-white transition-all cursor-pointer"
+              >
+                <option value="Lễ tân" className="cursor-pointer py-1">Lễ tân</option>
+                <option value="Admin" className="cursor-pointer py-1">Admin</option>
+                {appointment.doctorName && (
+                  <option value={appointment.doctorName} className="cursor-pointer py-1">
+                    {appointment.doctorName}
+                  </option>
+                )}
+              </select>
             </div>
           </div>
 
