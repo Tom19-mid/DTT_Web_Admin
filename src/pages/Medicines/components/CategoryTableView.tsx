@@ -378,7 +378,7 @@ export default function CategoryTableView({
                   <td colSpan={6} className="text-center py-12 text-gray-500 font-medium">
                     <div className="flex flex-col items-center justify-center gap-3">
                       <Loader2 className="w-8 h-8 text-purple-600 animate-spin" />
-                      <span className="text-base text-gray-600 font-semibold">
+                      <span className="text-gray-600 font-medium text-base">
                         Đang tải danh sách danh mục thuốc...
                       </span>
                     </div>

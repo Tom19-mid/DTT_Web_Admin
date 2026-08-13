@@ -24,7 +24,9 @@ export default function Doctors({ defaultTab = "doctors" }: DoctorsProps) {
   }, [defaultTab]);
 
   const [doctors, setDoctors] = useState<Doctor[]>([]);
-  const [specialties, setSpecialties] = useState<Array<{ specialtyId: number; specialtyName: string }>>([]);
+  const [specialties, setSpecialties] = useState<
+    Array<{ specialtyId: number; specialtyName: string }>
+  >([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isFormModalOpen, setIsFormModalOpen] = useState(false);
   const [editingDoctor, setEditingDoctor] = useState<Doctor | null>(null);
@@ -40,10 +42,14 @@ export default function Doctors({ defaultTab = "doctors" }: DoctorsProps) {
         const rawStatus = String(d.status || "Active").trim();
         let formattedStatus: any = "Đang hoạt động";
         const lower = rawStatus.toLowerCase();
-        if (lower === "active" || lower === "đang hoạt động") formattedStatus = "Đang hoạt động";
-        else if (lower === "inactive" || lower === "ngưng hoạt động") formattedStatus = "Ngưng hoạt động";
-        else if (lower === "onleave" || lower === "nghỉ phép") formattedStatus = "Nghỉ phép";
-        else if (lower === "locked" || lower === "đã khóa") formattedStatus = "Đã khóa";
+        if (lower === "active" || lower === "đang hoạt động")
+          formattedStatus = "Đang hoạt động";
+        else if (lower === "inactive" || lower === "ngưng hoạt động")
+          formattedStatus = "Ngưng hoạt động";
+        else if (lower === "onleave" || lower === "nghỉ phép")
+          formattedStatus = "Nghỉ phép";
+        else if (lower === "locked" || lower === "đã khóa")
+          formattedStatus = "Đã khóa";
 
         const rVal = Number(d.rating ?? d.ratingAverage ?? 5.0);
         const revVal = Number(d.reviewCount ?? d.totalReviews ?? 0);
@@ -92,10 +98,18 @@ export default function Doctors({ defaultTab = "doctors" }: DoctorsProps) {
 
   // Statistics
   const totalDoctors = doctors.length;
-  const activeCount = doctors.filter((d) => d.status === "Đang hoạt động" || d.status === "Active").length;
-  const inactiveCount = doctors.filter((d) => d.status === "Ngưng hoạt động" || d.status === "Inactive").length;
-  const onLeaveCount = doctors.filter((d) => d.status === "Nghỉ phép" || d.status === "OnLeave").length;
-  const lockedCount = doctors.filter((d) => d.status === "Đã khóa" || d.status === "Locked").length;
+  const activeCount = doctors.filter(
+    (d) => d.status === "Đang hoạt động" || d.status === "Active",
+  ).length;
+  const inactiveCount = doctors.filter(
+    (d) => d.status === "Ngưng hoạt động" || d.status === "Inactive",
+  ).length;
+  const onLeaveCount = doctors.filter(
+    (d) => d.status === "Nghỉ phép" || d.status === "OnLeave",
+  ).length;
+  const lockedCount = doctors.filter(
+    (d) => d.status === "Đã khóa" || d.status === "Locked",
+  ).length;
 
   // Open modal for adding new doctor
   const handleOpenAddModal = () => {
@@ -122,7 +136,9 @@ export default function Doctors({ defaultTab = "doctors" }: DoctorsProps) {
     let selectedSpecId = doctorData.specialtyId;
     if (doctorData.specialty) {
       const matchedSpec = specialties.find(
-        (s) => s.specialtyName.toLowerCase().trim() === doctorData.specialty.toLowerCase().trim()
+        (s) =>
+          s.specialtyName.toLowerCase().trim() ===
+          doctorData.specialty.toLowerCase().trim(),
       );
       if (matchedSpec) selectedSpecId = matchedSpec.specialtyId;
     }
@@ -134,7 +150,8 @@ export default function Doctors({ defaultTab = "doctors" }: DoctorsProps) {
       await doctorApi.update(targetId, {
         fullName: doctorData.fullName,
         degree: doctorData.degree || doctorData.qualifications,
-        experienceYears: Number(doctorData.experienceYears || doctorData.experience) || 0,
+        experienceYears:
+          Number(doctorData.experienceYears || doctorData.experience) || 0,
         clinicRoom: doctorData.clinicRoom,
         specialtyId: selectedSpecId,
         phone: doctorData.phone,
@@ -152,7 +169,8 @@ export default function Doctors({ defaultTab = "doctors" }: DoctorsProps) {
       await doctorApi.create({
         fullName: doctorData.fullName,
         degree: doctorData.degree || doctorData.qualifications,
-        experienceYears: Number(doctorData.experienceYears || doctorData.experience) || 0,
+        experienceYears:
+          Number(doctorData.experienceYears || doctorData.experience) || 0,
         clinicRoom: doctorData.clinicRoom,
         specialtyId: selectedSpecId || 1,
         phone: doctorData.phone || "",
@@ -247,7 +265,9 @@ export default function Doctors({ defaultTab = "doctors" }: DoctorsProps) {
             <div className="flex items-center justify-center p-12 bg-white rounded-2xl shadow-xs">
               <div className="flex flex-col items-center gap-3">
                 <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
-                <p className="text-sm font-medium text-gray-500">Đang tải danh sách bác sĩ...</p>
+                <p className="text-gray-600 font-medium text-base">
+                  Đang tải danh sách bác sĩ...
+                </p>
               </div>
             </div>
           ) : (

@@ -105,7 +105,7 @@ export default function SpecialtyTable({
                 >
                   <div className="flex flex-col items-center justify-center gap-3">
                     <Loader2 className="w-8 h-8 text-blue-600 animate-spin" />
-                    <span className="text-base text-gray-600">
+                    <span className="text-gray-600 font-medium text-base">
                       Đang tải danh sách chuyên khoa...
                     </span>
                   </div>

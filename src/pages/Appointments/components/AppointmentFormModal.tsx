@@ -55,9 +55,11 @@ const AVAILABLE_TIME_SLOTS = generateTimeSlots();
 function CustomDatePicker({
   value,
   onChange,
+  disabled = false,
 }: {
   value: string;
   onChange: (val: string) => void;
+  disabled?: boolean;
 }) {
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -131,14 +133,22 @@ function CustomDatePicker({
           type="text"
           value={value}
           readOnly
-          onClick={() => setIsOpen(!isOpen)}
+          disabled={disabled}
+          onClick={() => !disabled && setIsOpen(!isOpen)}
           placeholder="Chọn ngày khám (VD: 30/07/2026)"
-          className="w-full border border-gray-300 rounded-xl px-4 py-2.5 pr-11 text-base text-gray-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all cursor-pointer bg-white"
+          className={`w-full border border-gray-300 rounded-xl px-4 py-2.5 pr-11 text-base font-semibold outline-none transition-all ${
+            disabled
+              ? "bg-gray-100/80 text-gray-600 cursor-not-allowed"
+              : "bg-white text-gray-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 cursor-pointer"
+          }`}
         />
         <button
           type="button"
-          onClick={() => setIsOpen(!isOpen)}
-          className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-500 hover:text-blue-600 transition-colors cursor-pointer p-1"
+          disabled={disabled}
+          onClick={() => !disabled && setIsOpen(!isOpen)}
+          className={`absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-500 transition-colors p-1 ${
+            disabled ? "cursor-not-allowed text-gray-400" : "hover:text-blue-600 cursor-pointer"
+          }`}
         >
           <Calendar size={20} />
         </button>
@@ -268,9 +278,11 @@ function CustomDatePicker({
 function CustomTimePicker({
   value,
   onChange,
+  disabled = false,
 }: {
   value: string;
   onChange: (val: string) => void;
+  disabled?: boolean;
 }) {
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -303,16 +315,19 @@ function CustomTimePicker({
     <div className="relative" ref={containerRef}>
       <button
         type="button"
-        onClick={() => setIsOpen(!isOpen)}
-        className={`w-full flex items-center justify-between border rounded-xl px-4 py-2.5 text-base text-gray-900 bg-white transition-all cursor-pointer select-none ${
-          isOpen
-            ? "border-blue-500 ring-2 ring-blue-500/20"
-            : "border-gray-300 hover:border-gray-400"
+        disabled={disabled}
+        onClick={() => !disabled && setIsOpen(!isOpen)}
+        className={`w-full flex items-center justify-between border rounded-xl px-4 py-2.5 text-base font-semibold transition-all select-none ${
+          disabled
+            ? "bg-gray-100/80 text-gray-600 border-gray-300 cursor-not-allowed"
+            : isOpen
+            ? "bg-white text-gray-900 border-blue-500 ring-2 ring-blue-500/20 cursor-pointer"
+            : "bg-white text-gray-900 border-gray-300 hover:border-gray-400 cursor-pointer"
         }`}
       >
         <div className="flex items-center gap-2.5">
-          <Clock size={18} className="text-gray-400" />
-          <span className="font-normal text-gray-800 text-base">{value || "Chọn giờ khám"}</span>
+          <Clock size={18} className={disabled ? "text-gray-400" : "text-gray-500"} />
+          <span className="font-semibold text-base">{value || "Chọn giờ khám"}</span>
         </div>
         <ChevronDown
           size={18}
@@ -377,6 +392,41 @@ export default function AppointmentFormModal({
 }: AppointmentFormModalProps) {
   const [patientName, setPatientName] = useState<string>("");
   const [doctorName, setDoctorName] = useState<string>(doctors[0] || "BS. Trần Minh Tuấn");
+  const formatNurseNoteForEdit = (rawStr?: string | null): string => {
+    if (!rawStr || rawStr.trim() === "" || rawStr === "null") return "";
+    try {
+      if (rawStr.startsWith("{") && rawStr.endsWith("}")) {
+        const obj = JSON.parse(rawStr);
+        const lines: string[] = [];
+        if (obj.bloodPressure) lines.push(`Huyết áp: ${obj.bloodPressure}`);
+        if (obj.heartRate) lines.push(`Nhịp tim: ${obj.heartRate}`);
+        if (obj.temperature) lines.push(`Thân nhiệt: ${obj.temperature}`);
+        if (obj.bmi) lines.push(`BMI: ${obj.bmi}`);
+        if (obj.nurseNote) lines.push(`Ghi chú điều dưỡng: ${obj.nurseNote}`);
+        if (lines.length > 0) return lines.join("\n");
+      }
+    } catch {
+      // plain text
+    }
+    return rawStr;
+  };
+
+  const formatDateTimeDisplay = (dateStr?: string | null): string => {
+    if (!dateStr || dateStr.trim() === "" || dateStr === "null") return "";
+    try {
+      const dt = new Date(dateStr);
+      if (isNaN(dt.getTime())) return dateStr;
+      const day = String(dt.getDate()).padStart(2, "0");
+      const month = String(dt.getMonth() + 1).padStart(2, "0");
+      const year = dt.getFullYear();
+      const hours = String(dt.getHours()).padStart(2, "0");
+      const mins = String(dt.getMinutes()).padStart(2, "0");
+      return `${day}/${month}/${year} ${hours}:${mins}`;
+    } catch {
+      return dateStr;
+    }
+  };
+
   const [appointmentDate, setAppointmentDate] = useState<string>(getTodayFormatted());
   const [appointmentTime, setAppointmentTime] = useState<string>("08:00 - 08:30");
   const [reason, setReason] = useState<string>("");
@@ -385,7 +435,9 @@ export default function AppointmentFormModal({
   const [notes, setNotes] = useState<string>("");
   const [cancelReason, setCancelReason] = useState<string>("");
   const [cancelTime, setCancelTime] = useState<string>("");
-  const [cancelledBy, setCancelledBy] = useState<string>("Lễ tân");
+  const [cancelledBy, setCancelledBy] = useState<string>("-");
+  const [nurseNote, setNurseNote] = useState<string>("");
+  const [memberIdVal, setMemberIdVal] = useState<string | number | null>(null);
 
   // Track props changes for initial form state reset
   const [prevInitialData, setPrevInitialData] = useState<Appointment | null | undefined>(undefined);
@@ -402,10 +454,20 @@ export default function AppointmentFormModal({
       setReason(initialData.reason);
       setQueueNumber(initialData.queueNumber);
       setStatus(initialData.status);
-      setNotes(initialData.notes || "");
-      setCancelReason(initialData.cancelReason || "");
-      setCancelTime(initialData.cancelTime || "");
-      setCancelledBy(initialData.cancelledBy || "Lễ tân");
+      setNotes(initialData.notes || initialData.note || "");
+      setCancelReason(initialData.cancelReason || initialData.cancel_reason || "");
+      setNurseNote(formatNurseNoteForEdit(initialData.nurseNote || initialData.nurse_note));
+      setMemberIdVal(initialData.memberId || initialData.member_id || null);
+      const rawCancelTime = initialData.cancelTime || initialData.cancelledAt || initialData.cancelled_at;
+      setCancelTime(formatDateTimeDisplay(rawCancelTime));
+      const rawBy = initialData.cancelledBy || initialData.cancelled_by;
+      if (rawBy && rawBy.toLowerCase().includes("admin")) {
+        setCancelledBy("Admin");
+      } else if (rawBy && initialData.doctorName && rawBy.toLowerCase().includes(initialData.doctorName.toLowerCase())) {
+        setCancelledBy(initialData.doctorName);
+      } else {
+        setCancelledBy("Lễ tân");
+      }
     } else {
       setPatientName("");
       setDoctorName(doctors[0] || "BS. Trần Minh Tuấn");
@@ -418,6 +480,8 @@ export default function AppointmentFormModal({
       setCancelReason("");
       setCancelTime("");
       setCancelledBy("Lễ tân");
+      setNurseNote("");
+      setMemberIdVal(null);
     }
   }
 
@@ -446,6 +510,9 @@ export default function AppointmentFormModal({
       cancelTime: (status === "Cancelled" || status === "Đã hủy") ? cancelTime.trim() || null : null,
       cancelledBy: (status === "Cancelled" || status === "Đã hủy") ? cancelledBy.trim() || null : null,
       notes: notes.trim() || null,
+      note: notes.trim() || null,
+      nurseNote: nurseNote.trim() || null,
+      nurse_note: nurseNote.trim() || null,
     });
     onClose();
   };
@@ -456,18 +523,18 @@ export default function AppointmentFormModal({
         {/* Header */}
         <div className="flex items-center justify-between pb-4 border-b border-gray-100 mb-5">
           <div>
-            <h2 className="text-xl font-bold text-gray-900">
+            <h2 className="text-2xl font-bold text-gray-900">
               {initialData ? "Chỉnh sửa lịch hẹn" : "Tạo lịch hẹn mới"}
             </h2>
-            <p className="text-sm text-gray-500 mt-0.5">
+            <p className="text-base text-gray-500 mt-0.5">
               Nhập thông tin chi tiết lịch hẹn khám bệnh
             </p>
           </div>
           <button
             onClick={onClose}
-            className="p-1.5 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100 transition cursor-pointer"
+            className="p-2 text-gray-400 hover:text-gray-700 rounded-xl hover:bg-gray-100 transition cursor-pointer"
           >
-            <X size={20} />
+            <X size={24} />
           </button>
         </div>
 
@@ -476,7 +543,7 @@ export default function AppointmentFormModal({
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {/* Bệnh nhân */}
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-1">
+              <label className="block text-sm font-bold text-gray-700 mb-1">
                 Tên bệnh nhân <span className="text-rose-500">*</span>
               </label>
               <input
@@ -485,20 +552,30 @@ export default function AppointmentFormModal({
                 onChange={(e) => setPatientName(e.target.value)}
                 placeholder="Nhập tên bệnh nhân..."
                 required
-                className="w-full border border-gray-300 rounded-xl px-4 py-2.5 text-base text-gray-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all"
+                disabled={!!initialData}
+                className={`w-full border border-gray-300 rounded-xl px-4 py-2.5 text-base outline-none transition-all ${
+                  initialData
+                    ? "bg-gray-100/80 text-gray-800 font-bold cursor-not-allowed"
+                    : "bg-white text-gray-900 font-normal focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+                }`}
               />
             </div>
 
             {/* Bác sĩ */}
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-1">
+              <label className="block text-sm font-bold text-gray-700 mb-1">
                 Bác sĩ phụ trách <span className="text-rose-500">*</span>
               </label>
               <select
                 value={doctorName}
                 onChange={(e) => setDoctorName(e.target.value)}
                 required
-                className="w-full border border-gray-300 rounded-xl px-4 py-2.5 text-base text-gray-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 bg-white transition-all cursor-pointer"
+                disabled={!!initialData}
+                className={`w-full border border-gray-300 rounded-xl px-4 py-2.5 text-base outline-none transition-all ${
+                  initialData
+                    ? "bg-gray-100/80 text-gray-800 font-bold cursor-not-allowed"
+                    : "bg-white text-gray-900 font-normal focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 cursor-pointer"
+                }`}
               >
                 {doctors.map((doc) => (
                   <option key={doc} value={doc}>
@@ -513,24 +590,24 @@ export default function AppointmentFormModal({
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {/* Ngày khám */}
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-1">
+              <label className="block text-sm font-bold text-gray-700 mb-1">
                 Ngày khám <span className="text-rose-500">*</span>
               </label>
-              <CustomDatePicker value={appointmentDate} onChange={setAppointmentDate} />
+              <CustomDatePicker value={appointmentDate} onChange={setAppointmentDate} disabled={!!initialData} />
             </div>
 
             {/* Giờ khám */}
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-1">
+              <label className="block text-sm font-bold text-gray-700 mb-1">
                 Giờ khám <span className="text-rose-500">*</span>
               </label>
-              <CustomTimePicker value={appointmentTime} onChange={setAppointmentTime} />
+              <CustomTimePicker value={appointmentTime} onChange={setAppointmentTime} disabled={!!initialData} />
             </div>
           </div>
 
           {/* Lý do khám */}
           <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-1">
+            <label className="block text-sm font-bold text-gray-700 mb-1">
               Lý do khám <span className="text-rose-500">*</span>
             </label>
             <input
@@ -539,15 +616,15 @@ export default function AppointmentFormModal({
               onChange={(e) => setReason(e.target.value)}
               placeholder="VD: Khám sức khỏe tổng quát, Sốt và ho..."
               required
-              className="w-full border border-gray-300 rounded-xl px-4 py-2.5 text-base text-gray-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all"
+              className="w-full border border-gray-300 rounded-xl px-4 py-2.5 text-base text-gray-900 font-normal outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all"
             />
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {/* Số thứ tự khám */}
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-1">
-                Số thứ tự (STT) <span className="text-rose-500">*</span>
+              <label className="block text-sm font-bold text-gray-700 mb-1">
+                Số thứ tự khám (STTK) <span className="text-rose-500">*</span>
               </label>
               <input
                 type="number"
@@ -555,19 +632,24 @@ export default function AppointmentFormModal({
                 onChange={(e) => setQueueNumber(e.target.value === "" ? "" : Number(e.target.value))}
                 min={1}
                 required
-                className="w-full border border-gray-300 rounded-xl px-4 py-2.5 text-base text-gray-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all"
+                disabled={!!initialData}
+                className={`w-full border border-gray-300 rounded-xl px-4 py-2.5 text-base font-bold outline-none transition-all ${
+                  initialData
+                    ? "bg-gray-100/80 text-gray-800 cursor-not-allowed"
+                    : "bg-white text-gray-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+                }`}
               />
             </div>
 
             {/* Trạng thái */}
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-1">
+              <label className="block text-sm font-bold text-gray-700 mb-1">
                 Trạng thái <span className="text-rose-500">*</span>
               </label>
               <select
                 value={status}
                 onChange={(e) => setStatus(e.target.value as AppointmentStatusName)}
-                className="w-full border border-gray-300 rounded-xl px-4 py-2.5 text-base text-gray-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 bg-white transition-all cursor-pointer"
+                className="w-full border border-gray-300 rounded-xl px-4 py-2.5 text-base text-gray-900 font-normal outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 bg-white transition-all cursor-pointer"
               >
                 {statusOptions.map((st) => (
                   <option key={st.value} value={st.value}>
@@ -581,45 +663,69 @@ export default function AppointmentFormModal({
           {/* Các trường nếu trạng thái là "Đã hủy" / "Cancelled" */}
           {(status === "Cancelled" || status === "Đã hủy") && (
             <div className="p-4 bg-rose-50/60 rounded-xl border border-rose-100 space-y-3">
-              <p className="text-xs font-bold text-rose-700 uppercase tracking-wider">Thông tin hủy lịch hẹn</p>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <p className="text-sm font-bold text-rose-800 uppercase tracking-wider">Thông tin hủy lịch hẹn</p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-semibold text-gray-700 mb-1">Lý do hủy</label>
-                  <input
-                    type="text"
+                  <label className="block text-sm font-bold text-gray-700 mb-1">Lý do hủy</label>
+                  <textarea
                     value={cancelReason}
                     onChange={(e) => setCancelReason(e.target.value)}
                     placeholder="Bệnh nhân bận việc..."
-                    className="w-full border border-gray-300 rounded-xl px-3 py-2 text-sm bg-white outline-none focus:border-rose-500"
+                    rows={2}
+                    className="w-full border border-gray-300 rounded-xl px-3.5 py-2.5 text-base text-gray-900 font-normal bg-white outline-none focus:border-rose-500 transition-all resize-y"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-gray-700 mb-1">Thời gian hủy</label>
-                  <input
-                    type="text"
-                    value={cancelTime}
-                    onChange={(e) => setCancelTime(e.target.value)}
-                    placeholder="01/08/2026 08:10"
-                    className="w-full border border-gray-300 rounded-xl px-3 py-2 text-sm bg-white outline-none focus:border-rose-500"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold text-gray-700 mb-1">Người hủy</label>
-                  <input
-                    type="text"
+                  <label className="block text-sm font-bold text-gray-700 mb-1">Người hủy</label>
+                  <select
                     value={cancelledBy}
                     onChange={(e) => setCancelledBy(e.target.value)}
-                    placeholder="Lễ tân..."
-                    className="w-full border border-gray-300 rounded-xl px-3 py-2 text-sm bg-white outline-none focus:border-rose-500"
-                  />
+                    className="w-full border border-gray-300 rounded-xl px-3.5 py-2.5 text-base text-gray-900 font-normal bg-white outline-none focus:border-rose-500 cursor-pointer"
+                  >
+                    <option value="Lễ tân" className="cursor-pointer py-1">Lễ tân</option>
+                    <option value="Admin" className="cursor-pointer py-1">Admin</option>
+                    {doctorName && doctorName !== "Gói Khám Sức Khỏe" && (
+                      <option value={doctorName} className="cursor-pointer py-1">
+                        {doctorName}
+                      </option>
+                    )}
+                  </select>
                 </div>
               </div>
             </div>
           )}
 
+          {/* Thành viên gia đình (Read-only) */}
+          <div>
+            <label className="block text-sm font-bold text-gray-700 mb-1">
+              Thành viên gia đình
+            </label>
+            <input
+              type="text"
+              value={memberIdVal ? `Thành viên #${memberIdVal}` : "-"}
+              disabled
+              readOnly
+              className="w-full border border-gray-300 rounded-xl px-4 py-2.5 text-base font-bold bg-gray-100/80 text-gray-800 cursor-not-allowed outline-none"
+            />
+          </div>
+
+          {/* Ghi chú điều dưỡng (nurse_note) */}
+          <div>
+            <label className="block text-sm font-bold text-gray-700 mb-1">
+              Ghi chú điều dưỡng (nurse_note)
+            </label>
+            <textarea
+              value={nurseNote}
+              onChange={(e) => setNurseNote(e.target.value)}
+              placeholder="Ghi chú điều dưỡng / chỉ số sinh hiệu..."
+              rows={Math.max(5, (nurseNote.match(/\n/g) || []).length + 1)}
+              className="w-full border border-gray-300 rounded-xl px-4 py-2.5 text-base text-gray-900 font-normal outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all bg-white"
+            />
+          </div>
+
           {/* Ghi chú */}
           <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-1">
+            <label className="block text-sm font-bold text-gray-700 mb-1">
               Ghi chú
             </label>
             <textarea
@@ -627,7 +733,7 @@ export default function AppointmentFormModal({
               onChange={(e) => setNotes(e.target.value)}
               placeholder="Ghi chú thêm về lịch hẹn..."
               rows={2}
-              className="w-full border border-gray-300 rounded-xl px-4 py-2.5 text-base text-gray-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all resize-none"
+              className="w-full border border-gray-300 rounded-xl px-4 py-2.5 text-base text-gray-900 font-normal outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all resize-none"
             />
           </div>
 

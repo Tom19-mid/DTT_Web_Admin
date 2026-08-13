@@ -1,7 +1,7 @@
-import { Plus, Calendar, Clock, CheckCircle, XCircle } from "lucide-react";
+import { Calendar, Clock, CheckCircle, XCircle } from "lucide-react";
 
 interface AppointmentToolbarProps {
-  onAddAppointment: () => void;
+  onAddAppointment?: () => void;
   totalAppointments: number;
   waitingAndExaminingCount: number;
   completedCount: number;
@@ -9,7 +9,6 @@ interface AppointmentToolbarProps {
 }
 
 export default function AppointmentToolbar({
-  onAddAppointment,
   totalAppointments,
   waitingAndExaminingCount,
   completedCount,
@@ -17,16 +16,9 @@ export default function AppointmentToolbar({
 }: AppointmentToolbarProps) {
   return (
     <div className="mb-6 space-y-5">
-      {/* Header & Main Action Button */}
+      {/* Header */}
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-gray-900">Quản lý lịch hẹn</h1>
-        <button
-          onClick={onAddAppointment}
-          className="bg-blue-600 hover:bg-blue-700 text-white font-bold px-5 py-3 rounded-2xl shadow-sm transition flex items-center gap-2 cursor-pointer active:scale-95 text-base"
-        >
-          <Plus size={20} />
-          <span>Tạo lịch hẹn mới</span>
-        </button>
       </div>
 
       {/* Summary Cards */}
