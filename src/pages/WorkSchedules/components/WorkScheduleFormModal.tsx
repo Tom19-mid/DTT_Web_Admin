@@ -1,7 +1,8 @@
-  import { useState, useEffect, useRef } from "react";
-import { X, Calendar, ChevronLeft, ChevronRight, Save, Clock, ChevronDown, Check } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
+import { X, Calendar, ChevronLeft, ChevronRight, Save, Clock, ChevronDown, Check, AlertTriangle, AlertCircle } from "lucide-react";
 import type { WorkSchedule, TimeSlot } from "../types";
 import { doctorsList } from "../data";
+import doctorApi from "../../../api/doctorApi";
 
 interface WorkScheduleFormModalProps {
   isOpen: boolean;
@@ -118,7 +119,7 @@ function CustomDatePicker({
 }: {
   value: string;
   onChange: (val: string) => void;
-  onOpenStateChange?: (isOpen: boolean) => void;
+  onOpenStateChange?: (open: boolean) => void;
 }) {
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -422,33 +423,97 @@ export default function WorkScheduleFormModal({
   onSave,
   initialData,
   nextScheduleId,
-}: WorkScheduleFormModalProps) {
-  const [doctorName, setDoctorName] = useState(doctorsList[0]);
+  doctors = [],
+}: WorkScheduleFormModalProps & { doctors?: Array<{ doctorId: number; fullName: string }> }) {
+  const [fetchedDoctors, setFetchedDoctors] = useState<Array<{ doctorId: number; fullName: string }>>([]);
+
+  // Fetch danh sách Bác sĩ từ CSDL Database khi mở Modal
+  useEffect(() => {
+    if (isOpen) {
+      doctorApi.getAll().then((res) => {
+        if (Array.isArray(res) && res.length > 0) {
+          setFetchedDoctors(
+            res.map((d: any) => ({ doctorId: d.doctorId, fullName: d.fullName }))
+          );
+        }
+      });
+    }
+  }, [isOpen]);
+
+  const activeDoctors = doctors && doctors.length > 0 ? doctors : fetchedDoctors;
+
+  // Tạo danh sách bác sĩ linh hoạt 100% từ CSDL PostgreSQL Database
+  const doctorOptions: Array<{ id: number; name: string }> = activeDoctors.map((d) => ({
+    id: d.doctorId,
+    name: d.fullName,
+  }));
+
+  // Nếu initialData có tên bác sĩ mà chưa có trong danh sách thì tự chèn vào đầu danh sách
+  if (
+    initialData?.doctorName &&
+    !doctorOptions.some(
+      (d) => d.name.trim().toLowerCase() === initialData.doctorName!.trim().toLowerCase()
+    )
+  ) {
+    doctorOptions.unshift({
+      id: initialData.doctorId || 999,
+      name: initialData.doctorName,
+    });
+  }
+
+  const [selectedDoctorId, setSelectedDoctorId] = useState<number>(
+    doctorOptions[0]?.id || 1
+  );
+  const [doctorName, setDoctorName] = useState<string>(
+    doctorOptions[0]?.name || ""
+  );
   const [workDate, setWorkDate] = useState("");
   const [startTime, setStartTime] = useState("08:00");
   const [endTime, setEndTime] = useState("12:00");
+  const [alertMessage, setAlertMessage] = useState<string | null>(null);
   const modalScrollRef = useRef<HTMLDivElement>(null);
 
   const [prevInitialData, setPrevInitialData] = useState<WorkSchedule | null | undefined>(undefined);
   const [prevIsOpen, setPrevIsOpen] = useState(false);
+  const [prevDoctorOptionsLen, setPrevDoctorOptionsLen] = useState(0);
 
-  if (initialData !== prevInitialData || isOpen !== prevIsOpen) {
+  if (
+    initialData !== prevInitialData ||
+    isOpen !== prevIsOpen ||
+    doctorOptions.length !== prevDoctorOptionsLen
+  ) {
     setPrevInitialData(initialData);
     setPrevIsOpen(isOpen);
+    setPrevDoctorOptionsLen(doctorOptions.length);
+    setAlertMessage(null);
+
     if (initialData) {
-      setDoctorName(initialData.doctorName || doctorsList[0]);
+      const matched = doctorOptions.find(
+        (d) =>
+          (initialData.doctorId && d.id === initialData.doctorId) ||
+          (initialData.doctorName &&
+            d.name.trim().toLowerCase() === initialData.doctorName.trim().toLowerCase())
+      ) || doctorOptions[0];
+
+      setSelectedDoctorId(matched ? matched.id : (initialData.doctorId || 1));
+      setDoctorName(initialData.doctorName || (matched ? matched.name : ""));
       setWorkDate(initialData.workDate || "");
       setStartTime(initialData.startTime || "08:00");
       setEndTime(initialData.endTime || "12:00");
-    } else {
+    } else if (doctorOptions.length > 0) {
       const today = new Date();
       const dStr = String(today.getDate()).padStart(2, "0");
       const mStr = String(today.getMonth() + 1).padStart(2, "0");
       const yStr = String(today.getFullYear());
-      setDoctorName(doctorsList[0]);
-      setWorkDate(`${dStr}/${mStr}/${yStr}`);
-      setStartTime("08:00");
-      setEndTime("12:00");
+      if (!selectedDoctorId || !doctorOptions.some((d) => d.id === selectedDoctorId)) {
+        setSelectedDoctorId(doctorOptions[0].id);
+        setDoctorName(doctorOptions[0].name);
+      }
+      if (!workDate) {
+        setWorkDate(`${dStr}/${mStr}/${yStr}`);
+        setStartTime("08:00");
+        setEndTime("12:00");
+      }
     }
   }
 
@@ -468,7 +533,7 @@ export default function WorkScheduleFormModal({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!workDate) {
-      alert("Vui lòng chọn Ngày làm việc!");
+      setAlertMessage("Vui lòng chọn Ngày làm việc!");
       return;
     }
 
@@ -476,10 +541,11 @@ export default function WorkScheduleFormModal({
     const scheduleCodeStr = String(targetScheduleId);
 
     if (timeToMinutes(startTime) >= timeToMinutes(endTime)) {
-      alert("Thời gian kết thúc phải lớn hơn thời gian bắt đầu!");
+      setAlertMessage("Thời gian kết thúc phải lớn hơn thời gian bắt đầu!");
       return;
     }
 
+    // Kiểm tra xem có khung giờ "Đã đặt lịch" bị đẩy ra ngoài phạm vi thời gian mới hay không
     if (initialData?.timeSlots) {
       const newStart = timeToMinutes(startTime);
       const newEnd = timeToMinutes(endTime);
@@ -493,8 +559,8 @@ export default function WorkScheduleFormModal({
       });
 
       if (hasBookedOutsideRange) {
-        alert(
-          "Không thể thu hẹp khung giờ vì có khung giờ đã được đặt lịch nằm ngoài phạm vi mới."
+        setAlertMessage(
+          "Không thể thu hẹp khung giờ làm việc vì có khung giờ đã được bệnh nhân đặt lịch (Đã đặt lịch) nằm ngoài phạm vi thời gian mới!"
         );
         return;
       }
@@ -510,7 +576,7 @@ export default function WorkScheduleFormModal({
     onSave({
       scheduleId: targetScheduleId,
       scheduleCode: scheduleCodeStr,
-      doctorId: 1,
+      doctorId: selectedDoctorId,
       doctorName,
       workDate,
       startTime,
@@ -545,7 +611,7 @@ export default function WorkScheduleFormModal({
           </button>
         </div>
 
-        {/* Form - Fits content cleanly without huge bottom whitespace */}
+        {/* Form */}
         <form onSubmit={handleSubmit} className="space-y-4">
           {/* Bác sĩ */}
           <div>
@@ -553,13 +619,18 @@ export default function WorkScheduleFormModal({
               Bác sĩ <span className="text-rose-500">*</span>
             </label>
             <select
-              value={doctorName}
-              onChange={(e) => setDoctorName(e.target.value)}
+              value={selectedDoctorId}
+              onChange={(e) => {
+                const docId = Number(e.target.value);
+                setSelectedDoctorId(docId);
+                const found = doctorOptions.find((d) => d.id === docId);
+                if (found) setDoctorName(found.name);
+              }}
               className="w-full border border-gray-300 rounded-xl px-4 py-2.5 text-base font-normal text-gray-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 bg-white transition-all cursor-pointer"
             >
-              {doctorsList.map((doc) => (
-                <option key={doc} value={doc}>
-                  {doc}
+              {doctorOptions.map((doc) => (
+                <option key={doc.id} value={doc.id}>
+                  {doc.name}
                 </option>
               ))}
             </select>
@@ -625,6 +696,51 @@ export default function WorkScheduleFormModal({
           </div>
         </form>
       </div>
+
+      {/* Modal Thông báo cảnh báo theo chuẩn thiết kế mẫu người dùng */}
+      {alertMessage && (
+        <div className="fixed inset-0 z-60 bg-black/55 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-200">
+          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-lg p-6 sm:p-7 relative border border-gray-100 animate-in zoom-in-95 duration-200">
+            {/* Nút đóng X ở góc trên bên phải */}
+            <button
+              type="button"
+              onClick={() => setAlertMessage(null)}
+              className="absolute right-4 top-4 text-gray-400 hover:text-gray-600 rounded-xl p-1.5 hover:bg-gray-100 transition cursor-pointer"
+            >
+              <X size={20} />
+            </button>
+
+            {/* Icon tròn ở giữa phía trên */}
+            <div className="w-16 h-16 rounded-full bg-rose-100 text-rose-600 flex items-center justify-center mx-auto mb-4 border border-rose-200/70 shadow-2xs">
+              <AlertTriangle size={32} />
+            </div>
+
+            {/* Tiêu đề căn giữa */}
+            <h3 className="text-xl sm:text-2xl font-extrabold text-gray-900 text-center mb-1">
+              Không thể thu hẹp lịch làm việc
+            </h3>
+
+            {/* Thẻ Cảnh báo màu vàng nổi bật ở giữa */}
+            <div className="bg-amber-50/90 border border-amber-200/90 rounded-2xl p-4 flex items-start gap-3 my-5 text-left shadow-2xs">
+              <AlertCircle size={22} className="text-amber-600 shrink-0 mt-0.5" />
+              <p className="text-sm sm:text-base text-amber-950 leading-relaxed font-semibold">
+                {alertMessage}
+              </p>
+            </div>
+
+            {/* Nút Đã hiểu góc dưới bên phải */}
+            <div className="flex items-center justify-end gap-3 mt-6">
+              <button
+                type="button"
+                onClick={() => setAlertMessage(null)}
+                className="px-8 py-3 bg-rose-600 hover:bg-rose-700 active:scale-95 text-white font-extrabold rounded-2xl shadow-md hover:shadow-lg transition-all cursor-pointer text-base text-center"
+              >
+                Đã hiểu
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

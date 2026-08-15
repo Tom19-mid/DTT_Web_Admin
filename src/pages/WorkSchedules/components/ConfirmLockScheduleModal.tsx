@@ -41,8 +41,8 @@ export default function ConfirmLockScheduleModal({
           </h3>
 
           <p className="text-base text-gray-600 mb-4 leading-relaxed">
-            Bạn có chắc chắn muốn {isCurrentlyLocked ? "mở khóa" : "khóa lịch làm việc"} bác sĩ{" "}
-            <span className="font-bold text-gray-900">{schedule.doctorId}</span> (Ngày:{" "}
+            Bạn có chắc chắn muốn {isCurrentlyLocked ? "mở khóa" : "khóa lịch làm việc"} {" "}
+            <span className="font-bold text-gray-900">{schedule.doctorName || `Bác sĩ ${schedule.doctorId}`}</span> (Ngày:{" "}
             <span className="font-bold text-blue-600">{schedule.workDate}</span>) không?
           </p>
 

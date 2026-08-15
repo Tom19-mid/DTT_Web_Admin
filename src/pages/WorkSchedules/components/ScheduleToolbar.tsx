@@ -19,12 +19,8 @@ export default function ScheduleToolbar({
 }: ScheduleToolbarProps) {
   return (
     <div className="mb-6 space-y-5">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-        <h1 className="text-2xl font-bold text-gray-900">
-          Lịch làm việc của bác sĩ
-        </h1>
-
+      {/* Action Header */}
+      <div className="flex items-center justify-end">
         <button
           type="button"
           onClick={onAddSchedule}

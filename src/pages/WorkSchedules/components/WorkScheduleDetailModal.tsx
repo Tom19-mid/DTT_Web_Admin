@@ -77,8 +77,8 @@ export default function WorkScheduleDetailModal({
 
         {/* Time slots detailed list */}
         <TimeSlotSubTable
-          scheduleCode={schedule.scheduleCode}
-          timeSlots={schedule.timeSlots}
+          scheduleCode={schedule.scheduleCode || String(schedule.scheduleId || "")}
+          timeSlots={schedule.timeSlots || []}
           isModal={true}
         />
 

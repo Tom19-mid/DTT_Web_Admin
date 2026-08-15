@@ -5,6 +5,7 @@ import NotificationToolbar from "./components/NotificationToolbar";
 import NotificationCard from "./components/NotificationCard";
 import NotificationDetailModal from "./components/NotificationDetailModal";
 import ConfirmDeleteNotificationModal from "./components/ConfirmDeleteNotificationModal";
+import Pagination from "../../components/common/Pagination";
 import { ChevronLeft, ChevronRight, BellOff } from "lucide-react";
 
 export default function Notifications() {
@@ -156,47 +157,14 @@ export default function Notifications() {
 
         {/* Pagination Footer */}
         {filteredNotifications.length > 0 && (
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mt-6 pt-5 border-t border-gray-100 text-base text-gray-600">
-            <div>
-              Hiển thị <span className="font-bold text-gray-900">{(currentPage - 1) * itemsPerPage + 1}</span> -{" "}
-              <span className="font-bold text-gray-900">
-                {Math.min(currentPage * itemsPerPage, filteredNotifications.length)}
-              </span>{" "}
-              trên <span className="font-bold text-gray-900">{filteredNotifications.length}</span> thông báo
-            </div>
-
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
-                disabled={currentPage === 1}
-                className="p-2.5 border border-gray-200 bg-white rounded-xl hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition"
-              >
-                <ChevronLeft size={18} />
-              </button>
-
-              {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-                <button
-                  key={page}
-                  onClick={() => setCurrentPage(page)}
-                  className={`px-4 py-2 rounded-xl font-bold text-base cursor-pointer transition ${
-                    currentPage === page
-                      ? "bg-blue-600 text-white shadow-xs"
-                      : "border border-gray-200 bg-white text-gray-700 hover:bg-gray-50"
-                  }`}
-                >
-                  {page}
-                </button>
-              ))}
-
-              <button
-                onClick={() => setCurrentPage((p) => Math.min(p + 1, totalPages))}
-                disabled={currentPage === totalPages}
-                className="p-2.5 border border-gray-200 bg-white rounded-xl hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition"
-              >
-                <ChevronRight size={18} />
-              </button>
-            </div>
-          </div>
+          <Pagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            onPageChange={(page) => setCurrentPage(page)}
+            totalItems={filteredNotifications.length}
+            itemsPerPage={itemsPerPage}
+            itemLabel="thông báo"
+          />
         )}
       </div>
 

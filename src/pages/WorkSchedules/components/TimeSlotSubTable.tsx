@@ -13,6 +13,8 @@ export default function TimeSlotSubTable({
   timeSlots,
   isModal = false,
 }: TimeSlotSubTableProps) {
+  const safeTimeSlots = Array.isArray(timeSlots) ? timeSlots : [];
+
   return (
     <div
       className={`${
@@ -27,7 +29,7 @@ export default function TimeSlotSubTable({
           Danh sách khung giờ khám chi tiết (Mã lịch: <span className="text-blue-600 font-bold">{scheduleCode}</span>)
         </h4>
         <span className="text-xs bg-slate-200 text-slate-700 px-2.5 py-0.5 rounded-full font-semibold">
-          {timeSlots.length} khung giờ
+          {safeTimeSlots.length} khung giờ
         </span>
       </div>
 
@@ -44,8 +46,8 @@ export default function TimeSlotSubTable({
             </tr>
           </thead>
           <tbody>
-            {timeSlots.length > 0 ? (
-              timeSlots.map((slot) => {
+            {safeTimeSlots.length > 0 ? (
+              safeTimeSlots.map((slot) => {
                 const slotScheduleCode = slot.scheduleCode || scheduleCode;
 
                 return (
@@ -53,9 +55,9 @@ export default function TimeSlotSubTable({
                     key={slot.slotId}
                     className="border-b border-slate-100 hover:bg-blue-50/40 transition-colors text-base font-medium"
                   >
-                    {/* Mã khung giờ (Chữ màu đen) */}
-                    <td className="py-3.5 px-4 text-center font-medium text-gray-800 text-base">
-                      {slotScheduleCode}
+                    {/* Mã khung giờ (lấy từ slot_id của bảng doctor_schedule_slots) */}
+                    <td className="py-3.5 px-4 text-center font-normal text-gray-700 text-base">
+                      {slot.slotId || slot.slotCode || slotScheduleCode}
                     </td>
 
                     {/* Số thứ tự (Dạng chữ xanh lam in đậm theo ảnh mẫu) */}

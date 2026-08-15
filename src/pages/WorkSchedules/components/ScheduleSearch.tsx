@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { Search, Filter, ChevronDown, Check, Calendar as CalendarIcon, RotateCcw, X } from "lucide-react";
+import { Search, Filter, ChevronDown, Check, Calendar as CalendarIcon, RotateCcw, X, User } from "lucide-react";
 
 interface ScheduleSearchProps {
   searchTerm: string;
@@ -8,6 +8,9 @@ interface ScheduleSearchProps {
   onDateChange: (val: string) => void;
   selectedStatus: string;
   onStatusChange: (val: string) => void;
+  selectedDoctor: string;
+  onDoctorChange: (val: string) => void;
+  doctorOptions: string[];
   onShowAll: () => void;
 }
 
@@ -52,7 +55,7 @@ const monthNames = [
 
 const dayNames = ["CN", "T2", "T3", "T4", "T5", "T6", "T7"];
 
-function DateFilterPicker({
+export function DateFilterPicker({
   value,
   onChange,
 }: {
@@ -250,15 +253,24 @@ export default function ScheduleSearch({
   onDateChange,
   selectedStatus,
   onStatusChange,
+  selectedDoctor,
+  onDoctorChange,
+  doctorOptions,
   onShowAll,
 }: ScheduleSearchProps) {
   const [isStatusOpen, setIsStatusOpen] = useState(false);
   const statusRef = useRef<HTMLDivElement>(null);
 
+  const [isDoctorOpen, setIsDoctorOpen] = useState(false);
+  const doctorRef = useRef<HTMLDivElement>(null);
+
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       if (statusRef.current && !statusRef.current.contains(e.target as Node)) {
         setIsStatusOpen(false);
+      }
+      if (doctorRef.current && !doctorRef.current.contains(e.target as Node)) {
+        setIsDoctorOpen(false);
       }
     };
     document.addEventListener("mousedown", handleClickOutside);
@@ -269,7 +281,8 @@ export default function ScheduleSearch({
     statusOptions.find((s) => s.value === selectedStatus)?.label ||
     "Tất cả trạng thái";
 
-  const hasFiltersActive = searchTerm || selectedDate || selectedStatus !== "ALL";
+  const hasFiltersActive =
+    searchTerm || selectedDate || selectedStatus !== "ALL" || (selectedDoctor && selectedDoctor !== "ALL");
 
   return (
     <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-4 mb-6">
@@ -289,6 +302,82 @@ export default function ScheduleSearch({
 
       {/* Filter Options */}
       <div className="flex flex-wrap items-center gap-3 w-full lg:w-auto justify-end">
+        {/* Doctor Dropdown Filter */}
+        <div className="relative" ref={doctorRef}>
+          <button
+            type="button"
+            onClick={() => setIsDoctorOpen(!isDoctorOpen)}
+            className={`flex items-center gap-2.5 px-4 py-2.5 rounded-xl border text-base font-semibold transition-all cursor-pointer select-none ${
+              isDoctorOpen || (selectedDoctor && selectedDoctor !== "ALL")
+                ? "bg-white border-blue-500 text-blue-600 ring-2 ring-blue-500/20 shadow-sm"
+                : "bg-gray-100/80 hover:bg-gray-200/60 border-gray-200/80 text-gray-800"
+            }`}
+          >
+            <User size={18} className={selectedDoctor && selectedDoctor !== "ALL" ? "text-blue-600" : "text-gray-500"} />
+            <span className="text-sm font-medium text-gray-500 hidden sm:inline">
+              Bác sĩ:
+            </span>
+            <span className="font-bold text-gray-900 whitespace-nowrap">
+              {selectedDoctor && selectedDoctor !== "ALL" ? selectedDoctor : "Tất cả bác sĩ"}
+            </span>
+            <ChevronDown
+              size={18}
+              className={`text-gray-400 transition-transform duration-200 ${
+                isDoctorOpen ? "rotate-180 text-blue-600" : ""
+              }`}
+            />
+          </button>
+
+          {isDoctorOpen && (
+            <div className="absolute right-0 top-full mt-2 w-72 max-h-80 overflow-y-auto bg-white rounded-2xl shadow-xl border border-gray-100 p-2 z-50 animate-in fade-in zoom-in-95 duration-150">
+              <div className="text-xs font-bold text-gray-400 px-3 py-1.5 uppercase tracking-wider">
+                Lọc theo bác sĩ
+              </div>
+              <div className="space-y-1">
+                <button
+                  type="button"
+                  onClick={() => {
+                    onDoctorChange("ALL");
+                    setIsDoctorOpen(false);
+                  }}
+                  className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-semibold transition cursor-pointer ${
+                    selectedDoctor === "ALL" || !selectedDoctor
+                      ? "bg-blue-50 text-blue-700 font-bold"
+                      : "text-gray-700 hover:bg-gray-100/80 hover:text-gray-900"
+                  }`}
+                >
+                  <span>Tất cả bác sĩ</span>
+                  {(selectedDoctor === "ALL" || !selectedDoctor) && (
+                    <Check size={18} className="text-blue-600" />
+                  )}
+                </button>
+
+                {doctorOptions.map((docName) => {
+                  const isSelected = selectedDoctor === docName;
+                  return (
+                    <button
+                      key={docName}
+                      type="button"
+                      onClick={() => {
+                        onDoctorChange(docName);
+                        setIsDoctorOpen(false);
+                      }}
+                      className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-semibold transition cursor-pointer ${
+                        isSelected
+                          ? "bg-blue-50 text-blue-700 font-bold"
+                          : "text-gray-700 hover:bg-gray-100/80 hover:text-gray-900"
+                      }`}
+                    >
+                      <span className="truncate pr-2">{docName}</span>
+                      {isSelected && <Check size={18} className="text-blue-600 shrink-0" />}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+        </div>
+
         {/* Date Filter */}
         <DateFilterPicker value={selectedDate} onChange={onDateChange} />
 
