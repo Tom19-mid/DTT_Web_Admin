@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import Pagination from "../../components/common/Pagination";
 import {
   CalendarX,
   CheckCircle2,
@@ -415,48 +416,17 @@ export default function DoctorLeaves() {
           </table>
         </div>
 
-        {/* Thanh phân trang Pagination */}
-        {!loading && filteredLeaves.length > 0 && (
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 px-6 py-4 border-t border-gray-100 bg-gray-50/50">
-            <div className="text-sm font-medium text-gray-600">
-              Hiển thị <span className="font-bold text-gray-900">{(currentPage - 1) * itemsPerPage + 1}</span> - <span className="font-bold text-gray-900">{Math.min(currentPage * itemsPerPage, filteredLeaves.length)}</span> trong số <span className="font-bold text-gray-900">{filteredLeaves.length}</span> đơn nghỉ phép
-            </div>
-
-            {totalPages > 1 && (
-              <div className="flex items-center gap-1.5">
-                <button
-                  onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
-                  disabled={currentPage === 1}
-                  className="p-2 border border-gray-200 rounded-xl hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition text-gray-700 bg-white"
-                  title="Trang trước"
-                >
-                  <ChevronLeft className="w-5 h-5" />
-                </button>
-
-                {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-                  <button
-                    key={page}
-                    onClick={() => setCurrentPage(page)}
-                    className={`px-3.5 py-1.5 rounded-xl font-bold text-sm cursor-pointer transition ${
-                      currentPage === page
-                        ? "bg-blue-600 text-white shadow-xs"
-                        : "border border-gray-200 text-gray-700 hover:bg-gray-100 bg-white"
-                    }`}
-                  >
-                    {page}
-                  </button>
-                ))}
-
-                <button
-                  onClick={() => setCurrentPage((p) => Math.min(p + 1, totalPages))}
-                  disabled={currentPage === totalPages}
-                  className="p-2 border border-gray-200 rounded-xl hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition text-gray-700 bg-white"
-                  title="Trang kế tiếp"
-                >
-                  <ChevronRight className="w-5 h-5" />
-                </button>
-              </div>
-            )}
+        {/* Pagination Footer */}
+        {filteredLeaves.length > 0 && !loading && (
+          <div className="px-6 py-2 border-t border-gray-100 bg-gray-50/50">
+            <Pagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              onPageChange={(page) => setCurrentPage(page)}
+              totalItems={filteredLeaves.length}
+              itemsPerPage={itemsPerPage}
+              itemLabel="đơn nghỉ phép"
+            />
           </div>
         )}
       </div>

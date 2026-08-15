@@ -2,7 +2,7 @@ import { useState, useMemo } from "react";
 import type { WorkSchedule } from "../types";
 import ScheduleSearch from "./ScheduleSearch";
 import ScheduleRow from "./ScheduleRow";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import Pagination from "../../../components/common/Pagination";
 
 interface ScheduleTableProps {
   schedules: WorkSchedule[];
@@ -20,33 +20,53 @@ export default function ScheduleTable({
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedDate, setSelectedDate] = useState("");
   const [selectedStatus, setSelectedStatus] = useState("ALL");
+  const [selectedDoctor, setSelectedDoctor] = useState("ALL");
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
+
+  const doctorOptions = useMemo(() => {
+    if (!Array.isArray(schedules)) return [];
+    const names = new Set<string>();
+    schedules.forEach((s) => {
+      if (s?.doctorName) names.add(s.doctorName);
+    });
+    return Array.from(names).sort();
+  }, [schedules]);
 
   const handleShowAll = () => {
     setSearchTerm("");
     setSelectedDate("");
     setSelectedStatus("ALL");
+    setSelectedDoctor("ALL");
     setCurrentPage(1);
   };
 
   const filteredSchedules = useMemo(() => {
+    if (!Array.isArray(schedules)) return [];
     return schedules.filter((sch) => {
+      if (!sch) return false;
       const term = searchTerm.toLowerCase().trim();
+      const schCode = (sch.scheduleCode || String(sch.scheduleId || "")).toLowerCase();
+      const docName = (sch.doctorName || "").toLowerCase();
+      const wDate = (sch.workDate || "").toLowerCase();
+
       const matchesSearch =
         !term ||
-        sch.scheduleCode.toLowerCase().includes(term) ||
-        sch.doctorName.toLowerCase().includes(term) ||
-        sch.workDate.includes(term);
+        schCode.includes(term) ||
+        docName.includes(term) ||
+        wDate.includes(term);
 
       const matchesDate = !selectedDate || sch.workDate === selectedDate;
 
       const matchesStatus =
         selectedStatus === "ALL" || sch.status === selectedStatus;
 
-      return matchesSearch && matchesDate && matchesStatus;
-    });
-  }, [schedules, searchTerm, selectedDate, selectedStatus]);
+      const matchesDoctor =
+        selectedDoctor === "ALL" || sch.doctorName === selectedDoctor;
+
+      return matchesSearch && matchesDate && matchesStatus && matchesDoctor;
+    }).sort((a, b) => (Number(a.scheduleId) || 0) - (Number(b.scheduleId) || 0));
+  }, [schedules, searchTerm, selectedDate, selectedStatus, selectedDoctor]);
 
   // Pagination calculation
   const totalPages = Math.ceil(filteredSchedules.length / itemsPerPage) || 1;
@@ -73,6 +93,12 @@ export default function ScheduleTable({
           setSelectedStatus(val);
           setCurrentPage(1);
         }}
+        selectedDoctor={selectedDoctor}
+        onDoctorChange={(val) => {
+          setSelectedDoctor(val);
+          setCurrentPage(1);
+        }}
+        doctorOptions={doctorOptions}
         onShowAll={handleShowAll}
       />
 
@@ -117,47 +143,14 @@ export default function ScheduleTable({
 
       {/* Pagination Footer */}
       {filteredSchedules.length > 0 && (
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mt-6 pt-4 border-t border-gray-100 text-base text-gray-600">
-          <div>
-            Hiển thị <span className="font-bold text-gray-900">{(currentPage - 1) * itemsPerPage + 1}</span> -{" "}
-            <span className="font-bold text-gray-900">
-              {Math.min(currentPage * itemsPerPage, filteredSchedules.length)}
-            </span>{" "}
-            trên <span className="font-bold text-gray-900">{filteredSchedules.length}</span> lịch làm việc
-          </div>
-
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
-              disabled={currentPage === 1}
-              className="p-2.5 border border-gray-200 rounded-xl hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition"
-            >
-              <ChevronLeft size={18} />
-            </button>
-
-            {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-              <button
-                key={page}
-                onClick={() => setCurrentPage(page)}
-                className={`px-4 py-2 rounded-xl font-bold text-base cursor-pointer transition ${
-                  currentPage === page
-                    ? "bg-blue-600 text-white shadow-xs"
-                    : "border border-gray-200 text-gray-700 hover:bg-gray-50"
-                }`}
-              >
-                {page}
-              </button>
-            ))}
-
-            <button
-              onClick={() => setCurrentPage((p) => Math.min(p + 1, totalPages))}
-              disabled={currentPage === totalPages}
-              className="p-2.5 border border-gray-200 rounded-xl hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition"
-            >
-              <ChevronRight size={18} />
-            </button>
-          </div>
-        </div>
+        <Pagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          onPageChange={(page) => setCurrentPage(page)}
+          totalItems={filteredSchedules.length}
+          itemsPerPage={itemsPerPage}
+          itemLabel="lịch làm việc"
+        />
       )}
     </div>
   );

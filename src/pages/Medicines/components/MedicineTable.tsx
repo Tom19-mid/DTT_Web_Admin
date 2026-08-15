@@ -2,6 +2,7 @@ import { useState, useMemo } from "react";
 import type { Medicine, MedicineCategory } from "../types";
 import MedicineSearch from "./MedicineSearch";
 import MedicineRow from "./MedicineRow";
+import Pagination from "../../../components/common/Pagination";
 import { ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
 
 interface MedicineTableProps {
@@ -149,56 +150,15 @@ export default function MedicineTable({
       </div>
 
       {/* Pagination Footer */}
-      {filteredMedicines.length > 0 && !loading && (
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mt-6 pt-4 border-t border-gray-100 text-base text-gray-600">
-          <div>
-            Hiển thị{" "}
-            <span className="font-bold text-gray-900">
-              {(currentPage - 1) * itemsPerPage + 1}
-            </span>{" "}
-            -{" "}
-            <span className="font-bold text-gray-900">
-              {Math.min(currentPage * itemsPerPage, filteredMedicines.length)}
-            </span>{" "}
-            trên{" "}
-            <span className="font-bold text-gray-900">
-              {filteredMedicines.length}
-            </span>{" "}
-            thuốc
-          </div>
-
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
-              disabled={currentPage === 1}
-              className="p-2.5 border border-gray-200 rounded-xl hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition"
-            >
-              <ChevronLeft size={18} />
-            </button>
-
-            {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-              <button
-                key={page}
-                onClick={() => setCurrentPage(page)}
-                className={`px-4 py-2 rounded-xl font-bold text-base cursor-pointer transition ${
-                  currentPage === page
-                    ? "bg-blue-600 text-white shadow-xs"
-                    : "border border-gray-200 text-gray-700 hover:bg-gray-50"
-                }`}
-              >
-                {page}
-              </button>
-            ))}
-
-            <button
-              onClick={() => setCurrentPage((p) => Math.min(p + 1, totalPages))}
-              disabled={currentPage === totalPages}
-              className="p-2.5 border border-gray-200 rounded-xl hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition"
-            >
-              <ChevronRight size={18} />
-            </button>
-          </div>
-        </div>
+      {filteredMedicines.length > 0 && (
+        <Pagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          onPageChange={(page) => setCurrentPage(page)}
+          totalItems={filteredMedicines.length}
+          itemsPerPage={itemsPerPage}
+          itemLabel="thuốc"
+        />
       )}
     </div>
   );

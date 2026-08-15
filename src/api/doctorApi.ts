@@ -38,7 +38,9 @@ export interface UpdateDoctorPayload {
 export const doctorApi = {
   getAll: async (specialtyId?: number) => {
     try {
-      const url = specialtyId ? `/doctors?specialtyId=${specialtyId}` : "/doctors";
+      const url = specialtyId
+        ? `/doctors?specialtyId=${specialtyId}`
+        : "/doctors";
       const response = await axiosClient.get(url);
       return Array.isArray(response.data) ? response.data : [];
     } catch (error) {
@@ -49,7 +51,9 @@ export const doctorApi = {
 
   getSchedules: async (date?: string) => {
     try {
-      const url = date ? `/doctors/schedules?date=${date}` : "/doctors/schedules";
+      const url = date
+        ? `/doctors/schedules?date=${date}`
+        : "/doctors/schedules";
       const response = await axiosClient.get(url);
       return Array.isArray(response.data) ? response.data : [];
     } catch (error) {
@@ -63,7 +67,8 @@ export const doctorApi = {
       const response = await axiosClient.post("/doctors", payload);
       return response.data?.doctor || response.data;
     } catch (error: any) {
-      const msg = error?.response?.data?.message || "Lỗi khi tạo tài khoản bác sĩ";
+      const msg =
+        error?.response?.data?.message || "Lỗi khi tạo tài khoản bác sĩ";
       console.error("doctorApi.create error:", msg);
       throw new Error(msg, { cause: error });
     }
@@ -74,18 +79,29 @@ export const doctorApi = {
       const response = await axiosClient.put(`/doctors/${id}`, payload);
       return response.data?.doctor || response.data;
     } catch (error: any) {
-      const msg = error?.response?.data?.message || error?.response?.data?.error || error?.message || "Lỗi khi cập nhật bác sĩ";
-      console.error(`doctorApi.update(${id}) error:`, msg, error?.response?.data);
+      const msg =
+        error?.response?.data?.message ||
+        error?.response?.data?.error ||
+        error?.message ||
+        "Lỗi khi cập nhật bác sĩ";
+      console.error(
+        `doctorApi.update(${id}) error:`,
+        msg,
+        error?.response?.data,
+      );
       throw new Error(msg, { cause: error });
     }
   },
 
   updateStatus: async (id: number, status: string) => {
     try {
-      const response = await axiosClient.put(`/doctors/${id}/status`, { status });
+      const response = await axiosClient.put(`/doctors/${id}/status`, {
+        status,
+      });
       return response.data;
     } catch (error: any) {
-      const msg = error?.response?.data?.message || "Lỗi khi cập nhật trạng thái bác sĩ";
+      const msg =
+        error?.response?.data?.message || "Lỗi khi cập nhật trạng thái bác sĩ";
       console.error(`doctorApi.updateStatus(${id}) error:`, msg);
       throw new Error(msg, { cause: error });
     }
