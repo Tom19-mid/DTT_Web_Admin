@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
+import { useLocation } from "react-router-dom";
 import userApi from "../../api/userApi";
 import type { User } from "./types";
 import UserToolbar from "./components/UserToolbar";
@@ -12,8 +13,9 @@ import type { Notification } from "../Notifications/types";
 import { Loader2 } from "lucide-react";
 
 export default function Users() {
-  const [users, setUsers] = useState<User[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
+  const location = useLocation();
+  const [users, setUsers] = useState<User[]>(() => userApi.getCachedUsers() || []);
+  const [loading, setLoading] = useState<boolean>(() => !userApi.getCachedUsers());
   const [isFormModalOpen, setIsFormModalOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [lockingUser, setLockingUser] = useState<User | null>(null);
@@ -44,9 +46,9 @@ export default function Users() {
     return undefined;
   };
 
-  const reloadUsers = useCallback(async () => {
+  const reloadUsers = useCallback(async (forceRefresh = true) => {
     try {
-      const data = await userApi.getAll();
+      const data = await userApi.getAll(undefined, forceRefresh);
       setUsers(data);
     } catch (err) {
       console.warn("Lỗi khi tải danh sách người dùng:", err);
@@ -55,7 +57,10 @@ export default function Users() {
 
   useEffect(() => {
     let isMounted = true;
-    const loadData = async () => {
+    const loadData = async (silent = false) => {
+      if (!silent && !userApi.getCachedUsers()) {
+        setLoading(true);
+      }
       try {
         const data = await userApi.getAll();
         if (isMounted) {
@@ -70,11 +75,18 @@ export default function Users() {
       }
     };
 
-    loadData();
+    loadData(!!userApi.getCachedUsers());
+
+    const handleFocus = () => {
+      loadData(true);
+    };
+    window.addEventListener("focus", handleFocus);
+
     return () => {
       isMounted = false;
+      window.removeEventListener("focus", handleFocus);
     };
-  }, []);
+  }, [location.key]);
 
   // Statistics based on account status (Optimized with useMemo)
   const { totalUsers, activeCount, inactiveCount, lockedCount } = useMemo(() => {
@@ -84,7 +96,7 @@ export default function Users() {
     users.forEach((u) => {
       const st = u.status || "Active";
       if (st === "Active" || st === "Đang hoạt động") active++;
-      else if (st === "Inactive" || st === "Ngưng hoạt động") inactive++;
+      else if (st === "Inactive" || st === "Ngưng hoạt động" || st === "OnLeave" || st === "Nghỉ phép") inactive++;
       else if (st === "Locked" || st === "Đã khóa") locked++;
     });
     return {
@@ -111,59 +123,110 @@ export default function Users() {
   const handleSaveUser = async (userData: any) => {
     const targetUserId = userData.userId || userData.id;
     const userName = userData.fullName || userData.email || "Tài khoản";
-    const roleName = userData.roleName || (userData.roleId === 1 ? "Admin" : userData.roleId === 2 ? "Bác sĩ" : "Bệnh nhân");
-    const targetRoleId = Number(userData.roleId) || 3;
-    const adminUserId = getLoggedInAdminUserId();
 
-    if (targetUserId) {
-      // Edit mode
-      await userApi.update(targetUserId, {
-        email: userData.email,
-        phone: userData.phone || userData.phoneNumber,
-        roleId: targetRoleId,
-        fullName: userName,
-        status: userData.status,
-      });
-
-      const createdNoti = await notificationApi.create({
-        title: "Cập nhật tài khoản",
-        content: `Hệ thống vừa cập nhật thông tin tài khoản "${userName}" (${roleName}).`,
-        type: "system",
-        userId: adminUserId,
-      });
-
-      addToast({
-        type: "success",
-        title: "Cập nhật tài khoản",
-        message: `Đã cập nhật thông tin tài khoản "${userName}" thành công!`,
-        onClick: createdNoti ? () => setViewingNotification(createdNoti) : undefined,
-      });
-    } else {
-      // Add mode
-      await userApi.create({
-        email: userData.email || "",
-        phone: userData.phone || userData.phoneNumber || "",
-        roleId: targetRoleId,
-        fullName: userName,
-        status: userData.status || "Active",
-      });
-
-      const createdNoti = await notificationApi.create({
-        title: "Thêm tài khoản mới",
-        content: `Đã tạo mới thành công tài khoản "${userName}" với vai trò ${roleName}.`,
-        type: "PATIENT_REGISTERED",
-        userId: adminUserId,
-      });
-
-      addToast({
-        type: "success",
-        title: "Thêm mới tài khoản",
-        message: `Đã thêm mới tài khoản "${userName}" (${roleName}) thành công!`,
-        onClick: createdNoti ? () => setViewingNotification(createdNoti) : undefined,
-      });
+    let targetRoleId = Number(userData.roleId);
+    if (!targetRoleId || isNaN(targetRoleId)) {
+      const r = String(userData.role || userData.roleName || "").trim();
+      if (r === "Admin" || r === "Quản trị viên") targetRoleId = 1;
+      else if (r === "Bác sĩ" || r === "Doctor") targetRoleId = 2;
+      else if (r === "Bệnh nhân" || r === "Patient") targetRoleId = 3;
+      else if (r === "Lễ tân tiếp đón") targetRoleId = 4;
+      else if (r === "Điều dưỡng") targetRoleId = 5;
+      else if (r === "Kỹ thuật viên CLS") targetRoleId = 6;
+      else if (r === "Dược sĩ") targetRoleId = 7;
+      else targetRoleId = 3;
     }
 
-    await reloadUsers();
+    const roleName =
+      userData.roleName ||
+      userData.role ||
+      (targetRoleId === 1 ? "Admin" : targetRoleId === 2 ? "Bác sĩ" : "Bệnh nhân");
+    const adminUserId = getLoggedInAdminUserId();
+
+    try {
+      if (targetUserId) {
+        // Edit mode
+        setEditingUser(null);
+        setIsModalOpen(false);
+
+        // Optimistic update
+        setUsers((prev) =>
+          prev.map((u) =>
+            u.userId === targetUserId || u.id === targetUserId
+              ? { ...u, ...userData, fullName: userName, roleName }
+              : u
+          )
+        );
+
+        const notiData: Notification = {
+          notificationId: Date.now(),
+          title: "Cập nhật tài khoản",
+          content: `Hệ thống vừa cập nhật thông tin tài khoản "${userName}" (${roleName}).`,
+          type: "system",
+          isRead: false,
+          createdAt: new Date().toISOString(),
+          userId: adminUserId,
+        };
+
+        addToast({
+          type: "success",
+          title: "Cập nhật tài khoản",
+          message: `Đã cập nhật thông tin tài khoản "${userName}" thành công!`,
+          onClick: () => setViewingNotification(notiData),
+        });
+
+        // Trigger notification immediately for instant bell badge update
+        notificationApi.create(notiData).catch((e) => console.warn("Lỗi tạo thông báo:", e));
+
+        await userApi.update(targetUserId, {
+          email: userData.email,
+          phone: userData.phone || userData.phoneNumber,
+          roleId: targetRoleId,
+          fullName: userName,
+          status: userData.status,
+        });
+      } else {
+        // Add mode
+        setEditingUser(null);
+        setIsModalOpen(false);
+
+        const notiData: Notification = {
+          notificationId: Date.now(),
+          title: "Thêm tài khoản mới",
+          content: `Đã tạo mới thành công tài khoản "${userName}" với vai trò ${roleName}.`,
+          type: "PATIENT_REGISTERED",
+          isRead: false,
+          createdAt: new Date().toISOString(),
+          userId: adminUserId,
+        };
+
+        addToast({
+          type: "success",
+          title: "Thêm mới tài khoản",
+          message: `Đã thêm mới tài khoản "${userName}" (${roleName}) thành công!`,
+          onClick: () => setViewingNotification(notiData),
+        });
+
+        // Trigger notification immediately for instant bell badge update
+        notificationApi.create(notiData).catch((e) => console.warn("Lỗi tạo thông báo:", e));
+
+        await userApi.create({
+          email: userData.email || "",
+          phone: userData.phone || userData.phoneNumber || "",
+          roleId: targetRoleId,
+          fullName: userName,
+          status: userData.status || "Active",
+        });
+      }
+      reloadUsers();
+    } catch (error: any) {
+      reloadUsers();
+      addToast({
+        type: "error",
+        title: "Lỗi thao tác",
+        message: error.message || "Không thể lưu thông tin tài khoản. Vui lòng thử lại.",
+      });
+    }
   };
 
   // Open lock confirmation modal
@@ -171,41 +234,71 @@ export default function Users() {
     setLockingUser(user);
   };
 
-  // Confirm lock user action
+  // Confirm lock/unlock user action
   const handleConfirmLock = async () => {
     if (lockingUser) {
       const targetUserId = lockingUser.userId || lockingUser.id;
       const userName = lockingUser.fullName || lockingUser.email || "Tài khoản";
+      const isCurrentlyLocked =
+        lockingUser.status === "Đã khóa" || lockingUser.status === "Locked";
+      const newStatus = isCurrentlyLocked ? "Active" : "Đã khóa";
+      const actionTitle = isCurrentlyLocked ? "Mở khóa tài khoản" : "Khóa tài khoản";
+      const actionMessage = isCurrentlyLocked
+        ? `Đã mở khóa tài khoản "${userName}" thành công!`
+        : `Đã khóa tài khoản "${userName}" thành công!`;
+      const notiContent = isCurrentlyLocked
+        ? `Tài khoản "${userName}" đã được mở khóa và chuyển sang trạng thái Đang hoạt động.`
+        : `Tài khoản "${userName}" đã được chuyển sang trạng thái Đã khóa.`;
       const adminUserId = getLoggedInAdminUserId();
 
+      const notiData: Notification = {
+        notificationId: Date.now(),
+        title: actionTitle,
+        content: notiContent,
+        type: "system",
+        isRead: false,
+        createdAt: new Date().toISOString(),
+        userId: adminUserId,
+      };
+
+      // 1. Close modal immediately
+      setLockingUser(null);
+
+      // 2. Optimistic UI update
       if (targetUserId) {
+        setUsers((prev) =>
+          prev.map((u) =>
+            u.userId === targetUserId || u.id === targetUserId
+              ? { ...u, status: newStatus }
+              : u
+          )
+        );
+
+        // 3. Show Toast immediately with onClick
+        addToast({
+          type: "success",
+          title: actionTitle,
+          message: actionMessage,
+          onClick: () => setViewingNotification(notiData),
+        });
+
+        // 4. Background execution
         try {
-          await userApi.updateStatus(targetUserId, "Đã khóa");
-          await reloadUsers();
+          await userApi.updateStatus(targetUserId, newStatus);
+          notificationApi.create(notiData).catch((e) => console.warn("Lỗi tạo thông báo:", e));
 
-          const createdNoti = await notificationApi.create({
-            title: "Khóa tài khoản",
-            content: `Tài khoản "${userName}" đã được chuyển sang trạng thái Đã khóa.`,
-            type: "system",
-            userId: adminUserId,
-          });
-
-          addToast({
-            type: "success",
-            title: "Khóa tài khoản",
-            message: `Đã khóa tài khoản "${userName}" thành công!`,
-            onClick: createdNoti ? () => setViewingNotification(createdNoti) : undefined,
-          });
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          reloadUsers();
         } catch (err: any) {
+          reloadUsers();
           addToast({
             type: "error",
             title: "Lỗi thao tác",
-            message: err?.message || "Không thể khóa tài khoản.",
+            message:
+              err?.message ||
+              `Không thể ${isCurrentlyLocked ? "mở khóa" : "khóa"} tài khoản.`,
           });
         }
       }
-      setLockingUser(null);
     }
   };
 
@@ -222,7 +315,7 @@ export default function Users() {
         lockedCount={lockedCount}
       />
 
-      {loading ? (
+      {loading && users.length === 0 ? (
         <div className="py-24 flex flex-col justify-center items-center">
           <Loader2 className="animate-spin text-blue-700 mb-3" size={36} />
           <p className="text-gray-600 font-medium text-base">Đang tải danh sách tài khoản người dùng...</p>

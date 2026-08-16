@@ -15,10 +15,10 @@ export default function NotificationDetailModal({
   onDelete,
 }: NotificationDetailModalProps) {
   useEffect(() => {
-    if (notification && !notification.isRead) {
+    if (notification) {
       notificationApi.markAsRead(notification.notificationId);
     }
-  }, [notification]);
+  }, [notification?.notificationId]);
 
   if (!notification) return null;
 

@@ -98,7 +98,7 @@ export default function SpecialtyTable({
             </tr>
           </thead>
           <tbody>
-            {loading ? (
+            {loading && specialties.length === 0 ? (
               <tr>
                 <td
                   colSpan={6}

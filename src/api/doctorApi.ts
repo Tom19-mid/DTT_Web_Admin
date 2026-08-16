@@ -35,16 +35,44 @@ export interface UpdateDoctorPayload {
   leaveStatus?: string;
 }
 
+let doctorsCache: any[] | null = null;
+let cacheTimestamp = 0;
+const CACHE_TTL_MS = 60 * 1000; // 60 seconds
+
 export const doctorApi = {
-  getAll: async (specialtyId?: number) => {
+  getCachedDoctors: (): any[] | null => {
+    const now = Date.now();
+    if (doctorsCache && now - cacheTimestamp < CACHE_TTL_MS) {
+      return doctorsCache;
+    }
+    return null;
+  },
+
+  clearCache: () => {
+    doctorsCache = null;
+    cacheTimestamp = 0;
+  },
+
+  getAll: async (specialtyId?: number, forceRefresh = false) => {
+    const now = Date.now();
+    if (!specialtyId && !forceRefresh && doctorsCache && now - cacheTimestamp < CACHE_TTL_MS) {
+      return doctorsCache;
+    }
+
     try {
       const url = specialtyId
         ? `/doctors?specialtyId=${specialtyId}`
         : "/doctors";
       const response = await axiosClient.get(url);
-      return Array.isArray(response.data) ? response.data : [];
+      const data = Array.isArray(response.data) ? response.data : [];
+      if (!specialtyId) {
+        doctorsCache = data;
+        cacheTimestamp = Date.now();
+      }
+      return data;
     } catch (error) {
       console.warn("doctorApi.getAll error:", error);
+      if (doctorsCache && !specialtyId) return doctorsCache;
       return [];
     }
   },
@@ -64,6 +92,8 @@ export const doctorApi = {
 
   create: async (payload: CreateDoctorPayload) => {
     try {
+      doctorsCache = null;
+      cacheTimestamp = 0;
       const response = await axiosClient.post("/doctors", payload);
       return response.data?.doctor || response.data;
     } catch (error: any) {
@@ -76,6 +106,8 @@ export const doctorApi = {
 
   update: async (id: number, payload: UpdateDoctorPayload) => {
     try {
+      doctorsCache = null;
+      cacheTimestamp = 0;
       const response = await axiosClient.put(`/doctors/${id}`, payload);
       return response.data?.doctor || response.data;
     } catch (error: any) {
@@ -95,6 +127,8 @@ export const doctorApi = {
 
   updateStatus: async (id: number, status: string) => {
     try {
+      doctorsCache = null;
+      cacheTimestamp = 0;
       const response = await axiosClient.put(`/doctors/${id}/status`, {
         status,
       });

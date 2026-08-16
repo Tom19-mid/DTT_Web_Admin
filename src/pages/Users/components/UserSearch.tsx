@@ -16,6 +16,7 @@ const statusOptions = [
   { value: "ALL", label: "Tất cả trạng thái", dotColor: "bg-gray-400" },
   { value: "Đang hoạt động", label: "Đang hoạt động", dotColor: "bg-emerald-500" },
   { value: "Ngưng hoạt động", label: "Ngưng hoạt động", dotColor: "bg-amber-500" },
+  { value: "Nghỉ phép", label: "Nghỉ phép", dotColor: "bg-blue-500" },
   { value: "Đã khóa", label: "Đã khóa", dotColor: "bg-rose-500" },
 ];
 

@@ -35,9 +35,9 @@ export default function DashboardTitle({
       </div>
 
       {/* Date Filter Bar */}
-      <div className="flex items-center gap-3 bg-white p-2 px-4 rounded-2xl border border-gray-200 shadow-sm shrink-0">
-        <div className="flex items-center gap-1.5 text-gray-600 font-semibold text-sm mr-1">
-          <Filter size={16} className="text-blue-600" />
+      <div className="flex items-center gap-3.5 bg-white p-2.5 px-5 rounded-2xl border border-gray-200 shadow-sm shrink-0">
+        <div className="flex items-center gap-2 text-gray-800 font-bold text-base mr-1">
+          <Filter size={19} className="text-blue-600" />
           <span>Lọc ngày:</span>
         </div>
 
@@ -56,7 +56,7 @@ export default function DashboardTitle({
             onCustomDateChange("");
             onFilterTypeChange("all");
           }}
-          className={`px-3.5 py-2 rounded-xl text-xs font-bold transition cursor-pointer border ${
+          className={`px-4 py-2.5 rounded-xl text-sm font-bold transition cursor-pointer border ${
             filterType === "all" && !customDate
               ? "bg-blue-600 text-white border-blue-600 shadow-sm"
               : "bg-gray-100 hover:bg-gray-200 text-gray-700 border-gray-200"
@@ -71,9 +71,9 @@ export default function DashboardTitle({
             type="button"
             onClick={onResetFilter}
             title="Quay về ngày hôm nay"
-            className="flex items-center gap-1 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold text-xs py-2 px-3 rounded-xl transition cursor-pointer border border-gray-200"
+            className="flex items-center gap-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold text-sm py-2.5 px-4 rounded-xl transition cursor-pointer border border-gray-200"
           >
-            <RotateCcw size={14} />
+            <RotateCcw size={16} />
             <span>Hôm nay</span>
           </button>
         )}

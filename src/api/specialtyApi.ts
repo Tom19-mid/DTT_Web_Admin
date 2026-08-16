@@ -12,12 +12,34 @@ export interface UpdateSpecialtyPayload {
   status?: boolean;
 }
 
+let specialtiesCache: any[] | null = null;
+let cacheTimestamp = 0;
+const CACHE_TTL_MS = 60 * 1000; // 60 seconds
+
 export const specialtyApi = {
-  getAll: async () => {
+  getCachedSpecialties: (): any[] | null => {
+    const now = Date.now();
+    if (specialtiesCache && now - cacheTimestamp < CACHE_TTL_MS) {
+      return specialtiesCache;
+    }
+    return null;
+  },
+
+  clearCache: () => {
+    specialtiesCache = null;
+    cacheTimestamp = 0;
+  },
+
+  getAll: async (forceRefresh = false) => {
+    const now = Date.now();
+    if (!forceRefresh && specialtiesCache && now - cacheTimestamp < CACHE_TTL_MS) {
+      return specialtiesCache;
+    }
+
     try {
       const response = await axiosClient.get("/specialties");
       const list = Array.isArray(response.data) ? response.data : [];
-      return list.map((item: any, idx: number) => ({
+      const mapped = list.map((item: any, idx: number) => ({
         ...item,
         id: item.specialtyId || item.id,
         stt: idx + 1,
@@ -29,8 +51,12 @@ export const specialtyApi = {
               : "Ngưng hoạt động"
             : item.status || "Đang hoạt động",
       }));
+      specialtiesCache = mapped;
+      cacheTimestamp = Date.now();
+      return mapped;
     } catch (error) {
       console.warn("specialtyApi.getAll error:", error);
+      if (specialtiesCache) return specialtiesCache;
       return [];
     }
   },
@@ -48,6 +74,8 @@ export const specialtyApi = {
 
   create: async (payload: CreateSpecialtyPayload) => {
     try {
+      specialtiesCache = null;
+      cacheTimestamp = 0;
       const response = await axiosClient.post("/specialties", payload);
       return response.data;
     } catch (error: any) {
@@ -59,6 +87,8 @@ export const specialtyApi = {
 
   update: async (id: number, payload: UpdateSpecialtyPayload) => {
     try {
+      specialtiesCache = null;
+      cacheTimestamp = 0;
       const response = await axiosClient.put(`/specialties/${id}`, payload);
       return response.data;
     } catch (error: any) {
@@ -70,6 +100,8 @@ export const specialtyApi = {
 
   toggleStatus: async (id: number, status: boolean) => {
     try {
+      specialtiesCache = null;
+      cacheTimestamp = 0;
       const response = await axiosClient.put(`/specialties/${id}/status`, { status });
       return response.data;
     } catch (error: any) {
@@ -81,6 +113,8 @@ export const specialtyApi = {
 
   delete: async (id: number) => {
     try {
+      specialtiesCache = null;
+      cacheTimestamp = 0;
       const response = await axiosClient.delete(`/specialties/${id}`);
       return response.data;
     } catch (error: any) {

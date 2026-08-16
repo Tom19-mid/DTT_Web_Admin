@@ -1,4 +1,4 @@
-import { Pencil, LockKeyhole, Eye } from "lucide-react";
+import { Pencil, Lock, Unlock, Eye } from "lucide-react";
 import type { Medicine } from "../types";
 import StatusBadge from "./StatusBadge";
 
@@ -24,6 +24,9 @@ export default function MedicineRow({
     }
     return dateStr;
   };
+
+  const isCurrentlyLocked =
+    medicine.status === "Ngưng hoạt động" || medicine.status === "Inactive";
 
   return (
     <tr className="border-b border-gray-100 hover:bg-gray-50/60 transition-colors text-base text-gray-700">
@@ -101,10 +104,15 @@ export default function MedicineRow({
           </button>
           <button
             onClick={() => onToggleStatus(medicine)}
-            title={medicine.status === "Đang hoạt động" ? "Ngưng hoạt động thuốc" : "Kích hoạt lại thuốc"}
-            className="p-2 text-amber-500 hover:text-amber-700 hover:bg-amber-50 rounded-lg transition-colors cursor-pointer"
+            type="button"
+            title={isCurrentlyLocked ? "Mở lại thuốc" : "Ngưng hoạt động thuốc"}
+            className={`p-2 rounded-lg transition-colors cursor-pointer ${
+              isCurrentlyLocked
+                ? "text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50"
+                : "text-rose-500 hover:text-rose-700 hover:bg-rose-50"
+            }`}
           >
-            <LockKeyhole size={20} />
+            {isCurrentlyLocked ? <Unlock size={20} /> : <Lock size={20} />}
           </button>
         </div>
       </td>

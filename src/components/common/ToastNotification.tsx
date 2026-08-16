@@ -131,7 +131,7 @@ export default function ToastNotification({ toasts, toast, onClose }: ToastNotif
   if (activeToasts.length === 0) return null;
 
   return (
-    <div className="fixed top-24 right-7 z-50 flex flex-col gap-3 pointer-events-auto max-w-md w-full">
+    <div className="fixed top-24 right-7 z-[9999] flex flex-col gap-3 pointer-events-auto max-w-md w-full">
       {activeToasts.map((t) => (
         <ToastItem key={t.id} toast={t} onClose={(id) => onClose(id)} />
       ))}

@@ -13,11 +13,58 @@ import { notificationApi } from "../../api/notificationApi";
 import NotificationDetailModal from "../Notifications/components/NotificationDetailModal";
 import type { Notification } from "../Notifications/types";
 
+// Helper map backend status strings to frontend AppointmentStatusName
+const mapBackendStatus = (st?: string): string => {
+  if (!st) return "Scheduled";
+  const lower = st.toLowerCase();
+  if (lower === "confirmed" || lower === "scheduled" || lower === "đã đặt lịch") return "Scheduled";
+  if (lower === "checkedin" || lower === "đã check in") return "CheckedIn";
+  if (lower === "waitingfordoctor" || lower === "waiting" || lower === "đang chờ khám") return "Waiting";
+  if (lower === "inprogress" || lower === "đang khám") return "InProgress";
+  if (lower === "completed" || lower === "đã hoàn thành") return "Completed";
+  if (lower === "cancelled" || lower === "đã hủy") return "Cancelled";
+  if (lower === "noshow" || lower === "không đến khám") return "NoShow";
+  return st;
+};
+
+const mapAppointmentRecord = (a: any, index: number): Appointment => {
+  const apptId = Number(a.appointmentId || a.id || index + 1);
+  return {
+    ...a,
+    id: apptId,
+    appointmentId: apptId,
+    patientId: a.patientId,
+    doctorId: a.doctorId,
+    patientName: a.patientName || `Bệnh nhân #${a.patientId}`,
+    doctorName: a.doctorName || "BS. Bệnh viện DTT",
+    specialtyName: a.specialtyName || "Khám tổng quát",
+    appointmentDate: a.date || a.appointmentDate || "",
+    appointmentTime: a.timeSlot || a.appointmentTime || "08:30 - 09:30",
+    queueNumber: a.queueNumber || index + 1,
+    status: mapBackendStatus(a.status),
+    reason: a.reason || "",
+    fee: a.fee || "250.000đ",
+    cancelReason: a.cancelReason || a.cancel_reason || null,
+    cancelTime: a.cancelTime || a.cancelledAt || a.cancelled_at || a.cancelAt || null,
+    cancelledAt: a.cancelledAt || a.cancelled_at || a.cancelTime || null,
+    cancelledBy: a.cancelledBy || a.cancelled_by || null,
+    note: a.note || a.notes || null,
+    notes: a.note || a.notes || null,
+    createdAt: a.createdAt || a.created_at || "",
+    updatedAt: a.updatedAt || a.updated_at || "",
+    memberId: a.memberId || a.member_id || null,
+    nurseNote: a.nurseNote || a.nurse_note || null,
+  };
+};
+
 export default function Appointments() {
-  const [appointments, setAppointments] = useState<Appointment[]>([]);
+  const [appointments, setAppointments] = useState<Appointment[]>(() => {
+    const cached = appointmentApi.getCachedAppointments();
+    return cached ? cached.map(mapAppointmentRecord) : [];
+  });
   const [dbDoctors, setDbDoctors] = useState<any[]>([]);
   const [dbPatients, setDbPatients] = useState<any[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(() => !appointmentApi.getCachedAppointments());
 
   // Modal states
   const [isFormModalOpen, setIsFormModalOpen] = useState(false);
@@ -51,55 +98,13 @@ export default function Appointments() {
     return undefined;
   };
 
-  // Helper map backend status strings to frontend AppointmentStatusName
-  const mapBackendStatus = (st?: string): string => {
-    if (!st) return "Scheduled";
-    const lower = st.toLowerCase();
-    if (lower === "confirmed" || lower === "scheduled" || lower === "đã đặt lịch") return "Scheduled";
-    if (lower === "checkedin" || lower === "đã check in") return "CheckedIn";
-    if (lower === "waitingfordoctor" || lower === "waiting" || lower === "đang chờ khám") return "Waiting";
-    if (lower === "inprogress" || lower === "đang khám") return "InProgress";
-    if (lower === "completed" || lower === "đã hoàn thành") return "Completed";
-    if (lower === "cancelled" || lower === "đã hủy") return "Cancelled";
-    if (lower === "noshow" || lower === "không đến khám") return "NoShow";
-    return st;
-  };
-
   // Fetch appointments list from API
-  const fetchAppointments = useCallback(async () => {
+  const fetchAppointments = useCallback(async (forceRefresh = false) => {
     try {
-      setIsLoading(true);
-      const data = await appointmentApi.getAll();
+      if (!appointmentApi.getCachedAppointments()) setIsLoading(true);
+      const data = await appointmentApi.getAll(undefined, forceRefresh);
       if (Array.isArray(data)) {
-        const mapped: Appointment[] = data.map((a: any, index: number) => {
-          const apptId = Number(a.appointmentId || a.id || index + 1);
-          return {
-            ...a,
-            id: apptId,
-            appointmentId: apptId,
-            patientId: a.patientId,
-            doctorId: a.doctorId,
-            patientName: a.patientName || `Bệnh nhân #${a.patientId}`,
-            doctorName: a.doctorName || "BS. Bệnh viện DTT",
-            specialtyName: a.specialtyName || "Khám tổng quát",
-            appointmentDate: a.date || a.appointmentDate || "",
-            appointmentTime: a.timeSlot || a.appointmentTime || "08:30 - 09:30",
-            queueNumber: a.queueNumber || index + 1,
-            status: mapBackendStatus(a.status),
-            reason: a.reason || "",
-            fee: a.fee || "250.000đ",
-            cancelReason: a.cancelReason || a.cancel_reason || null,
-            cancelTime: a.cancelTime || a.cancelledAt || a.cancelled_at || a.cancelAt || null,
-            cancelledAt: a.cancelledAt || a.cancelled_at || a.cancelTime || null,
-            cancelledBy: a.cancelledBy || a.cancelled_by || null,
-            note: a.note || a.notes || null,
-            notes: a.note || a.notes || null,
-            createdAt: a.createdAt || a.created_at || "",
-            updatedAt: a.updatedAt || a.updated_at || "",
-            memberId: a.memberId || a.member_id || null,
-            nurseNote: a.nurseNote || a.nurse_note || null,
-          };
-        });
+        const mapped: Appointment[] = data.map(mapAppointmentRecord);
         setAppointments(mapped);
       }
     } catch (error) {
@@ -111,7 +116,9 @@ export default function Appointments() {
 
   useEffect(() => {
     let isMounted = true;
-    setIsLoading(true);
+    if (!appointmentApi.getCachedAppointments()) {
+      setIsLoading(true);
+    }
     Promise.all([
       appointmentApi.getAll(),
       doctorApi.getAll(),
@@ -120,38 +127,14 @@ export default function Appointments() {
       .then(([appData, docsData, patientsData]) => {
         if (!isMounted) return;
         if (Array.isArray(appData)) {
-          const mapped: Appointment[] = appData.map((a: any, index: number) => {
-            const apptId = Number(a.appointmentId || a.id || index + 1);
-            return {
-              ...a,
-              id: apptId,
-              appointmentId: apptId,
-              patientId: a.patientId,
-              doctorId: a.doctorId,
-              patientName: a.patientName || `Bệnh nhân #${a.patientId}`,
-              doctorName: a.doctorName || "BS. Bệnh viện DTT",
-              specialtyName: a.specialtyName || "Khám tổng quát",
-              appointmentDate: a.date || a.appointmentDate || "",
-              appointmentTime: a.timeSlot || a.appointmentTime || "08:30 - 09:30",
-              queueNumber: a.queueNumber || index + 1,
-              status: mapBackendStatus(a.status),
-              reason: a.reason || "",
-              fee: a.fee || "250.000đ",
-              note: a.note || a.notes || null,
-              notes: a.note || a.notes || null,
-              createdAt: a.createdAt || a.created_at || "",
-              updatedAt: a.updatedAt || a.updated_at || "",
-              memberId: a.memberId || a.member_id || null,
-              nurseNote: a.nurseNote || a.nurse_note || null,
-            };
-          });
+          const mapped: Appointment[] = appData.map(mapAppointmentRecord);
           setAppointments(mapped);
         }
         if (Array.isArray(docsData)) setDbDoctors(docsData);
         if (Array.isArray(patientsData)) setDbPatients(patientsData);
       })
-      .catch((error) => {
-        console.error("Lỗi tải song song dữ liệu Lịch hẹn:", error);
+      .catch((err) => {
+        console.error("Lỗi khi tải dữ liệu cho Appointments:", err);
       })
       .finally(() => {
         if (isMounted) setIsLoading(false);
@@ -247,6 +230,34 @@ export default function Appointments() {
 
       if (targetId && editingAppointment) {
         // Edit mode API
+        setEditingAppointment(null);
+        setIsFormModalOpen(false);
+
+        // Optimistic update
+        setAppointments((prev) =>
+          prev.map((a) => (a.id === targetId || a.appointmentId === targetId ? { ...a, ...appData } : a))
+        );
+
+        const notiData: Notification = {
+          notificationId: Date.now(),
+          title: "Cập nhật lịch hẹn",
+          content: `Lịch hẹn #${targetId} của bệnh nhân "${patientName}" (Bác sĩ: ${doctorName}) đã được cập nhật.`,
+          type: "system",
+          isRead: false,
+          createdAt: new Date().toISOString(),
+          userId: adminUserId,
+        };
+
+        addToast({
+          type: "success",
+          title: "Cập nhật lịch hẹn",
+          message: `Đã cập nhật thông tin lịch hẹn #${targetId} thành công!`,
+          onClick: () => setViewingNotification(notiData),
+        });
+
+        // Trigger notification immediately for instant bell badge update
+        notificationApi.create(notiData).catch((e) => console.warn("Lỗi tạo thông báo:", e));
+
         await appointmentApi.update(targetId, {
           patientId: matchedPatientId,
           doctorId: matchedDoctorId,
@@ -268,22 +279,29 @@ export default function Appointments() {
         if (appData.status && editingAppointment && editingAppointment.status !== appData.status) {
           await appointmentApi.updateStatus(targetId, appData.status);
         }
-
-        const createdNoti = await notificationApi.create({
-          title: "Cập nhật lịch hẹn",
-          content: `Lịch hẹn #${targetId} của bệnh nhân "${patientName}" (Bác sĩ: ${doctorName}) đã được cập nhật.`,
-          type: "system",
+      } else {
+        // Add mode API
+        setIsFormModalOpen(false);
+        const notiData: Notification = {
+          notificationId: Date.now(),
+          title: "Đặt lịch hẹn mới",
+          content: `Đã tạo mới thành công lịch hẹn cho bệnh nhân "${patientName}".`,
+          type: "APPOINTMENT_NEW",
+          isRead: false,
+          createdAt: new Date().toISOString(),
           userId: adminUserId,
-        });
+        };
 
         addToast({
           type: "success",
-          title: "Cập nhật lịch hẹn",
-          message: `Đã cập nhật thông tin lịch hẹn #${targetId} thành công!`,
-          onClick: createdNoti ? () => setViewingNotification(createdNoti) : undefined,
+          title: "Tạo lịch hẹn mới",
+          message: `Đã gửi yêu cầu đặt lịch hẹn cho bệnh nhân "${patientName}"...`,
+          onClick: () => setViewingNotification(notiData),
         });
-      } else {
-        // Add mode API
+
+        // Trigger notification immediately for instant bell badge update
+        notificationApi.create(notiData).catch((e) => console.warn("Lỗi tạo thông báo:", e));
+
         await appointmentApi.create({
           patientId: matchedPatientId,
           doctorId: matchedDoctorId,
@@ -294,26 +312,13 @@ export default function Appointments() {
           reason: appData.reason,
           fee: appData.fee || "250.000đ",
         });
-
-        const createdNoti = await notificationApi.create({
-          title: "Đặt lịch hẹn mới",
-          content: `Đã tạo mới thành công lịch hẹn cho bệnh nhân "${patientName}".`,
-          type: "APPOINTMENT_NEW",
-          userId: adminUserId,
-        });
-
-        addToast({
-          type: "success",
-          title: "Tạo lịch hẹn mới",
-          message: `Đã tạo mới lịch hẹn của bệnh nhân "${patientName}" thành công!`,
-          onClick: createdNoti ? () => setViewingNotification(createdNoti) : undefined,
-        });
       }
 
-      // Refresh list from Backend
-      await fetchAppointments();
+      // Refresh list from Backend silently
+      fetchAppointments();
     } catch (error: any) {
       console.error("Lỗi khi lưu lịch hẹn qua API:", error);
+      fetchAppointments();
       addToast({
         type: "error",
         title: "Lỗi thao tác",
@@ -332,32 +337,51 @@ export default function Appointments() {
     const patientName = targetApp?.patientName || "Bệnh nhân";
     const adminUserId = getLoggedInAdminUserId();
 
+    const notiData: Notification = {
+      notificationId: Date.now(),
+      title: "Hủy lịch hẹn",
+      content: `Lịch hẹn #${appointmentId} của bệnh nhân "${patientName}" đã bị hủy. Lý do: ${cancelReason || "Theo yêu cầu"}.`,
+      type: "APPOINTMENT_CANCELLED",
+      isRead: false,
+      createdAt: new Date().toISOString(),
+      userId: adminUserId,
+    };
+
+    // 1. Close cancel modal immediately
+    setCancellingAppointment(null);
+
+    // 2. Optimistic UI update for 0ms instant status change
+    setAppointments((prev) =>
+      prev.map((a) =>
+        a.id === appointmentId || a.appointmentId === appointmentId
+          ? { ...a, status: "Cancelled", cancelReason }
+          : a
+      )
+    );
+
+    // 3. Show Toast immediately with onClick
+    addToast({
+      type: "error",
+      title: "Hủy lịch hẹn",
+      message: `Đã hủy lịch hẹn #${appointmentId} của bệnh nhân "${patientName}" thành công!`,
+      onClick: () => setViewingNotification(notiData),
+    });
+
+    // 4. Trigger Notification immediately (updates bell badge in 0ms)
+    notificationApi.create(notiData).catch((e) => console.warn("Lỗi tạo thông báo:", e));
+
+    // 5. Background execution
     try {
       await appointmentApi.cancel(appointmentId, cancelReason, cancelledBy);
-      await fetchAppointments();
-
-      const createdNoti = await notificationApi.create({
-        title: "Hủy lịch hẹn",
-        content: `Lịch hẹn #${appointmentId} của bệnh nhân "${patientName}" đã bị hủy. Lý do: ${cancelReason || "Theo yêu cầu"}.`,
-        type: "APPOINTMENT_CANCELLED",
-        userId: adminUserId,
-      });
-
-      addToast({
-        type: "error",
-        title: "Hủy lịch hẹn",
-        message: `Đã hủy lịch hẹn #${appointmentId} của bệnh nhân "${patientName}" thành công!`,
-        onClick: createdNoti ? () => setViewingNotification(createdNoti) : undefined,
-      });
+      fetchAppointments();
     } catch (error: any) {
       console.error("Lỗi khi hủy lịch hẹn qua API:", error);
+      fetchAppointments();
       addToast({
         type: "error",
         title: "Lỗi thao tác",
         message: error.message || "Không thể hủy lịch hẹn. Vui lòng thử lại.",
       });
-    } finally {
-      setCancellingAppointment(null);
     }
   };
 
@@ -381,7 +405,7 @@ export default function Appointments() {
       />
 
       {/* Main Table View */}
-      {isLoading ? (
+      {isLoading && appointments.length === 0 ? (
         <div className="flex items-center justify-center p-12 bg-white rounded-2xl shadow-xs">
           <div className="flex flex-col items-center gap-3">
             <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>

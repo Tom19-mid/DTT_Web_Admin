@@ -11,8 +11,8 @@ import NotificationDetailModal from "../Notifications/components/NotificationDet
 import type { Notification } from "../Notifications/types";
 
 export default function Specialties() {
-  const [specialties, setSpecialties] = useState<Specialty[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
+  const [specialties, setSpecialties] = useState<Specialty[]>(() => specialtyApi.getCachedSpecialties() || []);
+  const [loading, setLoading] = useState<boolean>(() => !specialtyApi.getCachedSpecialties());
   const [isFormModalOpen, setIsFormModalOpen] = useState(false);
   const [editingSpecialty, setEditingSpecialty] = useState<Specialty | null>(null);
   const [lockingSpecialty, setLockingSpecialty] = useState<Specialty | null>(null);
@@ -43,8 +43,8 @@ export default function Specialties() {
     return undefined;
   };
 
-  const fetchSpecialties = async () => {
-    setLoading(true);
+  const fetchSpecialties = async (showSpinner = false) => {
+    if (showSpinner && !specialtyApi.getCachedSpecialties()) setLoading(true);
     try {
       const data = await specialtyApi.getAll();
       setSpecialties(data);
@@ -56,7 +56,7 @@ export default function Specialties() {
   };
 
   useEffect(() => {
-    fetchSpecialties();
+    fetchSpecialties(specialties.length === 0);
   }, []);
 
   // Statistics
@@ -88,49 +88,69 @@ export default function Specialties() {
       if (specialtyData.id || specialtyData.specialtyId) {
         // Edit mode
         const targetId = specialtyData.specialtyId || specialtyData.id!;
-        await specialtyApi.update(targetId, {
-          specialtyName: specName,
-          description: specialtyData.description || "",
-          status: targetStatus,
-        });
+        setEditingSpecialty(null);
+        setIsModalOpen(false);
 
-        const createdNoti = await notificationApi.create({
+        // Optimistic update
+        const notiData: Notification = {
+          notificationId: Date.now(),
           title: "Cập nhật chuyên khoa",
           content: `Hệ thống vừa cập nhật thông tin chuyên khoa "${specName}".`,
           type: "system",
+          isRead: false,
+          createdAt: new Date().toISOString(),
           userId: adminUserId,
-        });
+        };
 
         addToast({
           type: "success",
           title: "Cập nhật chuyên khoa",
           message: `Đã cập nhật thông tin chuyên khoa "${specName}" thành công!`,
-          onClick: createdNoti ? () => setViewingNotification(createdNoti) : undefined,
+          onClick: () => setViewingNotification(notiData),
         });
-      } else {
-        // Add mode
-        await specialtyApi.create({
+
+        // Trigger notification immediately for instant bell badge update
+        notificationApi.create(notiData).catch((e) => console.warn("Lỗi tạo thông báo:", e));
+
+        await specialtyApi.update(targetId, {
           specialtyName: specName,
           description: specialtyData.description || "",
           status: targetStatus,
         });
+      } else {
+        // Add mode
+        setEditingSpecialty(null);
+        setIsModalOpen(false);
 
-        const createdNoti = await notificationApi.create({
+        const notiData: Notification = {
+          notificationId: Date.now(),
           title: "Thêm chuyên khoa mới",
           content: `Đã tạo mới thành công chuyên khoa "${specName}".`,
           type: "system",
+          isRead: false,
+          createdAt: new Date().toISOString(),
           userId: adminUserId,
-        });
+        };
 
         addToast({
           type: "success",
           title: "Thêm chuyên khoa mới",
           message: `Đã thêm mới chuyên khoa "${specName}" thành công!`,
-          onClick: createdNoti ? () => setViewingNotification(createdNoti) : undefined,
+          onClick: () => setViewingNotification(notiData),
+        });
+
+        // Trigger notification immediately for instant bell badge update
+        notificationApi.create(notiData).catch((e) => console.warn("Lỗi tạo thông báo:", e));
+
+        await specialtyApi.create({
+          specialtyName: specName,
+          description: specialtyData.description || "",
+          status: targetStatus,
         });
       }
-      await fetchSpecialties();
+      fetchSpecialties(false);
     } catch (err: any) {
+      fetchSpecialties(false);
       addToast({
         type: "error",
         title: "Lỗi thao tác",
@@ -148,36 +168,69 @@ export default function Specialties() {
   const handleConfirmLock = async () => {
     if (lockingSpecialty) {
       const specName = lockingSpecialty.specialtyName || lockingSpecialty.name || "Chuyên khoa";
+      const isCurrentlyLocked =
+        lockingSpecialty.status === "Ngưng hoạt động" ||
+        lockingSpecialty.status === "Inactive" ||
+        lockingSpecialty.rawStatus === false ||
+        lockingSpecialty.status === false;
+      const newBoolStatus = isCurrentlyLocked;
+      const actionTitle = isCurrentlyLocked
+        ? "Mở lại chuyên khoa"
+        : "Ngưng hoạt động chuyên khoa";
+      const actionMessage = isCurrentlyLocked
+        ? `Đã mở lại chuyên khoa "${specName}" thành công!`
+        : `Đã chuyển chuyên khoa "${specName}" sang trạng thái Ngưng hoạt động!`;
+      const notiContent = isCurrentlyLocked
+        ? `Chuyên khoa "${specName}" đã được kích hoạt và chuyển sang trạng thái Đang hoạt động.`
+        : `Chuyên khoa "${specName}" đã được chuyển sang trạng thái Ngưng hoạt động.`;
       const adminUserId = getLoggedInAdminUserId();
+      const targetId = lockingSpecialty.specialtyId || lockingSpecialty.id!;
 
+      const notiData: Notification = {
+        notificationId: Date.now(),
+        title: actionTitle,
+        content: notiContent,
+        type: "system",
+        isRead: false,
+        createdAt: new Date().toISOString(),
+        userId: adminUserId,
+      };
+
+      // 1. Close modal immediately
+      setLockingSpecialty(null);
+
+      // 2. Optimistic UI update
+      setSpecialties((prev) =>
+        prev.map((s) =>
+          s.specialtyId === targetId || s.id === targetId
+            ? { ...s, status: newBoolStatus ? "Đang hoạt động" : "Ngưng hoạt động", rawStatus: newBoolStatus }
+            : s
+        )
+      );
+
+      // 3. Show Toast immediately with onClick
+      addToast({
+        type: "success",
+        title: actionTitle,
+        message: actionMessage,
+        onClick: () => setViewingNotification(notiData),
+      });
+
+      // 4. Background execution
       try {
-        const targetId = lockingSpecialty.specialtyId || lockingSpecialty.id!;
-        const currentBool = lockingSpecialty.status === "Đang hoạt động" || lockingSpecialty.rawStatus === true;
-        const newBoolStatus = !currentBool;
         await specialtyApi.toggleStatus(targetId, newBoolStatus);
-        await fetchSpecialties();
+        notificationApi.create(notiData).catch((e) => console.warn("Lỗi tạo thông báo:", e));
 
-        const createdNoti = await notificationApi.create({
-          title: "Khóa chuyên khoa",
-          content: `Chuyên khoa "${specName}" đã được chuyển sang trạng thái Đã khóa/Ngưng hoạt động.`,
-          type: "system",
-          userId: adminUserId,
-        });
-
-        addToast({
-          type: "success",
-          title: "Khóa chuyên khoa",
-          message: `Đã cập nhật trạng thái chuyên khoa "${specName}" thành công!`,
-          onClick: createdNoti ? () => setViewingNotification(createdNoti) : undefined,
-        });
+        fetchSpecialties(false);
       } catch (err: any) {
+        fetchSpecialties(false);
         addToast({
           type: "error",
           title: "Lỗi thao tác",
-          message: err.message || "Lỗi khi cập nhật trạng thái chuyên khoa!",
+          message:
+            err.message ||
+            `Lỗi khi ${isCurrentlyLocked ? "mở lại" : "ngưng hoạt động"} chuyên khoa!`,
         });
-      } finally {
-        setLockingSpecialty(null);
       }
     }
   };

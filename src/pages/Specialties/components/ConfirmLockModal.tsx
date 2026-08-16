@@ -1,4 +1,4 @@
-import { AlertTriangle, X } from "lucide-react";
+import { Lock, Unlock, X } from "lucide-react";
 import type { Specialty } from "../types";
 
 interface ConfirmLockModalProps {
@@ -16,34 +16,57 @@ export default function ConfirmLockModal({
 }: ConfirmLockModalProps) {
   if (!isOpen || !specialty) return null;
 
-  const isCurrentlyActive = specialty.status === true || specialty.status === "Đang hoạt động" || specialty.status === "Active";
+  const isCurrentlyLocked =
+    specialty.status === "Ngưng hoạt động" ||
+    specialty.status === "Inactive" ||
+    specialty.rawStatus === false ||
+    specialty.status === false;
 
   return (
     <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-xs flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6 relative animation-fadeIn">
+      <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6 relative animate-in fade-in zoom-in-95 duration-200">
         <button
           onClick={onClose}
-          className="absolute top-4 right-4 p-1 text-gray-400 hover:text-gray-600 rounded-lg transition cursor-pointer"
+          className="absolute top-4 right-4 p-1.5 text-gray-400 hover:text-gray-600 rounded-lg transition cursor-pointer"
         >
           <X size={20} />
         </button>
 
         <div className="flex flex-col items-center text-center py-2">
-          <div className="w-14 h-14 bg-amber-100 text-amber-600 rounded-full flex items-center justify-center mb-4 shrink-0">
-            <AlertTriangle size={28} />
+          <div
+            className={`w-14 h-14 rounded-full flex items-center justify-center mb-4 shrink-0 shadow-2xs ${
+              isCurrentlyLocked
+                ? "bg-emerald-100 text-emerald-600"
+                : "bg-rose-100 text-rose-600"
+            }`}
+          >
+            {isCurrentlyLocked ? <Unlock size={28} /> : <Lock size={28} />}
           </div>
 
           <h3 className="text-xl font-bold text-gray-900 mb-2">
-            {isCurrentlyActive ? "Xác nhận ngưng hoạt động" : "Xác nhận kích hoạt chuyên khoa"}
+            {isCurrentlyLocked
+              ? "Mở lại chuyên khoa"
+              : "Xác nhận ngưng hoạt động chuyên khoa"}
           </h3>
 
-          <p className="text-base text-gray-600 mb-6">
-            Bạn có chắc chắn muốn chuyển trạng thái chuyên khoa{" "}
-            <span className="font-bold text-gray-900">{specialty.specialtyName || specialty.name}</span> thành{" "}
-            <span className="font-bold text-blue-600">
-              {isCurrentlyActive ? "Ngưng hoạt động" : "Đang hoạt động"}
-            </span>{" "}
-            không?
+          <p className="text-base text-gray-600 mb-6 leading-relaxed">
+            {isCurrentlyLocked ? (
+              <>
+                Bạn có chắc chắn muốn mở lại chuyên khoa{" "}
+                <span className="font-bold text-gray-900">
+                  {specialty.specialtyName || specialty.name}
+                </span>{" "}
+                không?
+              </>
+            ) : (
+              <>
+                Bạn có chắc chắn muốn ngưng hoạt động chuyên khoa{" "}
+                <span className="font-bold text-gray-900">
+                  {specialty.specialtyName || specialty.name}
+                </span>{" "}
+                không?
+              </>
+            )}
           </p>
 
           <div className="flex items-center justify-center gap-3 w-full">
@@ -55,9 +78,13 @@ export default function ConfirmLockModal({
             </button>
             <button
               onClick={onConfirm}
-              className="w-1/2 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl shadow-sm transition cursor-pointer text-base"
+              className={`w-1/2 py-2.5 text-white font-bold rounded-xl shadow-sm transition cursor-pointer text-base ${
+                isCurrentlyLocked
+                  ? "bg-emerald-600 hover:bg-emerald-700"
+                  : "bg-rose-600 hover:bg-rose-700"
+              }`}
             >
-              Xác nhận
+              {isCurrentlyLocked ? "Mở chuyên khoa" : "Ngưng hoạt động"}
             </button>
           </div>
         </div>

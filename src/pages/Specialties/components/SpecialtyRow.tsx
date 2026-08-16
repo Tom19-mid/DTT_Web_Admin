@@ -34,6 +34,12 @@ export default function SpecialtyRow({
         <ActionButtons
           onEdit={() => onEdit && onEdit(specialty)}
           onLock={() => onLock && onLock(specialty)}
+          isLocked={
+            specialty.status === "Ngưng hoạt động" ||
+            specialty.status === "Inactive" ||
+            specialty.rawStatus === false ||
+            specialty.status === false
+          }
         />
       </td>
     </tr>

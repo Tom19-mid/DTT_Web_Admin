@@ -11,8 +11,8 @@ import { ChevronLeft, ChevronRight, BellOff, Loader2 } from "lucide-react";
 import { notificationApi, type CreateNotificationPayload } from "../../api/notificationApi";
 
 export default function Notifications() {
-  const [notifications, setNotifications] = useState<Notification[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [notifications, setNotifications] = useState<Notification[]>(() => notificationApi.getCachedNotifications() || []);
+  const [isLoading, setIsLoading] = useState(() => !notificationApi.getCachedNotifications());
 
   // Filters state
   const [searchTerm, setSearchTerm] = useState("");
@@ -43,8 +43,10 @@ export default function Notifications() {
   };
 
   // Fetch notifications from Backend API
-  const fetchNotifications = async () => {
-    setIsLoading(true);
+  const fetchNotifications = async (showLoading = false) => {
+    if (showLoading && !notificationApi.getCachedNotifications()) {
+      setIsLoading(true);
+    }
     try {
       const adminUserId = getLoggedInAdminUserId();
       const data = await notificationApi.getAll(adminUserId ? { userId: adminUserId } : undefined);
@@ -62,7 +64,54 @@ export default function Notifications() {
   };
 
   useEffect(() => {
-    fetchNotifications();
+    fetchNotifications(notifications.length === 0);
+
+    const handleNewNotification = (e: any) => {
+      const newNoti = e.detail as Notification;
+      if (newNoti) {
+        setNotifications((prev) => [
+          newNoti,
+          ...prev.filter((n) => n.notificationId !== newNoti.notificationId),
+        ]);
+      }
+    };
+
+    const handleNotificationRead = (e: any) => {
+      const id = e.detail as number;
+      if (id) {
+        setNotifications((prev) =>
+          prev.map((n) => (n.notificationId === id ? { ...n, isRead: true } : n))
+        );
+      }
+    };
+
+    const handleAllRead = () => {
+      setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
+    };
+
+    const handleNotificationDeleted = (e: any) => {
+      const id = e.detail as number;
+      if (id) {
+        setNotifications((prev) => prev.filter((n) => n.notificationId !== id));
+      }
+    };
+
+    const handleNotificationUpdated = () => {
+      fetchNotifications(false);
+    };
+
+    window.addEventListener("notification_updated", handleNotificationUpdated);
+    window.addEventListener("new_notification_created", handleNewNotification as EventListener);
+    window.addEventListener("notification_read", handleNotificationRead as EventListener);
+    window.addEventListener("notification_all_read", handleAllRead);
+    window.addEventListener("notification_deleted", handleNotificationDeleted as EventListener);
+    return () => {
+      window.removeEventListener("notification_updated", handleNotificationUpdated);
+      window.removeEventListener("new_notification_created", handleNewNotification as EventListener);
+      window.removeEventListener("notification_read", handleNotificationRead as EventListener);
+      window.removeEventListener("notification_all_read", handleAllRead);
+      window.removeEventListener("notification_deleted", handleNotificationDeleted as EventListener);
+    };
   }, []);
 
   const handleCreateNotification = async (payload: CreateNotificationPayload): Promise<boolean> => {
@@ -196,7 +245,7 @@ export default function Notifications() {
       />
 
       {/* Main Content Container */}
-      {isLoading ? (
+      {isLoading && notifications.length === 0 ? (
         <div className="p-12 text-center text-gray-500 font-normal bg-white rounded-2xl border border-gray-100/80 shadow-xs flex flex-col items-center justify-center gap-3">
           <Loader2 className="w-8 h-8 text-blue-600 animate-spin" />
           <span className="text-base font-medium text-gray-700">Đang tải dữ liệu thông báo...</span>

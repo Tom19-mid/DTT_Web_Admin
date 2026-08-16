@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import Pagination from "../../components/common/Pagination";
 import ToastNotification, { type ToastMessage } from "../../components/common/ToastNotification";
 import { notificationApi } from "../../api/notificationApi";
@@ -36,13 +36,21 @@ const statusOptions = [
   { value: "Đã hủy", label: "Đã hủy", dotColor: "bg-gray-400" },
 ];
 
-export default function DoctorLeaves() {
-  const [leaves, setLeaves] = useState<DoctorLeaveItem[]>([]);
-  const [loading, setLoading] = useState(true);
+interface DoctorLeavesProps {
+  onLeaveUpdated?: () => void;
+}
+
+export default function DoctorLeaves({ onLeaveUpdated }: DoctorLeavesProps = {}) {
+  const [leaves, setLeaves] = useState<DoctorLeaveItem[]>(() => doctorLeaveApi.getCachedLeaves() || []);
+  const [loading, setLoading] = useState(() => !doctorLeaveApi.getCachedLeaves());
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedStatus, setSelectedStatus] = useState("Tất cả");
   const [isStatusOpen, setIsStatusOpen] = useState(false);
+  const [selectedDoctor, setSelectedDoctor] = useState("ALL");
+  const [isDoctorOpen, setIsDoctorOpen] = useState(false);
+
   const statusRef = useRef<HTMLDivElement>(null);
+  const doctorRef = useRef<HTMLDivElement>(null);
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
   const [viewingNotification, setViewingNotification] = useState<Notification | null>(null);
 
@@ -79,31 +87,43 @@ export default function DoctorLeaves() {
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
 
+  // Extract unique doctor names
+  const doctorOptions = useMemo(() => {
+    const docSet = new Set<string>();
+    leaves.forEach((l) => {
+      if (l.doctorName) docSet.add(l.doctorName);
+    });
+    return Array.from(docSet);
+  }, [leaves]);
+
   // Reset to page 1 when filter or search changes
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchQuery, selectedStatus]);
+  }, [searchQuery, selectedStatus, selectedDoctor]);
 
   const fetchLeaves = async (showLoading = true) => {
-    if (showLoading) setLoading(true);
+    if (showLoading && !doctorLeaveApi.getCachedLeaves()) setLoading(true);
     try {
       const data = await doctorLeaveApi.getAll();
       setLeaves(data);
     } catch (err) {
       console.error("Lỗi lấy danh sách đơn nghỉ phép:", err);
     } finally {
-      if (showLoading) setLoading(false);
+      setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchLeaves(true);
+    fetchLeaves(leaves.length === 0);
   }, []);
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       if (statusRef.current && !statusRef.current.contains(e.target as Node)) {
         setIsStatusOpen(false);
+      }
+      if (doctorRef.current && !doctorRef.current.contains(e.target as Node)) {
+        setIsDoctorOpen(false);
       }
     };
     document.addEventListener("mousedown", handleClickOutside);
@@ -117,18 +137,23 @@ export default function DoctorLeaves() {
   const rejectedCount = leaves.filter((l) => l.status === "Từ chối").length;
 
   // Filter leaves list
-  const filteredLeaves = leaves.filter((item) => {
-    const matchesSearch =
-      item.doctorName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      item.specialtyName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      item.phone.includes(searchQuery) ||
-      item.leaveId.toString().includes(searchQuery);
+  const filteredLeaves = useMemo(() => {
+    return leaves.filter((item) => {
+      const matchesSearch =
+        item.doctorName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        item.specialtyName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        item.phone.includes(searchQuery) ||
+        item.leaveId.toString().includes(searchQuery);
 
-    const matchesStatus =
-      selectedStatus === "Tất cả" || item.status === selectedStatus;
+      const matchesStatus =
+        selectedStatus === "Tất cả" || item.status === selectedStatus;
 
-    return matchesSearch && matchesStatus;
-  });
+      const matchesDoctor =
+        selectedDoctor === "ALL" || item.doctorName === selectedDoctor;
+
+      return matchesSearch && matchesStatus && matchesDoctor;
+    });
+  }, [leaves, searchQuery, selectedStatus, selectedDoctor]);
 
   const totalPages = Math.ceil(filteredLeaves.length / itemsPerPage) || 1;
   const paginatedLeaves = filteredLeaves.slice(
@@ -138,7 +163,6 @@ export default function DoctorLeaves() {
 
   const handleUpdateStatus = async (newStatus: "Approved" | "Rejected" | "Cancelled") => {
     if (!actionLeave) return;
-    setIsSubmitting(true);
     const docName = actionLeave.doctorName || "bác sĩ";
     const adminUserId = getLoggedInAdminUserId();
     const targetLeaveId = actionLeave.leaveId;
@@ -147,64 +171,71 @@ export default function DoctorLeaves() {
     const newViStatus =
       newStatus === "Approved" ? "Đã duyệt" : newStatus === "Rejected" ? "Từ chối" : "Đã hủy";
 
-    // Optimistically update local state immediately
+    // 1. Close modal immediately
+    setActionLeave(null);
+    setActionType(null);
+
+    // 2. Optimistically update local state immediately
     setLeaves((prev) =>
       prev.map((item) => (item.leaveId === targetLeaveId ? { ...item, status: newViStatus } : item))
     );
 
+    const notiTitle =
+      newStatus === "Approved"
+        ? "Duyệt đơn nghỉ phép bác sĩ"
+        : newStatus === "Rejected"
+        ? "Từ chối đơn nghỉ phép bác sĩ"
+        : "Hủy lịch nghỉ bác sĩ";
+
+    const notiContent =
+      newStatus === "Approved"
+        ? `Đơn xin nghỉ phép của bác sĩ ${docName} (Mã đơn: #${targetLeaveId}) đã được duyệt.`
+        : newStatus === "Rejected"
+        ? `Đơn xin nghỉ phép của bác sĩ ${docName} (Mã đơn: #${targetLeaveId}) đã bị từ chối.`
+        : `Lịch nghỉ phép của bác sĩ ${docName} (Mã đơn: #${targetLeaveId}) đã bị hủy.`;
+
+    const notiData: Notification = {
+      notificationId: Date.now(),
+      title: notiTitle,
+      content: notiContent,
+      type: "system",
+      isRead: false,
+      createdAt: new Date().toISOString(),
+      userId: adminUserId,
+    };
+
+    // 3. Show toast immediately with onClick to open modal
+    if (newStatus === "Approved") {
+      addToast({
+        type: "success",
+        title: "Duyệt đơn nghỉ phép",
+        message: `Đã phê duyệt đơn nghỉ phép của bác sĩ "${docName}"!`,
+        onClick: () => setViewingNotification(notiData),
+      });
+    } else if (newStatus === "Rejected") {
+      addToast({
+        type: "error",
+        title: "Từ chối đơn nghỉ phép",
+        message: `Đã từ chối đơn nghỉ phép của bác sĩ "${docName}"!`,
+        onClick: () => setViewingNotification(notiData),
+      });
+    } else if (newStatus === "Cancelled") {
+      addToast({
+        type: "info",
+        title: "Hủy lịch nghỉ",
+        message: `Đã hủy lịch nghỉ của bác sĩ "${docName}"!`,
+        onClick: () => setViewingNotification(notiData),
+      });
+    }
+
+    // 4. Trigger Notification immediately (updates bell badge in 0ms)
+    notificationApi.create(notiData).catch((e) => console.warn("Lỗi tạo thông báo:", e));
+
+    // 5. Background execution
     try {
-      await doctorLeaveApi.updateStatus(actionLeave.leaveId, newStatus);
-      // Re-fetch silently in background without showing full-page loading spinner
+      await doctorLeaveApi.updateStatus(targetLeaveId, newStatus);
       fetchLeaves(false);
-
-      let createdNoti: Notification | null = null;
-
-      if (newStatus === "Approved") {
-        createdNoti = await notificationApi.create({
-          title: "Duyệt đơn nghỉ phép bác sĩ",
-          content: `Đơn xin nghỉ phép của bác sĩ ${docName} (Mã đơn: #${actionLeave.leaveId}) đã được duyệt.`,
-          type: "system",
-          userId: adminUserId,
-        });
-
-        addToast({
-          type: "success",
-          title: "Duyệt đơn nghỉ phép",
-          message: `Đã phê duyệt đơn nghỉ phép của bác sĩ "${docName}"!`,
-          onClick: createdNoti ? () => setViewingNotification(createdNoti) : undefined,
-        });
-      } else if (newStatus === "Rejected") {
-        createdNoti = await notificationApi.create({
-          title: "Từ chối đơn nghỉ phép bác sĩ",
-          content: `Đơn xin nghỉ phép của bác sĩ ${docName} (Mã đơn: #${actionLeave.leaveId}) đã bị từ chối.`,
-          type: "system",
-          userId: adminUserId,
-        });
-
-        addToast({
-          type: "error",
-          title: "Từ chối đơn nghỉ phép",
-          message: `Đã từ chối đơn nghỉ phép của bác sĩ "${docName}"!`,
-          onClick: createdNoti ? () => setViewingNotification(createdNoti) : undefined,
-        });
-      } else if (newStatus === "Cancelled") {
-        createdNoti = await notificationApi.create({
-          title: "Hủy lịch nghỉ bác sĩ",
-          content: `Lịch nghỉ phép của bác sĩ ${docName} (Mã đơn: #${actionLeave.leaveId}) đã bị hủy.`,
-          type: "system",
-          userId: adminUserId,
-        });
-
-        addToast({
-          type: "info",
-          title: "Hủy lịch nghỉ",
-          message: `Đã hủy lịch nghỉ của bác sĩ "${docName}"!`,
-          onClick: createdNoti ? () => setViewingNotification(createdNoti) : undefined,
-        });
-      }
-
-      setActionLeave(null);
-      setActionType(null);
+      if (onLeaveUpdated) onLeaveUpdated();
     } catch (err: any) {
       addToast({
         type: "error",
@@ -213,8 +244,6 @@ export default function DoctorLeaves() {
       });
       // Rollback on error
       fetchLeaves(false);
-    } finally {
-      setIsSubmitting(false);
     }
   };
 
@@ -304,12 +333,92 @@ export default function DoctorLeaves() {
 
           {/* Custom Status Dropdown & Reset */}
           <div className="flex flex-wrap items-center gap-3 w-full md:w-auto justify-end">
+            {/* Doctor Dropdown */}
+            <div className="relative" ref={doctorRef}>
+              <button
+                type="button"
+                onClick={() => {
+                  setIsDoctorOpen(!isDoctorOpen);
+                  setIsStatusOpen(false);
+                }}
+                className={`flex items-center gap-2.5 px-4 py-2.5 rounded-xl border text-base font-semibold transition-all cursor-pointer select-none ${
+                  isDoctorOpen || (selectedDoctor && selectedDoctor !== "ALL")
+                    ? "bg-white border-blue-500 text-blue-600 ring-2 ring-blue-500/20 shadow-sm"
+                    : "bg-gray-100/80 hover:bg-gray-200/60 border-gray-200/80 text-gray-800"
+                }`}
+              >
+                <User size={18} className={selectedDoctor && selectedDoctor !== "ALL" ? "text-blue-600" : "text-gray-500"} />
+                <span className="text-sm font-medium text-gray-500 hidden sm:inline">Bác sĩ:</span>
+                <span className="font-bold text-gray-900 whitespace-nowrap">
+                  {selectedDoctor && selectedDoctor !== "ALL" ? selectedDoctor : "Tất cả bác sĩ"}
+                </span>
+                <ChevronDown
+                  size={18}
+                  className={`text-gray-400 transition-transform duration-200 ${
+                    isDoctorOpen ? "rotate-180 text-blue-600" : ""
+                  }`}
+                />
+              </button>
+
+              {isDoctorOpen && (
+                <div className="absolute right-0 top-full mt-2 w-72 max-h-80 overflow-y-auto bg-white rounded-2xl shadow-xl border border-gray-100 p-2 z-50 animate-in fade-in zoom-in-95 duration-150">
+                  <div className="text-xs font-bold text-gray-400 px-3 py-1.5 uppercase tracking-wider">
+                    Lọc theo bác sĩ
+                  </div>
+                  <div className="space-y-1">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSelectedDoctor("ALL");
+                        setIsDoctorOpen(false);
+                      }}
+                      className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-base font-semibold transition cursor-pointer ${
+                        selectedDoctor === "ALL" || !selectedDoctor
+                          ? "bg-blue-50 text-blue-700 font-bold"
+                          : "text-gray-700 hover:bg-gray-100/80 hover:text-gray-900"
+                      }`}
+                    >
+                      <span>Tất cả bác sĩ</span>
+                      {(selectedDoctor === "ALL" || !selectedDoctor) && (
+                        <Check size={18} className="text-blue-600" />
+                      )}
+                    </button>
+
+                    {doctorOptions.map((docName) => {
+                      const isSelected = selectedDoctor === docName;
+                      return (
+                        <button
+                          key={docName}
+                          type="button"
+                          onClick={() => {
+                            setSelectedDoctor(docName);
+                            setIsDoctorOpen(false);
+                          }}
+                          className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-base font-semibold transition cursor-pointer ${
+                            isSelected
+                              ? "bg-blue-50 text-blue-700 font-bold"
+                              : "text-gray-700 hover:bg-gray-100/80 hover:text-gray-900"
+                          }`}
+                        >
+                          <span className="truncate">{docName}</span>
+                          {isSelected && <Check size={18} className="text-blue-600" />}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+            </div>
+
             <div className="relative" ref={statusRef}>
               <button
                 type="button"
-                onClick={() => setIsStatusOpen(!isStatusOpen)}
+                onClick={() => {
+                  setIsStatusOpen(!isStatusOpen);
+                  setIsDoctorOpen(false);
+                }}
                 className={`flex items-center gap-2.5 px-4 py-2.5 rounded-xl border text-base font-semibold transition-all cursor-pointer select-none ${
-                  isStatusOpen
+                  isStatusOpen || (selectedStatus && selectedStatus !== "Tất cả")
                     ? "bg-white border-blue-500 text-blue-600 ring-2 ring-blue-500/20 shadow-sm"
                     : "bg-gray-100/80 hover:bg-gray-200/60 border-gray-200/80 text-gray-800"
                 }`}
@@ -360,12 +469,14 @@ export default function DoctorLeaves() {
               )}
             </div>
 
-            {(searchQuery || selectedStatus !== "Tất cả") && (
+            {(searchQuery || selectedStatus !== "Tất cả" || (selectedDoctor && selectedDoctor !== "ALL")) && (
               <button
                 onClick={() => {
                   setSearchQuery("");
                   setSelectedStatus("Tất cả");
+                  setSelectedDoctor("ALL");
                   setIsStatusOpen(false);
+                  setIsDoctorOpen(false);
                 }}
                 className="inline-flex items-center gap-1.5 px-4 py-2.5 text-base font-semibold text-gray-600 bg-gray-200/80 hover:bg-gray-300 rounded-xl transition cursor-pointer active:scale-95"
                 title="Đặt lại bộ lọc"
@@ -392,7 +503,7 @@ export default function DoctorLeaves() {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100 text-base font-medium text-gray-800">
-              {loading ? (
+              {loading && leaves.length === 0 ? (
                 <tr>
                   <td colSpan={7} className="text-center py-12 text-gray-500 font-medium">
                     <div className="flex flex-col items-center justify-center gap-3">

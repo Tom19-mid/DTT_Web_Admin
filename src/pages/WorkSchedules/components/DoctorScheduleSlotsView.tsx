@@ -463,7 +463,21 @@ export default function DoctorScheduleSlotsView({
                 </tr>
               </thead>
               <tbody>
-                {paginatedSlots.length > 0 ? (
+                {isLoading && allSlots.length === 0 ? (
+                  <tr>
+                    <td
+                      colSpan={7}
+                      className="text-center py-12 text-gray-500 font-medium"
+                    >
+                      <div className="flex flex-col items-center justify-center gap-3">
+                        <Loader2 className="w-8 h-8 text-blue-600 animate-spin" />
+                        <span className="text-gray-600 font-medium text-base">
+                          Đang tải danh sách khung giờ khám...
+                        </span>
+                      </div>
+                    </td>
+                  </tr>
+                ) : paginatedSlots.length > 0 ? (
                   paginatedSlots.map((slot, index) => (
                     <tr
                       key={slot.slotId || index}

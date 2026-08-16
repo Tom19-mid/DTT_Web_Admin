@@ -4,7 +4,8 @@ import {
   Search,
   Plus,
   Pencil,
-  LockKeyhole,
+  Lock,
+  Unlock,
   Eye,
   Boxes,
   CheckCircle,
@@ -180,63 +181,79 @@ export default function CategoryTableView({
       return;
     }
 
-    setSubmitting(true);
     const catName = name.trim();
     const adminUserId = getLoggedInAdminUserId();
+    const targetStatus = status === "Ngưng hoạt động" ? "Inactive" : "Active";
+
+    setIsFormModalOpen(false);
 
     try {
       if (editingCategory) {
         const id = editingCategory.categoryId || editingCategory.id!;
-        await medicineApi.updateCategory(id, {
-          categoryName: catName,
-          description: description.trim(),
-          status: status === "Ngưng hoạt động" ? "Inactive" : "Active",
-        });
+        setEditingCategory(null);
 
-        const createdNoti = await notificationApi.create({
+        const notiData: Notification = {
+          notificationId: Date.now(),
           title: "Cập nhật danh mục thuốc",
           content: `Hệ thống vừa cập nhật thông tin danh mục thuốc "${catName}".`,
           type: "system",
+          isRead: false,
+          createdAt: new Date().toISOString(),
           userId: adminUserId,
-        });
+        };
 
         onAddToast?.({
           type: "success",
           title: "Cập nhật danh mục thuốc",
           message: `Đã cập nhật thông tin danh mục "${catName}" thành công!`,
-          onClick: createdNoti ? () => onViewNotification?.(createdNoti) : undefined,
-        });
-      } else {
-        await medicineApi.createCategory({
-          categoryName: catName,
-          description: description.trim(),
-          status: status === "Ngưng hoạt động" ? "Inactive" : "Active",
+          onClick: () => onViewNotification?.(notiData),
         });
 
-        const createdNoti = await notificationApi.create({
+        // Trigger notification immediately for instant bell badge update
+        notificationApi.create(notiData).catch((e) => console.warn("Lỗi tạo thông báo:", e));
+
+        await medicineApi.updateCategory(id, {
+          categoryName: catName,
+          description: description.trim(),
+          status: targetStatus,
+        });
+      } else {
+        setEditingCategory(null);
+
+        const notiData: Notification = {
+          notificationId: Date.now(),
           title: "Thêm danh mục thuốc mới",
           content: `Đã tạo mới thành công danh mục thuốc "${catName}".`,
           type: "system",
+          isRead: false,
+          createdAt: new Date().toISOString(),
           userId: adminUserId,
-        });
+        };
 
         onAddToast?.({
           type: "success",
           title: "Thêm danh mục mới",
           message: `Đã thêm mới danh mục "${catName}" thành công!`,
-          onClick: createdNoti ? () => onViewNotification?.(createdNoti) : undefined,
+          onClick: () => onViewNotification?.(notiData),
+        });
+
+        // Trigger notification immediately for instant bell badge update
+        notificationApi.create(notiData).catch((e) => console.warn("Lỗi tạo thông báo:", e));
+
+        await medicineApi.createCategory({
+          categoryName: catName,
+          description: description.trim(),
+          status: targetStatus,
         });
       }
-      setIsFormModalOpen(false);
       onRefreshData();
     } catch (err: any) {
+      onRefreshData();
       onAddToast?.({
         type: "error",
         title: "Lỗi thao tác",
         message: err.message || "Lỗi khi lưu thông tin danh mục thuốc!",
       });
-    } finally {
-      setSubmitting(false);
     }
   };
 
@@ -246,40 +263,63 @@ export default function CategoryTableView({
 
   const handleConfirmCategoryStatusToggle = async () => {
     if (statusTogglingCategory) {
-      const catName = statusTogglingCategory.categoryName || statusTogglingCategory.name || "Danh mục";
+      const catName =
+        statusTogglingCategory.categoryName ||
+        statusTogglingCategory.name ||
+        "Danh mục";
+      const isCurrentlyLocked =
+        statusTogglingCategory.status === "Ngưng hoạt động" ||
+        statusTogglingCategory.status === "Inactive" ||
+        statusTogglingCategory.status === false;
+      const nextStatus = isCurrentlyLocked ? "Active" : "Inactive";
+      const actionTitle = isCurrentlyLocked
+        ? "Mở lại danh mục thuốc"
+        : "Ngưng hoạt động danh mục";
+      const actionMessage = isCurrentlyLocked
+        ? `Đã mở lại danh mục "${catName}" thành công!`
+        : `Đã chuyển danh mục "${catName}" sang trạng thái Ngưng hoạt động!`;
+      const notiContent = isCurrentlyLocked
+        ? `Danh mục thuốc "${catName}" đã được kích hoạt và chuyển sang trạng thái Đang hoạt động.`
+        : `Danh mục thuốc "${catName}" đã được chuyển sang trạng thái Ngưng hoạt động.`;
       const adminUserId = getLoggedInAdminUserId();
+      const id = statusTogglingCategory.categoryId || statusTogglingCategory.id!;
 
+      const notiData: Notification = {
+        notificationId: Date.now(),
+        title: actionTitle,
+        content: notiContent,
+        type: "system",
+        isRead: false,
+        createdAt: new Date().toISOString(),
+        userId: adminUserId,
+      };
+
+      // 1. Close modal immediately
+      setStatusTogglingCategory(null);
+
+      // 2. Show Toast immediately with onClick
+      onAddToast?.({
+        type: "success",
+        title: actionTitle,
+        message: actionMessage,
+        onClick: () => onViewNotification?.(notiData),
+      });
+
+      // 3. Background execution
       try {
-        const id = statusTogglingCategory.categoryId || statusTogglingCategory.id!;
-        const isCurrentActive =
-          statusTogglingCategory.status === "Đang hoạt động" ||
-          statusTogglingCategory.status === "Active";
-        const nextStatus = isCurrentActive ? "Inactive" : "Active";
-
         await medicineApi.toggleCategoryStatus(id, nextStatus);
+        notificationApi.create(notiData).catch((e) => console.warn("Lỗi tạo thông báo:", e));
+
         onRefreshData();
-
-        const createdNoti = await notificationApi.create({
-          title: "Khóa / Đổi trạng thái danh mục",
-          content: `Danh mục thuốc "${catName}" đã được chuyển sang trạng thái ${nextStatus === "Active" ? "Đang hoạt động" : "Đã khóa/Ngưng hoạt động"}.`,
-          type: "system",
-          userId: adminUserId,
-        });
-
-        onAddToast?.({
-          type: "success",
-          title: "Khóa danh mục thuốc",
-          message: `Đã cập nhật trạng thái danh mục "${catName}" thành công!`,
-          onClick: createdNoti ? () => onViewNotification?.(createdNoti) : undefined,
-        });
       } catch (err: any) {
+        onRefreshData();
         onAddToast?.({
           type: "error",
           title: "Lỗi thao tác",
-          message: err.message || "Lỗi khi đổi trạng thái danh mục!",
+          message:
+            err.message ||
+            `Lỗi khi ${isCurrentlyLocked ? "mở lại" : "ngưng hoạt động"} danh mục!`,
         });
-      } finally {
-        setStatusTogglingCategory(null);
       }
     }
   };
@@ -456,7 +496,7 @@ export default function CategoryTableView({
               </tr>
             </thead>
             <tbody>
-              {loading ? (
+              {loading && categories.length === 0 ? (
                 <tr>
                   <td colSpan={6} className="text-center py-12 text-gray-500 font-medium">
                     <div className="flex flex-col items-center justify-center gap-3">
@@ -509,7 +549,7 @@ export default function CategoryTableView({
                         <StatusBadge status={cat.status} />
                       </td>
 
-                      {/* Chỉnh sửa (Actions: Eye, Pencil, LockKeyhole) */}
+                      {/* Chỉnh sửa (Actions: Eye, Pencil, Lock/Unlock) */}
                       <td className="py-4 px-4 text-center">
                         <div className="flex items-center justify-center gap-1.5">
                           <button
@@ -528,14 +568,19 @@ export default function CategoryTableView({
                           </button>
                           <button
                             onClick={() => handleToggleCategoryStatus(cat)}
+                            type="button"
                             title={
-                              isActive
-                                ? "Ngưng hoạt động danh mục"
-                                : "Kích hoạt lại danh mục"
+                              !isActive
+                                ? "Mở lại danh mục"
+                                : "Ngưng hoạt động danh mục"
                             }
-                            className="p-2 text-amber-500 hover:text-amber-700 hover:bg-amber-50 rounded-lg transition-colors cursor-pointer"
+                            className={`p-2 rounded-lg transition-colors cursor-pointer ${
+                              !isActive
+                                ? "text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50"
+                                : "text-rose-500 hover:text-rose-700 hover:bg-rose-50"
+                            }`}
                           >
-                            <LockKeyhole size={20} />
+                            {!isActive ? <Unlock size={20} /> : <Lock size={20} />}
                           </button>
                         </div>
                       </td>
@@ -774,67 +819,83 @@ export default function CategoryTableView({
         </div>
       )}
 
-      {/* Category Status Toggle Confirmation Modal (Giống hệt 100% bên Quản lý thuốc) */}
-      {statusTogglingCategory && (
-        <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6 relative animate-in fade-in zoom-in duration-200">
-            <button
-              onClick={() => setStatusTogglingCategory(null)}
-              className="absolute top-4 right-4 p-1 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100 transition cursor-pointer"
-            >
-              <X size={20} />
-            </button>
+      {/* Category Status Toggle Confirmation Modal */}
+      {statusTogglingCategory && (() => {
+        const isCurrentlyLocked =
+          statusTogglingCategory.status === "Ngưng hoạt động" ||
+          statusTogglingCategory.status === "Inactive" ||
+          statusTogglingCategory.status === false;
+        const catName =
+          statusTogglingCategory.categoryName ||
+          statusTogglingCategory.name ||
+          "Danh mục";
 
-            <div className="flex flex-col items-center text-center space-y-4">
-              <div className="p-3 bg-amber-100 text-amber-600 rounded-full">
-                <LockKeyhole size={32} />
-              </div>
+        return (
+          <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-xs flex items-center justify-center p-4">
+            <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6 relative animate-in fade-in zoom-in-95 duration-200">
+              <button
+                onClick={() => setStatusTogglingCategory(null)}
+                className="absolute top-4 right-4 p-1.5 text-gray-400 hover:text-gray-600 rounded-lg transition cursor-pointer"
+              >
+                <X size={20} />
+              </button>
 
-              <div>
-                <h3 className="text-xl font-bold text-gray-900">Xác nhận chuyển trạng thái</h3>
-                <p className="text-base text-gray-600 mt-2">
-                  Bạn có muốn thay đổi trạng thái của danh mục{" "}
-                  <span className="font-bold text-gray-900">
-                    "{statusTogglingCategory.categoryName || statusTogglingCategory.name}"
-                  </span>{" "}
-                  sang{" "}
-                  <span
-                    className={`font-bold ${
-                      statusTogglingCategory.status === "Đang hoạt động" ||
-                      statusTogglingCategory.status === "Active"
-                        ? "text-amber-600"
-                        : "text-emerald-600"
+              <div className="flex flex-col items-center text-center py-2">
+                <div
+                  className={`w-14 h-14 rounded-full flex items-center justify-center mb-4 shrink-0 shadow-2xs ${
+                    isCurrentlyLocked
+                      ? "bg-emerald-100 text-emerald-600"
+                      : "bg-rose-100 text-rose-600"
+                  }`}
+                >
+                  {isCurrentlyLocked ? <Unlock size={28} /> : <Lock size={28} />}
+                </div>
+
+                <h3 className="text-xl font-bold text-gray-900 mb-2">
+                  {isCurrentlyLocked
+                    ? "Mở lại danh mục thuốc"
+                    : "Xác nhận ngưng hoạt động danh mục"}
+                </h3>
+
+                <p className="text-base text-gray-600 mb-6 leading-relaxed">
+                  {isCurrentlyLocked ? (
+                    <>
+                      Bạn có chắc chắn muốn mở lại danh mục thuốc{" "}
+                      <span className="font-bold text-gray-900">"{catName}"</span>{" "}
+                      không?
+                    </>
+                  ) : (
+                    <>
+                      Bạn có chắc chắn muốn ngưng hoạt động danh mục thuốc{" "}
+                      <span className="font-bold text-gray-900">"{catName}"</span>{" "}
+                      không?
+                    </>
+                  )}
+                </p>
+
+                <div className="flex items-center justify-center gap-3 w-full">
+                  <button
+                    onClick={() => setStatusTogglingCategory(null)}
+                    className="w-1/2 py-2.5 border border-gray-300 rounded-xl text-gray-700 font-bold hover:bg-gray-50 transition cursor-pointer text-base"
+                  >
+                    Hủy
+                  </button>
+                  <button
+                    onClick={handleConfirmCategoryStatusToggle}
+                    className={`w-1/2 py-2.5 text-white font-bold rounded-xl shadow-sm transition cursor-pointer text-base ${
+                      isCurrentlyLocked
+                        ? "bg-emerald-600 hover:bg-emerald-700"
+                        : "bg-rose-600 hover:bg-rose-700"
                     }`}
                   >
-                    "
-                    {statusTogglingCategory.status === "Đang hoạt động" ||
-                    statusTogglingCategory.status === "Active"
-                      ? "Ngưng hoạt động"
-                      : "Đang hoạt động"}
-                    "
-                  </span>
-                  ?
-                </p>
-              </div>
-
-              <div className="flex items-center justify-center gap-3 w-full pt-2">
-                <button
-                  onClick={() => setStatusTogglingCategory(null)}
-                  className="w-1/2 py-3 border border-gray-300 rounded-xl text-gray-700 font-bold hover:bg-gray-50 transition cursor-pointer text-base"
-                >
-                  Hủy bỏ
-                </button>
-                <button
-                  onClick={handleConfirmCategoryStatusToggle}
-                  className="w-1/2 py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl shadow-sm transition cursor-pointer text-base"
-                >
-                  Xác nhận
-                </button>
+                    {isCurrentlyLocked ? "Mở danh mục" : "Ngưng hoạt động"}
+                  </button>
+                </div>
               </div>
             </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
     </div>
   );
 }

@@ -83,17 +83,17 @@ export default function UserTable({
       />
 
       <div className="overflow-x-auto">
-        <table className="w-full text-left border-collapse min-w-[950px]">
+        <table className="w-full text-left border-collapse min-w-[1020px]">
           <thead>
             <tr className="bg-gray-200/70 text-gray-800 font-bold text-base">
               <th className="py-4 px-4 rounded-l-xl">Họ và tên</th>
               <th className="py-4 px-4">Email</th>
               <th className="py-4 px-4">Số điện thoại</th>
-              <th className="py-4 px-4">Vai trò</th>
-              <th className="py-4 px-4">Ngày tham gia</th>
-              <th className="py-4 px-4">Cập nhật lần cuối</th>
-              <th className="py-4 px-4">Trạng thái</th>
-              <th className="py-4 px-4 text-center rounded-r-xl">Chỉnh sửa</th>
+              <th className="py-4 px-4 min-w-[120px]">Vai trò</th>
+              <th className="py-4 px-4 min-w-[140px]">Ngày tham gia</th>
+              <th className="py-4 px-4 min-w-[140px]">Cập nhật lần cuối</th>
+              <th className="py-4 px-4 min-w-[125px]">Trạng thái</th>
+              <th className="py-4 px-4 text-center rounded-r-xl min-w-[100px]">Chỉnh sửa</th>
             </tr>
           </thead>
           <tbody>

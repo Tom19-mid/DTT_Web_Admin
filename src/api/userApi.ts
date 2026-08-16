@@ -55,8 +55,30 @@ const formatRoleName = (roleId?: number, rawName?: unknown): string => {
   return str || "Bệnh nhân";
 };
 
+let usersCache: User[] | null = null;
+let cacheTimestamp = 0;
+const CACHE_TTL_MS = 60 * 1000; // 60 seconds
+
 export const userApi = {
-  getAll: async (params?: UserFilterParams): Promise<User[]> => {
+  getCachedUsers: (): User[] | null => {
+    const now = Date.now();
+    if (usersCache && now - cacheTimestamp < CACHE_TTL_MS) {
+      return usersCache;
+    }
+    return null;
+  },
+
+  clearCache: () => {
+    usersCache = null;
+    cacheTimestamp = 0;
+  },
+
+  getAll: async (params?: UserFilterParams, forceRefresh = false): Promise<User[]> => {
+    const now = Date.now();
+    if (!params && !forceRefresh && usersCache && now - cacheTimestamp < CACHE_TTL_MS) {
+      return usersCache;
+    }
+
     try {
       const response = await axiosClient.get("/users", { params });
       const data = Array.isArray(response.data)
@@ -64,13 +86,15 @@ export const userApi = {
         : response.data?.users || response.data?.data || [];
 
       // Maps backend DTO format (UserDto) to frontend User interface cleanly
-      return data.map((u: Record<string, unknown>, index: number) => {
+      const mappedUsers = data.map((u: Record<string, unknown>, index: number) => {
         const rawStatus = String(u.status || "Active");
         let displayStatus = "Đang hoạt động";
         if (rawStatus.toLowerCase() === "locked" || rawStatus === "Đã khóa") {
           displayStatus = "Đã khóa";
         } else if (rawStatus.toLowerCase() === "inactive" || rawStatus === "Ngưng hoạt động") {
           displayStatus = "Ngưng hoạt động";
+        } else if (rawStatus.toLowerCase() === "onleave" || rawStatus === "Nghỉ phép") {
+          displayStatus = "Nghỉ phép";
         }
 
         const roleId = Number(u.roleId || u.role_id || 3);
@@ -91,8 +115,16 @@ export const userApi = {
           fullName: String(u.fullName || u.full_name || u.name || ""),
         } as User;
       });
+
+      if (!params) {
+        usersCache = mappedUsers;
+        cacheTimestamp = Date.now();
+      }
+
+      return mappedUsers;
     } catch (error) {
       console.warn("userApi.getAll error:", error);
+      if (usersCache && !params) return usersCache;
       return [];
     }
   },
@@ -135,6 +167,8 @@ export const userApi = {
 
   create: async (data: CreateUserData): Promise<User | null> => {
     try {
+      usersCache = null;
+      cacheTimestamp = 0;
       let backendStatus = "Active";
       if (data.status === "Đã khóa" || data.status?.toLowerCase() === "locked") {
         backendStatus = "Locked";
@@ -169,6 +203,8 @@ export const userApi = {
 
   update: async (id: string | number, data: UpdateUserData): Promise<User | null> => {
     try {
+      usersCache = null;
+      cacheTimestamp = 0;
       let backendStatus = data.status;
       if (data.status === "Đã khóa" || data.status?.toLowerCase() === "locked") {
         backendStatus = "Locked";
@@ -213,6 +249,8 @@ export const userApi = {
 
   updateStatus: async (id: string | number, status: string): Promise<boolean> => {
     try {
+      usersCache = null;
+      cacheTimestamp = 0;
       let backendStatus = "Active";
       if (status === "Đã khóa" || status.toLowerCase() === "locked") {
         backendStatus = "Locked";
@@ -230,6 +268,8 @@ export const userApi = {
 
   deleteUser: async (id: string | number): Promise<boolean> => {
     try {
+      usersCache = null;
+      cacheTimestamp = 0;
       await axiosClient.delete(`/users/${id}`);
       return true;
     } catch (error) {

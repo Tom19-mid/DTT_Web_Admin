@@ -20,14 +20,39 @@ export interface UpdateWorkSchedulePayload {
   timeSlots?: TimeSlot[];
 }
 
+let schedulesCache: WorkSchedule[] | null = null;
+let cacheTimestamp = 0;
+const CACHE_TTL_MS = 60 * 1000; // 60 seconds
+
 export const workScheduleApi = {
-  getAll: async (params?: {
-    doctorId?: number;
-    specialtyId?: number;
-    workDate?: string;
-    status?: string;
-    search?: string;
-  }): Promise<WorkSchedule[]> => {
+  getCachedSchedules: (): WorkSchedule[] | null => {
+    const now = Date.now();
+    if (schedulesCache && now - cacheTimestamp < CACHE_TTL_MS) {
+      return schedulesCache;
+    }
+    return null;
+  },
+
+  clearCache: () => {
+    schedulesCache = null;
+    cacheTimestamp = 0;
+  },
+
+  getAll: async (
+    params?: {
+      doctorId?: number;
+      specialtyId?: number;
+      workDate?: string;
+      status?: string;
+      search?: string;
+    },
+    forceRefresh = false
+  ): Promise<WorkSchedule[]> => {
+    const now = Date.now();
+    if (!params && !forceRefresh && schedulesCache && now - cacheTimestamp < CACHE_TTL_MS) {
+      return schedulesCache;
+    }
+
     try {
       const queryParts: string[] = [];
       if (params?.doctorId) queryParts.push(`doctorId=${params.doctorId}`);
@@ -38,11 +63,18 @@ export const workScheduleApi = {
 
       const queryString = queryParts.length > 0 ? `?${queryParts.join("&")}` : "";
       const response = await axiosClient.get(`/work-schedules${queryString}`);
-      if (Array.isArray(response.data)) return response.data;
-      if (response.data && Array.isArray(response.data.data)) return response.data.data;
-      return [];
+      let result: WorkSchedule[] = [];
+      if (Array.isArray(response.data)) result = response.data;
+      else if (response.data && Array.isArray(response.data.data)) result = response.data.data;
+
+      if (!params) {
+        schedulesCache = result;
+        cacheTimestamp = Date.now();
+      }
+      return result;
     } catch (error) {
       console.warn("workScheduleApi.getAll error:", error);
+      if (schedulesCache && !params) return schedulesCache;
       return [];
     }
   },
@@ -59,6 +91,8 @@ export const workScheduleApi = {
 
   create: async (payload: CreateWorkSchedulePayload): Promise<WorkSchedule> => {
     try {
+      schedulesCache = null;
+      cacheTimestamp = 0;
       const response = await axiosClient.post("/work-schedules", payload);
       return response.data.data || response.data;
     } catch (error: any) {
@@ -70,6 +104,8 @@ export const workScheduleApi = {
 
   update: async (id: number, payload: UpdateWorkSchedulePayload): Promise<WorkSchedule> => {
     try {
+      schedulesCache = null;
+      cacheTimestamp = 0;
       const response = await axiosClient.put(`/work-schedules/${id}`, payload);
       return response.data.data || response.data;
     } catch (error: any) {
@@ -81,6 +117,8 @@ export const workScheduleApi = {
 
   toggleLock: async (id: number, isLocked?: boolean, status?: string): Promise<WorkSchedule> => {
     try {
+      schedulesCache = null;
+      cacheTimestamp = 0;
       const response = await axiosClient.put(`/work-schedules/${id}/toggle-lock`, { isLocked, status });
       return response.data.data || response.data;
     } catch (error: any) {
@@ -92,6 +130,8 @@ export const workScheduleApi = {
 
   cancel: async (id: number): Promise<WorkSchedule> => {
     try {
+      schedulesCache = null;
+      cacheTimestamp = 0;
       const response = await axiosClient.put(`/work-schedules/${id}/cancel`);
       return response.data.data || response.data;
     } catch (error: any) {

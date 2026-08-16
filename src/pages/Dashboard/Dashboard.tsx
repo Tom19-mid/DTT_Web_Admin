@@ -1,8 +1,8 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import DashboardTitle from "./components/DashboardTitle";
 import SummarySection from "./components/SummarySection";
 import ContentSection from "./components/ContentSection";
-import dashboardApi from "../../api/dashboardApi";
+import dashboardApi, { type RawDashboardCache } from "../../api/dashboardApi";
 import type { DashboardData, DateFilterType } from "../../types/dashboard";
 import { Loader2 } from "lucide-react";
 
@@ -16,7 +16,7 @@ const getTodayString = (): string => {
 };
 
 export default function Dashboard() {
-  const [data, setData] = useState<DashboardData | null>(null);
+  const [rawData, setRawData] = useState<RawDashboardCache | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
 
   // Mặc định hiển thị ngày hôm nay trên ô input ngày tháng năm
@@ -26,10 +26,9 @@ export default function Dashboard() {
   useEffect(() => {
     let isMounted = true;
     const fetchDashboard = async () => {
-      setLoading(true);
-      const res = await dashboardApi.getDashboardData(filterType, customDate);
+      const cached = await dashboardApi.getRawData(false);
       if (isMounted) {
-        setData(res);
+        setRawData(cached);
         setLoading(false);
       }
     };
@@ -38,7 +37,13 @@ export default function Dashboard() {
     return () => {
       isMounted = false;
     };
-  }, [filterType, customDate]);
+  }, []);
+
+  // Tính toán dữ liệu bảng điều khiển tức thì (0ms) khi thay đổi filter ngày mà không cần gọi lại API
+  const data: DashboardData | null = useMemo(() => {
+    if (!rawData) return null;
+    return dashboardApi.computeDashboardMetrics(rawData, filterType, customDate);
+  }, [rawData, filterType, customDate]);
 
   const handleResetFilter = () => {
     const today = getTodayString();
@@ -56,7 +61,7 @@ export default function Dashboard() {
         onResetFilter={handleResetFilter}
       />
 
-      {loading ? (
+      {loading && !rawData ? (
         <div className="py-24 flex flex-col justify-center items-center">
           <Loader2 className="animate-spin text-blue-700 mb-3" size={36} />
           <p className="text-gray-600 font-medium text-base">Đang tải dữ liệu bảng điều khiển...</p>

@@ -18,9 +18,9 @@ export default function Medicines() {
   const [activeTab, setActiveTab] = useState<"medicines" | "categories">(
     "medicines"
   );
-  const [medicines, setMedicines] = useState<Medicine[]>([]);
-  const [categories, setCategories] = useState<MedicineCategory[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
+  const [medicines, setMedicines] = useState<Medicine[]>(() => medicineApi.getCachedMedicines() || []);
+  const [categories, setCategories] = useState<MedicineCategory[]>(() => medicineApi.getCachedCategories() || []);
+  const [loading, setLoading] = useState<boolean>(() => !medicineApi.getCachedMedicines() && !medicineApi.getCachedCategories());
 
   // Modal states
   const [isFormModalOpen, setIsFormModalOpen] = useState(false);
@@ -57,8 +57,10 @@ export default function Medicines() {
     return undefined;
   };
 
-  const fetchAllData = async () => {
-    setLoading(true);
+  const fetchAllData = async (showSpinner = false) => {
+    if (showSpinner && (!medicineApi.getCachedMedicines() || !medicineApi.getCachedCategories())) {
+      setLoading(true);
+    }
     try {
       const [medsData, catsData] = await Promise.all([
         medicineApi.getAll(),
@@ -74,7 +76,7 @@ export default function Medicines() {
   };
 
   useEffect(() => {
-    fetchAllData();
+    fetchAllData(medicines.length === 0 || categories.length === 0);
   }, []);
 
   // Statistics
@@ -118,71 +120,79 @@ export default function Medicines() {
           ? "Inactive"
           : "Active";
 
-      const formatExpiryDateForPayload = (dateStr?: string) => {
-        if (!dateStr) return undefined;
-        const str = dateStr.trim();
-        if (str.includes("/")) {
-          const parts = str.split("/");
-          if (parts.length === 3) {
-            const [d, m, y] = parts;
-            return `${y}-${m.padStart(2, "0")}-${d.padStart(2, "0")}`;
-          }
-        }
-        return str;
-      };
-
-      const payload = {
-        categoryId: Number(medicineData.categoryId) || 1,
-        medicineName: medicineData.medicineName || medicineData.name || "",
-        unit: medicineData.unit || "Viên",
-        unitPrice: Number(medicineData.unitPrice ?? medicineData.price) || 0,
-        stockQuantity:
-          Number(medicineData.stockQuantity ?? medicineData.stock) || 0,
-        description: medicineData.description || "",
-        defaultUsage: medicineData.defaultUsage || medicineData.usage || "",
-        status: targetStatus,
-        expiryDate: formatExpiryDateForPayload(medicineData.expiryDate),
-      };
-
-      const targetId = medicineData.medicineId || medicineData.id;
-      const medName = payload.medicineName || "Thuốc";
+      const medName = medicineData.medicineName || "Thuốc";
       const adminUserId = getLoggedInAdminUserId();
 
-      if (targetId && editingMedicine) {
-        await medicineApi.update(targetId, payload);
+      if (medicineData.medicineId || medicineData.id) {
+        const targetId = medicineData.medicineId || medicineData.id!;
+        setEditingMedicine(null);
+        setIsModalOpen(false);
 
-        const createdNoti = await notificationApi.create({
-          title: "Cập nhật thông tin thuốc",
+        // Optimistic update
+        setMedicines((prev) =>
+          prev.map((m) =>
+            m.medicineId === targetId || m.id === targetId
+              ? { ...m, ...medicineData, status: targetStatus }
+              : m
+          )
+        );
+
+        const notiData: Notification = {
+          notificationId: Date.now(),
+          title: "Cập nhật thuốc",
           content: `Hệ thống vừa cập nhật thông tin thuốc "${medName}".`,
           type: "system",
+          isRead: false,
+          createdAt: new Date().toISOString(),
           userId: adminUserId,
-        });
+        };
 
         addToast({
           type: "success",
           title: "Cập nhật thuốc",
           message: `Đã cập nhật thông tin thuốc "${medName}" thành công!`,
-          onClick: createdNoti ? () => setViewingNotification(createdNoti) : undefined,
+          onClick: () => setViewingNotification(notiData),
+        });
+
+        // Trigger notification immediately for instant bell badge update
+        notificationApi.create(notiData).catch((e) => console.warn("Lỗi tạo thông báo:", e));
+
+        await medicineApi.update(targetId, {
+          ...medicineData,
+          status: targetStatus,
         });
       } else {
-        await medicineApi.create(payload);
+        setEditingMedicine(null);
+        setIsModalOpen(false);
 
-        const createdNoti = await notificationApi.create({
-          title: "Thêm thuốc mới",
-          content: `Đã tạo mới thành công thuốc "${medName}".`,
+        const notiData: Notification = {
+          notificationId: Date.now(),
+          title: "Thêm mới thuốc",
+          content: `Đã thêm mới thành công thuốc "${medName}".`,
           type: "system",
+          isRead: false,
+          createdAt: new Date().toISOString(),
           userId: adminUserId,
-        });
+        };
 
         addToast({
           type: "success",
           title: "Thêm thuốc mới",
           message: `Đã thêm mới thuốc "${medName}" thành công!`,
-          onClick: createdNoti ? () => setViewingNotification(createdNoti) : undefined,
+          onClick: () => setViewingNotification(notiData),
+        });
+
+        // Trigger notification immediately for instant bell badge update
+        notificationApi.create(notiData).catch((e) => console.warn("Lỗi tạo thông báo:", e));
+
+        await medicineApi.create({
+          ...medicineData,
+          status: targetStatus,
         });
       }
-      await fetchAllData();
+      fetchAllData(false);
     } catch (err: any) {
+      fetchAllData(false);
       addToast({
         type: "error",
         title: "Lỗi thao tác",
@@ -191,44 +201,75 @@ export default function Medicines() {
     }
   };
 
-  // Confirm status toggle action (khóa / mở với hình ổ khóa màu vàng)
+  // Confirm status toggle action (khóa / mở lại thuốc)
   const handleConfirmStatusToggle = async () => {
     if (statusTogglingMedicine) {
-      const medName = statusTogglingMedicine.medicineName || statusTogglingMedicine.name || "Thuốc";
+      const medName =
+        statusTogglingMedicine.medicineName ||
+        statusTogglingMedicine.name ||
+        "Thuốc";
+      const isCurrentlyLocked =
+        statusTogglingMedicine.status === "Ngưng hoạt động" ||
+        statusTogglingMedicine.status === "Inactive";
+      const nextStatus = isCurrentlyLocked ? "Active" : "Inactive";
+      const actionTitle = isCurrentlyLocked
+        ? "Mở lại thuốc"
+        : "Ngưng hoạt động thuốc";
+      const actionMessage = isCurrentlyLocked
+        ? `Đã mở lại thuốc "${medName}" thành công!`
+        : `Đã chuyển thuốc "${medName}" sang trạng thái Ngưng hoạt động!`;
+      const notiContent = isCurrentlyLocked
+        ? `Thuốc "${medName}" đã được kích hoạt và chuyển sang trạng thái Đang hoạt động.`
+        : `Thuốc "${medName}" đã được chuyển sang trạng thái Ngưng hoạt động.`;
       const adminUserId = getLoggedInAdminUserId();
+      const targetId =
+        statusTogglingMedicine.medicineId || statusTogglingMedicine.id!;
 
+      const notiData: Notification = {
+        notificationId: Date.now(),
+        title: actionTitle,
+        content: notiContent,
+        type: "system",
+        isRead: false,
+        createdAt: new Date().toISOString(),
+        userId: adminUserId,
+      };
+
+      // 1. Close modal immediately
+      setStatusTogglingMedicine(null);
+
+      // 2. Optimistic UI update
+      setMedicines((prev) =>
+        prev.map((m) =>
+          m.medicineId === targetId || m.id === targetId
+            ? { ...m, status: nextStatus }
+            : m
+        )
+      );
+
+      // 3. Show Toast immediately with onClick
+      addToast({
+        type: "success",
+        title: actionTitle,
+        message: actionMessage,
+        onClick: () => setViewingNotification(notiData),
+      });
+
+      // 4. Background execution
       try {
-        const targetId =
-          statusTogglingMedicine.medicineId || statusTogglingMedicine.id!;
-        const currentActive =
-          statusTogglingMedicine.status === "Đang hoạt động" ||
-          statusTogglingMedicine.status === "Active";
-        const nextStatus = currentActive ? "Inactive" : "Active";
-
         await medicineApi.toggleStatus(targetId, nextStatus);
-        await fetchAllData();
+        notificationApi.create(notiData).catch((e) => console.warn("Lỗi tạo thông báo:", e));
 
-        const createdNoti = await notificationApi.create({
-          title: "Khóa / Đổi trạng thái thuốc",
-          content: `Thuốc "${medName}" đã được chuyển sang trạng thái ${nextStatus === "Active" ? "Đang hoạt động" : "Đã khóa/Ngưng hoạt động"}.`,
-          type: "system",
-          userId: adminUserId,
-        });
-
-        addToast({
-          type: "success",
-          title: "Khóa thuốc",
-          message: `Đã cập nhật trạng thái thuốc "${medName}" thành công!`,
-          onClick: createdNoti ? () => setViewingNotification(createdNoti) : undefined,
-        });
+        fetchAllData(false);
       } catch (err: any) {
+        fetchAllData(false);
         addToast({
           type: "error",
           title: "Lỗi thao tác",
-          message: err.message || "Lỗi khi đổi trạng thái thuốc!",
+          message:
+            err.message ||
+            `Lỗi khi ${isCurrentlyLocked ? "mở lại" : "ngưng hoạt động"} thuốc!`,
         });
-      } finally {
-        setStatusTogglingMedicine(null);
       }
     }
   };

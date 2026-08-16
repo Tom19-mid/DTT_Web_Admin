@@ -50,6 +50,8 @@ export default function UserFormModal({
     if (str === "locked" || str === "đã khóa") return "Đã khóa";
     if (str === "inactive" || str === "ngưng hoạt động")
       return "Ngưng hoạt động";
+    if (str === "onleave" || str === "nghỉ phép")
+      return "Nghỉ phép";
     return "Đang hoạt động";
   };
 
@@ -125,6 +127,19 @@ export default function UserFormModal({
         today.getMonth() + 1,
       ).padStart(2, "0")}/${today.getFullYear()}`;
 
+      const getRoleId = (r: string): number => {
+        if (r === "Admin" || r === "Quản trị viên") return 1;
+        if (r === "Bác sĩ" || r === "Doctor") return 2;
+        if (r === "Bệnh nhân" || r === "Patient") return 3;
+        if (r === "Lễ tân tiếp đón") return 4;
+        if (r === "Điều dưỡng") return 5;
+        if (r === "Kỹ thuật viên CLS") return 6;
+        if (r === "Dược sĩ") return 7;
+        return 3;
+      };
+
+      const selectedRoleId = getRoleId(role);
+
       await onSave({
         id: initialData?.id,
         userId: initialData?.userId,
@@ -133,6 +148,8 @@ export default function UserFormModal({
         phone: phone.trim(),
         phoneNumber: phone.trim(),
         role,
+        roleId: selectedRoleId,
+        roleName: role,
         status,
         createdAt: initialData?.createdAt || formattedDate,
         updatedAt: initialData?.updatedAt || formattedDate,
@@ -272,6 +289,11 @@ export default function UserFormModal({
                     onChange={(e) => setStatus(e.target.value as UserStatus)}
                     className="w-full border border-gray-300 rounded-xl px-4 py-2.5 text-base text-gray-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 bg-white transition-all cursor-pointer font-medium"
                   >
+                    {status === "Nghỉ phép" && (
+                      <option value="Nghỉ phép" disabled>
+                        Nghỉ phép (Chỉnh trong Quản lý bác sĩ)
+                      </option>
+                    )}
                     <option value="Đang hoạt động">Đang hoạt động</option>
                     <option value="Ngưng hoạt động">Ngưng hoạt động</option>
                     <option value="Đã khóa">Đã khóa</option>

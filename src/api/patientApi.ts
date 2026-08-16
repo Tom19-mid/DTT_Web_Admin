@@ -44,8 +44,30 @@ const extractErrorMessage = (error: any): string => {
   return error?.message || "Thao tác thất bại. Vui lòng kiểm tra lại kết nối API!";
 };
 
+let patientsCache: Patient[] | null = null;
+let cacheTimestamp = 0;
+const CACHE_TTL_MS = 60 * 1000; // 60 seconds
+
 export const patientApi = {
-  getAll: async (): Promise<Patient[]> => {
+  getCachedPatients: (): Patient[] | null => {
+    const now = Date.now();
+    if (patientsCache && now - cacheTimestamp < CACHE_TTL_MS) {
+      return patientsCache;
+    }
+    return null;
+  },
+
+  clearCache: () => {
+    patientsCache = null;
+    cacheTimestamp = 0;
+  },
+
+  getAll: async (forceRefresh = false): Promise<Patient[]> => {
+    const now = Date.now();
+    if (!forceRefresh && patientsCache && now - cacheTimestamp < CACHE_TTL_MS) {
+      return patientsCache;
+    }
+
     try {
       const response = await axiosClient.get("/patients");
       const data = Array.isArray(response.data?.patients)
@@ -54,7 +76,7 @@ export const patientApi = {
         ? response.data
         : [];
 
-      return data.map((p: Record<string, unknown>, index: number) => {
+      const mappedPatients = data.map((p: Record<string, unknown>, index: number) => {
         const pId = Number(p.id || p.patientId || p.patient_id || index + 1);
         const rawVer = String(p.verificationStatus || p.verification_status || "pending").toLowerCase();
         let displayVer = "Chờ duyệt";
@@ -102,8 +124,14 @@ export const patientApi = {
           updatedAt: String(p.updatedAt || p.updated_at || ""),
         } as Patient;
       });
+
+      patientsCache = mappedPatients;
+      cacheTimestamp = Date.now();
+
+      return mappedPatients;
     } catch (error) {
       console.warn("patientApi.getAll error:", error);
+      if (patientsCache) return patientsCache;
       return [];
     }
   },
@@ -151,6 +179,8 @@ export const patientApi = {
 
   create: async (data: CreatePatientData): Promise<Patient | null> => {
     try {
+      patientsCache = null;
+      cacheTimestamp = 0;
       const response = await axiosClient.post("/patients", data);
       const p = response.data?.patient || response.data;
       if (!p) return null;
@@ -176,6 +206,8 @@ export const patientApi = {
 
   update: async (id: number | string, data: UpdatePatientData): Promise<Patient | null> => {
     try {
+      patientsCache = null;
+      cacheTimestamp = 0;
       let verStatus = data.verificationStatus;
       if (verStatus === "Chờ duyệt") verStatus = "pending";
       if (verStatus === "Đã duyệt") verStatus = "verified";
@@ -197,34 +229,28 @@ export const patientApi = {
         }
       }
 
-      /* [OLD CODE COMMENTED OUT — replaced by payload filtering above]
-      const response = await axiosClient.put(`/patients/${id}`, {
-        ...data,
-        verificationStatus: verStatus,
-      });
-      */
       const response = await axiosClient.put(`/patients/${id}`, payload);
       const p = response.data?.patient || response.data;
       if (!p) return null;
 
-        const updateVerifiedBy = "Lễ tân";
+      const updateVerifiedBy = "Lễ tân";
 
-        return {
-          id: Number(id),
-          fullName: String(p.fullName || data.fullName || ""),
-          phone: String(p.phone || data.phone || ""),
-          phoneNumber: String(p.phone || data.phone || ""),
-          gender: formatGenderVi(p.gender as string || data.gender),
-          address: String(p.address || data.address || ""),
-          cccdNumber: String(p.cccd || data.cccdNumber || ""),
-          healthInsuranceNumber: String(p.bhyt || data.healthInsuranceNumber || ""),
-          verificationStatus: String(p.verificationStatus || data.verificationStatus || "Chờ duyệt"),
-          verifiedAt: p.verifiedAt ? String(p.verifiedAt) : null,
-          verifiedBy: updateVerifiedBy,
-          verificationNote: p.verificationNote ? String(p.verificationNote) : null,
-          status: p.status || "Đang hoạt động",
-          updatedAt: p.updatedAt ? String(p.updatedAt) : null,
-        } as Patient;
+      return {
+        id: Number(id),
+        fullName: String(p.fullName || data.fullName || ""),
+        phone: String(p.phone || data.phone || ""),
+        phoneNumber: String(p.phone || data.phone || ""),
+        gender: formatGenderVi(p.gender as string || data.gender),
+        address: String(p.address || data.address || ""),
+        cccdNumber: String(p.cccd || data.cccdNumber || ""),
+        healthInsuranceNumber: String(p.bhyt || data.healthInsuranceNumber || ""),
+        verificationStatus: String(p.verificationStatus || data.verificationStatus || "Chờ duyệt"),
+        verifiedAt: p.verifiedAt ? String(p.verifiedAt) : null,
+        verifiedBy: updateVerifiedBy,
+        verificationNote: p.verificationNote ? String(p.verificationNote) : null,
+        status: p.status || "Đang hoạt động",
+        updatedAt: p.updatedAt ? String(p.updatedAt) : null,
+      } as Patient;
     } catch (error) {
       const msg = extractErrorMessage(error);
       console.error(`patientApi.update(${id}) error:`, msg);
@@ -234,6 +260,8 @@ export const patientApi = {
 
   verify: async (id: number | string, cccdNumber: string): Promise<boolean> => {
     try {
+      patientsCache = null;
+      cacheTimestamp = 0;
       await axiosClient.patch(`/patients/${id}/verify`, { cccdNumber });
       return true;
     } catch (error) {

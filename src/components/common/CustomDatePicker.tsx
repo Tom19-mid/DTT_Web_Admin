@@ -133,20 +133,20 @@ export default function CustomDatePicker({
           readOnly
           onClick={() => setIsOpen(!isOpen)}
           placeholder={placeholder}
-          className={`w-40 border border-blue-300 rounded-xl pl-4 pr-10 py-2 text-sm text-gray-900 font-extrabold placeholder:font-extrabold placeholder:text-gray-900 placeholder:opacity-100 bg-blue-50/70 hover:bg-blue-100/60 transition cursor-pointer outline-none focus:ring-2 focus:ring-blue-500 font-mono tracking-wide shadow-xs ${className}`}
+          className={`w-48 border border-blue-300 rounded-xl pl-4 pr-11 py-2.5 text-base text-gray-900 font-extrabold placeholder:font-extrabold placeholder:text-gray-900 placeholder:opacity-100 bg-blue-50/70 hover:bg-blue-100/60 transition cursor-pointer outline-none focus:ring-2 focus:ring-blue-500 font-mono tracking-wide shadow-xs ${className}`}
         />
         <button
           type="button"
           onClick={() => setIsOpen(!isOpen)}
-          className="absolute right-3 top-1/2 -translate-y-1/2 text-blue-600 hover:text-blue-800 transition-colors cursor-pointer p-0.5"
+          className="absolute right-3.5 top-1/2 -translate-y-1/2 text-blue-600 hover:text-blue-800 transition-colors cursor-pointer p-0.5"
           title="Mở lịch chọn ngày"
         >
-          <Calendar size={18} />
+          <Calendar size={20} />
         </button>
       </div>
 
       {isOpen && (
-        <div className="absolute top-full left-0 mt-2 z-50 bg-white rounded-2xl shadow-2xl border border-gray-200 p-4 w-76 text-sm select-none">
+        <div className="absolute top-full left-0 mt-2 z-50 bg-white rounded-3xl shadow-2xl border border-gray-200 p-4.5 w-80 text-sm select-none animate-in fade-in zoom-in-95 duration-150">
           {/* Header Month/Year Selector */}
           <div className="flex items-center justify-between mb-3 gap-2">
             <div className="flex items-center gap-1.5">
@@ -155,7 +155,7 @@ export default function CustomDatePicker({
                 onChange={(e) =>
                   setViewDate(new Date(currentYear, Number(e.target.value), 1))
                 }
-                className="font-bold text-gray-800 bg-gray-100 hover:bg-gray-200 rounded-xl px-2.5 py-1.5 text-xs outline-none cursor-pointer transition-colors"
+                className="font-bold text-gray-800 bg-gray-100 hover:bg-gray-200 rounded-xl px-3 py-1.5 text-sm outline-none cursor-pointer transition-colors"
               >
                 {monthNames.map((m, idx) => (
                   <option key={idx} value={idx}>
@@ -169,7 +169,7 @@ export default function CustomDatePicker({
                 onChange={(e) =>
                   setViewDate(new Date(Number(e.target.value), currentMonth, 1))
                 }
-                className="font-bold text-gray-800 bg-gray-100 hover:bg-gray-200 rounded-xl px-2.5 py-1.5 text-xs outline-none cursor-pointer transition-colors"
+                className="font-bold text-gray-800 bg-gray-100 hover:bg-gray-200 rounded-xl px-3 py-1.5 text-sm outline-none cursor-pointer transition-colors"
               >
                 {Array.from({ length: 30 }, (_, i) => 2030 - i).map((y) => (
                   <option key={y} value={y}>
@@ -183,18 +183,18 @@ export default function CustomDatePicker({
               <button
                 type="button"
                 onClick={handlePrevMonth}
-                className="p-1.5 hover:bg-gray-100 rounded-lg text-gray-600 transition cursor-pointer"
+                className="p-1.5 hover:bg-gray-100 rounded-xl text-gray-600 transition cursor-pointer"
                 title="Tháng trước"
               >
-                <ChevronLeft size={18} />
+                <ChevronLeft size={20} />
               </button>
               <button
                 type="button"
                 onClick={handleNextMonth}
-                className="p-1.5 hover:bg-gray-100 rounded-lg text-gray-600 transition cursor-pointer"
+                className="p-1.5 hover:bg-gray-100 rounded-xl text-gray-600 transition cursor-pointer"
                 title="Tháng sau"
               >
-                <ChevronRight size={18} />
+                <ChevronRight size={20} />
               </button>
             </div>
           </div>
@@ -227,9 +227,9 @@ export default function CustomDatePicker({
                   key={day}
                   type="button"
                   onClick={() => handleSelectDay(day)}
-                  className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs transition cursor-pointer mx-auto ${
+                  className={`w-9 h-9 rounded-xl flex items-center justify-center font-bold text-sm transition cursor-pointer mx-auto ${
                     isSelected
-                      ? "bg-blue-600 text-white shadow-md"
+                      ? "bg-blue-600 text-white shadow-md scale-105"
                       : "text-gray-800 hover:bg-blue-50 hover:text-blue-600"
                   }`}
                 >
@@ -240,7 +240,7 @@ export default function CustomDatePicker({
           </div>
 
           {/* Footer Actions */}
-          <div className="flex items-center justify-between mt-4 pt-3 border-t border-gray-100 text-xs font-semibold">
+          <div className="flex items-center justify-between mt-4 pt-3 border-t border-gray-100 text-sm font-semibold">
             <button
               type="button"
               onClick={handleSelectToday}
@@ -251,7 +251,7 @@ export default function CustomDatePicker({
             <button
               type="button"
               onClick={() => setIsOpen(false)}
-              className="text-gray-500 hover:text-gray-800 cursor-pointer"
+              className="text-gray-500 hover:text-gray-800 cursor-pointer font-bold"
             >
               Đóng
             </button>

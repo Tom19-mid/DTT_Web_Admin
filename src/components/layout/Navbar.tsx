@@ -39,10 +39,58 @@ export default function Navbar() {
       fetchNotifications();
     };
 
+    const handleNewNotification = (e: any) => {
+      const newNoti = e.detail as Notification;
+      if (newNoti) {
+        setNotifications((prev) => [
+          newNoti,
+          ...prev.filter((n) => n.notificationId !== newNoti.notificationId),
+        ]);
+      }
+    };
+
+    const handleNotificationRead = (e: any) => {
+      const detail = e.detail;
+      const id = typeof detail === "object" && detail !== null ? detail.id : detail;
+      const realId = typeof detail === "object" && detail !== null ? detail.realId : id;
+      if (id || realId) {
+        setNotifications((prev) =>
+          prev.map((n) =>
+            n.notificationId === id || n.notificationId === realId
+              ? { ...n, isRead: true }
+              : n
+          )
+        );
+      }
+    };
+
+    const handleAllRead = () => {
+      setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
+    };
+
+    const handleNotificationDeleted = (e: any) => {
+      const detail = e.detail;
+      const id = typeof detail === "object" && detail !== null ? detail.id : detail;
+      const realId = typeof detail === "object" && detail !== null ? detail.realId : id;
+      if (id || realId) {
+        setNotifications((prev) =>
+          prev.filter((n) => n.notificationId !== id && n.notificationId !== realId)
+        );
+      }
+    };
+
     window.addEventListener("notification_updated", handleNotificationUpdated);
+    window.addEventListener("new_notification_created", handleNewNotification as EventListener);
+    window.addEventListener("notification_read", handleNotificationRead as EventListener);
+    window.addEventListener("notification_all_read", handleAllRead);
+    window.addEventListener("notification_deleted", handleNotificationDeleted as EventListener);
     return () => {
       clearInterval(interval);
       window.removeEventListener("notification_updated", handleNotificationUpdated);
+      window.removeEventListener("new_notification_created", handleNewNotification as EventListener);
+      window.removeEventListener("notification_read", handleNotificationRead as EventListener);
+      window.removeEventListener("notification_all_read", handleAllRead);
+      window.removeEventListener("notification_deleted", handleNotificationDeleted as EventListener);
     };
   }, [user?.userId]);
 
@@ -70,26 +118,29 @@ export default function Navbar() {
     return true;
   });
 
-  const handleItemClick = async (noti: Notification) => {
+  const handleItemClick = (noti: Notification) => {
+    // 1. Open Detail Modal & Close Dropdown immediately (0ms)
+    setViewingNotification(noti);
+    setIsOpen(false);
+
+    // 2. Optimistically update read state in background
     if (!noti.isRead) {
       setNotifications((prev) =>
         prev.map((n) => (n.notificationId === noti.notificationId ? { ...n, isRead: true } : n))
       );
-      await notificationApi.markAsRead(noti.notificationId);
+      notificationApi.markAsRead(noti.notificationId).catch(console.warn);
     }
-    setViewingNotification(noti);
-    setIsOpen(false);
   };
 
   const handleMarkAllRead = async () => {
     setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
-    await notificationApi.markAllAsRead();
+    notificationApi.markAllAsRead().catch(console.warn);
   };
 
-  const handleDeleteNotification = async (id: number) => {
-    await notificationApi.delete(id);
-    setNotifications((prev) => prev.filter((n) => n.notificationId !== id));
+  const handleDeleteNotification = (id: number) => {
     setViewingNotification(null);
+    setNotifications((prev) => prev.filter((n) => n.notificationId !== id));
+    notificationApi.delete(id).catch(console.warn);
   };
 
   const badgeText = displayBadge();

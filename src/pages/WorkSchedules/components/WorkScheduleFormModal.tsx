@@ -10,6 +10,12 @@ interface WorkScheduleFormModalProps {
   onSave: (scheduleData: WorkSchedule) => void;
   initialData?: WorkSchedule | null;
   nextScheduleId: number;
+  doctors?: Array<{ doctorId: number; fullName: string }>;
+  onAddToast?: (toast: {
+    type: "success" | "error" | "info";
+    title?: string;
+    message: string;
+  }) => void;
 }
 
 const monthNames = [
@@ -424,7 +430,8 @@ export default function WorkScheduleFormModal({
   initialData,
   nextScheduleId,
   doctors = [],
-}: WorkScheduleFormModalProps & { doctors?: Array<{ doctorId: number; fullName: string }> }) {
+  onAddToast,
+}: WorkScheduleFormModalProps) {
   const [fetchedDoctors, setFetchedDoctors] = useState<Array<{ doctorId: number; fullName: string }>>([]);
 
   // Fetch danh sách Bác sĩ từ CSDL Database khi mở Modal
@@ -470,7 +477,6 @@ export default function WorkScheduleFormModal({
   const [workDate, setWorkDate] = useState("");
   const [startTime, setStartTime] = useState("08:00");
   const [endTime, setEndTime] = useState("12:00");
-  const [alertMessage, setAlertMessage] = useState<string | null>(null);
   const modalScrollRef = useRef<HTMLDivElement>(null);
 
   const [prevInitialData, setPrevInitialData] = useState<WorkSchedule | null | undefined>(undefined);
@@ -485,7 +491,6 @@ export default function WorkScheduleFormModal({
     setPrevInitialData(initialData);
     setPrevIsOpen(isOpen);
     setPrevDoctorOptionsLen(doctorOptions.length);
-    setAlertMessage(null);
 
     if (initialData) {
       const matched = doctorOptions.find(
@@ -517,6 +522,18 @@ export default function WorkScheduleFormModal({
     }
   }
 
+  const notifyWarning = (message: string, title = "Lỗi lịch làm việc") => {
+    if (onAddToast) {
+      onAddToast({
+        type: "error",
+        title,
+        message,
+      });
+    } else {
+      alert(message);
+    }
+  };
+
   const handleDropdownOpened = (open: boolean) => {
     if (open && modalScrollRef.current) {
       setTimeout(() => {
@@ -533,7 +550,7 @@ export default function WorkScheduleFormModal({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!workDate) {
-      setAlertMessage("Vui lòng chọn Ngày làm việc!");
+      notifyWarning("Vui lòng chọn Ngày làm việc!", "Thiếu thông tin");
       return;
     }
 
@@ -541,7 +558,10 @@ export default function WorkScheduleFormModal({
     const scheduleCodeStr = String(targetScheduleId);
 
     if (timeToMinutes(startTime) >= timeToMinutes(endTime)) {
-      setAlertMessage("Thời gian kết thúc phải lớn hơn thời gian bắt đầu!");
+      notifyWarning(
+        "Thời gian kết thúc phải lớn hơn thời gian bắt đầu!",
+        "Không thể thu hẹp lịch làm việc"
+      );
       return;
     }
 
@@ -559,8 +579,9 @@ export default function WorkScheduleFormModal({
       });
 
       if (hasBookedOutsideRange) {
-        setAlertMessage(
-          "Không thể thu hẹp khung giờ làm việc vì có khung giờ đã được bệnh nhân đặt lịch (Đã đặt lịch) nằm ngoài phạm vi thời gian mới!"
+        notifyWarning(
+          "Không thể thu hẹp khung giờ làm việc vì có khung giờ đã được bệnh nhân đặt lịch (Đã đặt lịch) nằm ngoài phạm vi thời gian mới!",
+          "Không thể thu hẹp lịch làm việc"
         );
         return;
       }
@@ -588,35 +609,35 @@ export default function WorkScheduleFormModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-xs flex items-center justify-center p-4 sm:p-6">
+    <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-xs flex items-center justify-center p-4">
       <div
         ref={modalScrollRef}
-        className="bg-white rounded-2xl shadow-2xl w-full max-w-lg p-6 sm:p-7 relative max-h-[90vh] overflow-y-auto animate-in fade-in zoom-in-95 duration-200"
+        className="bg-white rounded-3xl shadow-xl w-full max-w-xl p-6 relative max-h-[90vh] overflow-y-auto"
       >
-        {/* Header */}
         <div className="flex items-center justify-between pb-4 border-b border-gray-100 mb-5">
           <div>
-            <h2 className="text-2xl font-bold text-gray-900">
-              {initialData ? "Chỉnh sửa lịch làm việc" : "Thêm lịch làm việc bác sĩ"}
+            <h2 className="text-xl font-bold text-gray-900">
+              {initialData ? "Chỉnh sửa lịch làm việc" : "Thêm lịch làm việc mới"}
             </h2>
             <p className="text-sm text-gray-500 mt-0.5">
-              Nhập các thông tin lịch làm việc bác sĩ vào hệ thống
+              {initialData
+                ? `Mã lịch: #${initialData.scheduleCode || initialData.scheduleId}`
+                : "Thiết lập ca làm việc và tự động phân chia khung giờ 30 phút"}
             </p>
           </div>
           <button
             onClick={onClose}
-            className="p-2 text-gray-400 hover:text-gray-600 rounded-xl hover:bg-gray-100 transition cursor-pointer"
+            className="text-gray-400 hover:text-gray-600 rounded-xl p-1 hover:bg-gray-100 transition cursor-pointer"
           >
-            <X size={22} />
+            <X size={20} />
           </button>
         </div>
 
-        {/* Form */}
         <form onSubmit={handleSubmit} className="space-y-4">
-          {/* Bác sĩ */}
+          {/* Bác sĩ phụ trách */}
           <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-1.5">
-              Bác sĩ <span className="text-rose-500">*</span>
+            <label className="block text-sm font-bold text-gray-700 mb-1.5">
+              Bác sĩ phụ trách <span className="text-rose-500">*</span>
             </label>
             <select
               value={selectedDoctorId}
@@ -638,7 +659,7 @@ export default function WorkScheduleFormModal({
 
           {/* Ngày làm việc */}
           <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-1.5">
+            <label className="block text-sm font-bold text-gray-700 mb-1.5">
               Ngày làm việc <span className="text-rose-500">*</span>
             </label>
             <CustomDatePicker
@@ -648,41 +669,75 @@ export default function WorkScheduleFormModal({
             />
           </div>
 
-          {/* Thời gian bắt đầu & Thời gian kết thúc */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          {/* Khung giờ làm việc (Giờ bắt đầu & Giờ kết thúc) */}
+          <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-1.5">
-                Thời gian bắt đầu <span className="text-rose-500">*</span>
+              <label className="block text-sm font-bold text-gray-700 mb-1.5">
+                Giờ bắt đầu <span className="text-rose-500">*</span>
               </label>
               <CustomTimeSelect
                 value={startTime}
                 onChange={setStartTime}
                 options={TIME_OPTIONS_8_TO_22}
-                placeholder="Chọn giờ bắt đầu"
+                placeholder="08:00"
                 onOpenStateChange={handleDropdownOpened}
               />
             </div>
-
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-1.5">
-                Thời gian kết thúc <span className="text-rose-500">*</span>
+              <label className="block text-sm font-bold text-gray-700 mb-1.5">
+                Giờ kết thúc <span className="text-rose-500">*</span>
               </label>
               <CustomTimeSelect
                 value={endTime}
                 onChange={setEndTime}
                 options={TIME_OPTIONS_8_TO_22}
-                placeholder="Chọn giờ kết thúc"
+                placeholder="12:00"
                 onOpenStateChange={handleDropdownOpened}
               />
             </div>
           </div>
 
-          {/* Footer Actions */}
-          <div className="flex items-center justify-end gap-3 pt-5 border-t border-gray-100 mt-5">
+          {/* Preview khung giờ tạo tự động */}
+          <div className="bg-blue-50/70 border border-blue-100 rounded-2xl p-4">
+            <div className="flex items-center gap-2 mb-2">
+              <Clock size={16} className="text-blue-600" />
+              <p className="text-sm font-bold text-blue-900">
+                Khung giờ khám (Tự động chia mỗi 30 phút)
+              </p>
+            </div>
+            <p className="text-xs text-blue-700 mb-3">
+              Hệ thống sẽ tự động tạo danh sách các ca khám 30 phút trong khoảng {startTime} - {endTime}
+            </p>
+
+            {timeToMinutes(startTime) < timeToMinutes(endTime) ? (
+              <div className="flex flex-wrap gap-1.5 max-h-32 overflow-y-auto pr-1">
+                {generateTimeSlots(startTime, endTime, String(initialData?.scheduleId ?? nextScheduleId), initialData?.timeSlots || []).map((slot, i) => (
+                  <span
+                    key={i}
+                    className={`text-xs font-semibold px-2.5 py-1 rounded-lg border ${
+                      slot.status === "Đã đặt lịch"
+                        ? "bg-amber-100 text-amber-800 border-amber-200"
+                        : "bg-white text-blue-800 border-blue-200"
+                    }`}
+                  >
+                    {slot.startTime} - {slot.endTime}
+                    {slot.status === "Đã đặt lịch" && " (Đã đặt)"}
+                  </span>
+                ))}
+              </div>
+            ) : (
+              <p className="text-xs text-rose-600 font-bold">
+                ⚠️ Giờ kết thúc phải lớn hơn giờ bắt đầu!
+              </p>
+            )}
+          </div>
+
+          {/* Action Buttons */}
+          <div className="flex items-center justify-end gap-3 pt-4 border-t border-gray-100">
             <button
               type="button"
               onClick={onClose}
-              className="px-6 py-2.5 border border-gray-300 rounded-xl text-gray-700 font-bold hover:bg-gray-50 transition cursor-pointer text-base"
+              className="px-5 py-2.5 border border-gray-300 rounded-xl text-gray-700 font-bold hover:bg-gray-50 transition cursor-pointer text-base"
             >
               Hủy
             </button>
@@ -696,51 +751,6 @@ export default function WorkScheduleFormModal({
           </div>
         </form>
       </div>
-
-      {/* Modal Thông báo cảnh báo theo chuẩn thiết kế mẫu người dùng */}
-      {alertMessage && (
-        <div className="fixed inset-0 z-60 bg-black/55 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-200">
-          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-lg p-6 sm:p-7 relative border border-gray-100 animate-in zoom-in-95 duration-200">
-            {/* Nút đóng X ở góc trên bên phải */}
-            <button
-              type="button"
-              onClick={() => setAlertMessage(null)}
-              className="absolute right-4 top-4 text-gray-400 hover:text-gray-600 rounded-xl p-1.5 hover:bg-gray-100 transition cursor-pointer"
-            >
-              <X size={20} />
-            </button>
-
-            {/* Icon tròn ở giữa phía trên */}
-            <div className="w-16 h-16 rounded-full bg-rose-100 text-rose-600 flex items-center justify-center mx-auto mb-4 border border-rose-200/70 shadow-2xs">
-              <AlertTriangle size={32} />
-            </div>
-
-            {/* Tiêu đề căn giữa */}
-            <h3 className="text-xl sm:text-2xl font-extrabold text-gray-900 text-center mb-1">
-              Không thể thu hẹp lịch làm việc
-            </h3>
-
-            {/* Thẻ Cảnh báo màu vàng nổi bật ở giữa */}
-            <div className="bg-amber-50/90 border border-amber-200/90 rounded-2xl p-4 flex items-start gap-3 my-5 text-left shadow-2xs">
-              <AlertCircle size={22} className="text-amber-600 shrink-0 mt-0.5" />
-              <p className="text-sm sm:text-base text-amber-950 leading-relaxed font-semibold">
-                {alertMessage}
-              </p>
-            </div>
-
-            {/* Nút Đã hiểu góc dưới bên phải */}
-            <div className="flex items-center justify-end gap-3 mt-6">
-              <button
-                type="button"
-                onClick={() => setAlertMessage(null)}
-                className="px-8 py-3 bg-rose-600 hover:bg-rose-700 active:scale-95 text-white font-extrabold rounded-2xl shadow-md hover:shadow-lg transition-all cursor-pointer text-base text-center"
-              >
-                Đã hiểu
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

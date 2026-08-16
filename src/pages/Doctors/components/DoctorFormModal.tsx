@@ -9,6 +9,11 @@ interface DoctorFormModalProps {
   onSave: (doctorData: any) => Promise<void> | void;
   initialData?: Doctor | null;
   specialtiesOptions?: Array<{ specialtyId: number; specialtyName: string }>;
+  onAddToast?: (toast: {
+    type: "success" | "error" | "info";
+    title?: string;
+    message: string;
+  }) => void;
 }
 
 const specialtiesList = [
@@ -46,6 +51,24 @@ const getTodayFormatted = () => {
   const mStr = String(today.getMonth() + 1).padStart(2, "0");
   const yStr = String(today.getFullYear());
   return `${dStr}/${mStr}/${yStr}`;
+};
+
+const parseDateToComparable = (str?: string): number => {
+  if (!str) return 0;
+  if (str.includes("/")) {
+    const parts = str.split("/");
+    if (parts.length === 3) {
+      const [d, m, y] = parts;
+      return new Date(Number(y), Number(m) - 1, Number(d)).getTime();
+    }
+  } else if (str.includes("-")) {
+    const parts = str.split("-");
+    if (parts.length === 3) {
+      const [y, m, d] = parts;
+      return new Date(Number(y), Number(m) - 1, Number(d)).getTime();
+    }
+  }
+  return 0;
 };
 
 // Custom Date Picker Component matching AppointmentFormModal UI with auto-scroll down
@@ -304,6 +327,7 @@ export default function DoctorFormModal({
   onSave,
   initialData,
   specialtiesOptions,
+  onAddToast,
 }: DoctorFormModalProps) {
   const [fullName, setFullName] = useState("");
   const [avatar, setAvatar] = useState("");
@@ -364,11 +388,47 @@ export default function DoctorFormModal({
 
   if (!isOpen) return null;
 
+  const notifyError = (message: string, title = "Lỗi thao tác") => {
+    if (onAddToast) {
+      onAddToast({
+        type: "error",
+        title,
+        message,
+      });
+    } else {
+      alert(message);
+    }
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!fullName.trim()) {
-      alert("Vui lòng nhập Họ tên bác sĩ!");
+      notifyError("Vui lòng nhập Họ tên bác sĩ!", "Lỗi thao tác");
       return;
+    }
+
+    if (status === "Nghỉ phép") {
+      if (!leaveStartDate) {
+        notifyError("Vui lòng chọn Ngày bắt đầu nghỉ!", "Lỗi thao tác");
+        return;
+      }
+      if (!leaveEndDate) {
+        notifyError("Vui lòng chọn Ngày kết thúc nghỉ!", "Lỗi thao tác");
+        return;
+      }
+      const startMs = parseDateToComparable(leaveStartDate);
+      const endMs = parseDateToComparable(leaveEndDate);
+      if (startMs && endMs && endMs < startMs) {
+        notifyError(
+          "Ngày kết thúc nghỉ phải lớn hơn hoặc bằng ngày bắt đầu nghỉ!",
+          "Lỗi thao tác"
+        );
+        return;
+      }
+      if (!leaveReason.trim()) {
+        notifyError("Vui lòng nhập lý do xin nghỉ phép!", "Lỗi thao tác");
+        return;
+      }
     }
 
     if (status === "Đã khóa" && initialData?.status !== "Đã khóa") {
@@ -408,7 +468,7 @@ export default function DoctorFormModal({
       setIsConfirmLockOpen(false);
       onClose();
     } catch (err: any) {
-      alert(err.message || "Lỗi khi lưu thông tin bác sĩ!");
+      notifyError(err.message || "Lỗi khi lưu thông tin bác sĩ!", "Lỗi thao tác");
     } finally {
       setIsSubmitting(false);
     }

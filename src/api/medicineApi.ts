@@ -36,13 +36,57 @@ export interface UpdateCategoryPayload {
   status?: string;
 }
 
+let medicinesCache: any[] | null = null;
+let medsCacheTimestamp = 0;
+let categoriesCache: any[] | null = null;
+let catsCacheTimestamp = 0;
+const CACHE_TTL_MS = 60 * 1000; // 60 seconds
+
 export const medicineApi = {
+  getCachedMedicines: (): any[] | null => {
+    const now = Date.now();
+    if (medicinesCache && now - medsCacheTimestamp < CACHE_TTL_MS) {
+      return medicinesCache;
+    }
+    return null;
+  },
+
+  getCachedCategories: (): any[] | null => {
+    const now = Date.now();
+    if (categoriesCache && now - catsCacheTimestamp < CACHE_TTL_MS) {
+      return categoriesCache;
+    }
+    return null;
+  },
+
+  clearMedicinesCache: () => {
+    medicinesCache = null;
+    medsCacheTimestamp = 0;
+  },
+
+  clearCategoriesCache: () => {
+    categoriesCache = null;
+    catsCacheTimestamp = 0;
+  },
+
+  clearAllCache: () => {
+    medicinesCache = null;
+    medsCacheTimestamp = 0;
+    categoriesCache = null;
+    catsCacheTimestamp = 0;
+  },
+
   // ── MEDICINES API ─────────────────────────────────────────────────────────
-  getAll: async () => {
+  getAll: async (forceRefresh = false) => {
+    const now = Date.now();
+    if (!forceRefresh && medicinesCache && now - medsCacheTimestamp < CACHE_TTL_MS) {
+      return medicinesCache;
+    }
+
     try {
       const response = await axiosClient.get("/medicines");
       const list = Array.isArray(response.data) ? response.data : [];
-      return list.map((item: any) => ({
+      const mapped = list.map((item: any) => ({
         ...item,
         id: item.medicineId || item.id,
         name: item.medicineName || item.name || "",
@@ -55,8 +99,12 @@ export const medicineApi = {
             ? "Đang hoạt động"
             : "Ngưng hoạt động",
       }));
+      medicinesCache = mapped;
+      medsCacheTimestamp = Date.now();
+      return mapped;
     } catch (error) {
       console.warn("medicineApi.getAll error:", error);
+      if (medicinesCache) return medicinesCache;
       return [];
     }
   },
@@ -74,6 +122,8 @@ export const medicineApi = {
 
   create: async (payload: CreateMedicinePayload) => {
     try {
+      medicinesCache = null;
+      medsCacheTimestamp = 0;
       const response = await axiosClient.post("/medicines", payload);
       return response.data;
     } catch (error: any) {
@@ -85,6 +135,8 @@ export const medicineApi = {
 
   update: async (id: number, payload: UpdateMedicinePayload) => {
     try {
+      medicinesCache = null;
+      medsCacheTimestamp = 0;
       const response = await axiosClient.put(`/medicines/${id}`, payload);
       return response.data;
     } catch (error: any) {
@@ -96,6 +148,8 @@ export const medicineApi = {
 
   toggleStatus: async (id: number, status: string) => {
     try {
+      medicinesCache = null;
+      medsCacheTimestamp = 0;
       const response = await axiosClient.put(`/medicines/${id}/status`, { status });
       return response.data;
     } catch (error: any) {
@@ -107,6 +161,8 @@ export const medicineApi = {
 
   delete: async (id: number) => {
     try {
+      medicinesCache = null;
+      medsCacheTimestamp = 0;
       const response = await axiosClient.delete(`/medicines/${id}`);
       return response.data;
     } catch (error: any) {
@@ -117,11 +173,16 @@ export const medicineApi = {
   },
 
   // ── MEDICINE CATEGORIES API ────────────────────────────────────────────────
-  getCategories: async () => {
+  getCategories: async (forceRefresh = false) => {
+    const now = Date.now();
+    if (!forceRefresh && categoriesCache && now - catsCacheTimestamp < CACHE_TTL_MS) {
+      return categoriesCache;
+    }
+
     try {
       const response = await axiosClient.get("/medicines/categories");
       const list = Array.isArray(response.data) ? response.data : [];
-      return list.map((item: any) => ({
+      const mapped = list.map((item: any) => ({
         ...item,
         id: item.categoryId || item.id,
         categoryName: item.categoryName || item.name || "",
@@ -131,8 +192,12 @@ export const medicineApi = {
             ? "Đang hoạt động"
             : "Ngưng hoạt động",
       }));
+      categoriesCache = mapped;
+      catsCacheTimestamp = Date.now();
+      return mapped;
     } catch (error) {
       console.warn("medicineApi.getCategories error:", error);
+      if (categoriesCache) return categoriesCache;
       return [];
     }
   },
@@ -150,6 +215,8 @@ export const medicineApi = {
 
   createCategory: async (payload: CreateCategoryPayload) => {
     try {
+      categoriesCache = null;
+      catsCacheTimestamp = 0;
       const response = await axiosClient.post("/medicines/categories", payload);
       return response.data;
     } catch (error: any) {
@@ -161,6 +228,8 @@ export const medicineApi = {
 
   updateCategory: async (id: number, payload: UpdateCategoryPayload) => {
     try {
+      categoriesCache = null;
+      catsCacheTimestamp = 0;
       const response = await axiosClient.put(`/medicines/categories/${id}`, payload);
       return response.data;
     } catch (error: any) {
@@ -172,6 +241,8 @@ export const medicineApi = {
 
   toggleCategoryStatus: async (id: number, status: string) => {
     try {
+      categoriesCache = null;
+      catsCacheTimestamp = 0;
       const response = await axiosClient.put(`/medicines/categories/${id}/status`, { status });
       return response.data;
     } catch (error: any) {
@@ -183,6 +254,8 @@ export const medicineApi = {
 
   deleteCategory: async (id: number) => {
     try {
+      categoriesCache = null;
+      catsCacheTimestamp = 0;
       const response = await axiosClient.delete(`/medicines/categories/${id}`);
       return response.data;
     } catch (error: any) {

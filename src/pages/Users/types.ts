@@ -2,9 +2,11 @@ export type UserStatus =
   | "Active"
   | "Locked"
   | "Inactive"
+  | "OnLeave"
   | "Đang hoạt động"
   | "Đã khóa"
   | "Ngưng hoạt động"
+  | "Nghỉ phép"
   | string;
 
 export type UserRole =

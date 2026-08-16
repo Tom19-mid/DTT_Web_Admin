@@ -111,7 +111,7 @@ export default function MedicineTable({
             </tr>
           </thead>
           <tbody>
-            {loading ? (
+            {loading && medicines.length === 0 ? (
               <tr>
                 <td
                   colSpan={11}

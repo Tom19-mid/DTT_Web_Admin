@@ -260,6 +260,7 @@ export default function PatientFormModal({
   onClose,
   onSave,
   initialData,
+  onAddToast,
 }: PatientFormModalProps) {
   const [fullName, setFullName] = useState("");
   const [dob, setDob] = useState("");
@@ -271,14 +272,12 @@ export default function PatientFormModal({
   const [verificationStatus, setVerificationStatus] = useState<
     VerificationStatus | string
   >("Chờ duyệt");
-  // [FIX] Giá trị mặc định phải khớp với option value trong dropdown ("Admin" hoặc "Lễ tân")
   const [verifiedBy, setVerifiedBy] = useState("Lễ tân");
   const [verificationNote, setVerificationNote] = useState("");
   const [status, setStatus] = useState<PatientStatus | string>(
     "Đang hoạt động",
   );
 
-  // Confirmation Modal state for Approve or Reject verification
   const [confirmType, setConfirmType] = useState<"approve" | "reject" | null>(
     null,
   );
@@ -287,6 +286,14 @@ export default function PatientFormModal({
     Patient | null | undefined
   >(undefined);
   const [prevIsOpen, setPrevIsOpen] = useState(false);
+
+  const notifyError = (message: string) => {
+    if (onAddToast) {
+      onAddToast({ type: "error", message });
+    } else {
+      alert(message);
+    }
+  };
 
   if (initialData !== prevInitialData || isOpen !== prevIsOpen) {
     setPrevInitialData(initialData);
@@ -297,7 +304,6 @@ export default function PatientFormModal({
       setGender(formatGenderVi(initialData.gender) || "");
       setPhone(initialData.phone || initialData.phoneNumber || "");
 
-      // Address: If "Chưa cập nhật" or empty, set to "" so placeholder shows
       const rawAddr = initialData.address || "";
       setAddress(rawAddr === "Chưa cập nhật" ? "" : rawAddr);
 
@@ -328,15 +334,15 @@ export default function PatientFormModal({
   const handleFormSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!fullName.trim()) {
-      alert("Vui lòng nhập Họ tên bệnh nhân!");
+      notifyError("Vui lòng nhập Họ tên bệnh nhân!");
       return;
     }
     if (phone.trim().length > 10) {
-      alert("Số điện thoại không được vượt quá 10 chữ số!");
+      notifyError("Số điện thoại không được vượt quá 10 chữ số!");
       return;
     }
     if (cccdNumber.trim().length > 12) {
-      alert("Số CCCD / CMND không được vượt quá 12 chữ số!");
+      notifyError("Số CCCD / CMND không được vượt quá 12 chữ số!");
       return;
     }
 
@@ -349,18 +355,16 @@ export default function PatientFormModal({
 
     if (verificationStatus === "Đã duyệt") {
       if (!cccdNumber.trim()) {
-        alert(
+        notifyError(
           "Vui lòng nhập số CCCD / CMND để duyệt xác thực hồ sơ bệnh nhân!",
         );
         return;
       }
       if (!verifiedBy.trim()) {
-        alert("Vui lòng nhập Người thực hiện xác thực!");
+        notifyError("Vui lòng nhập Người thực hiện xác thực!");
         return;
       }
 
-      // Nếu trạng thái vừa được đổi sang "Đã duyệt" mới hiện Popup xác nhận.
-      // Nếu đã "Đã duyệt" từ trước thì lưu thẳng thông tin cập nhật không hiện Popup.
       if (!wasApproved) {
         setConfirmType("approve");
         return;
@@ -369,15 +373,14 @@ export default function PatientFormModal({
 
     if (verificationStatus === "Từ chối") {
       if (!verifiedBy.trim()) {
-        alert("Vui lòng nhập Người thực hiện xác thực!");
+        notifyError("Vui lòng nhập Người thực hiện xác thực!");
         return;
       }
       if (!verificationNote.trim()) {
-        alert("Vui lòng nhập Ghi chú xác thực!");
+        notifyError("Vui lòng nhập Ghi chú xác thực!");
         return;
       }
 
-      // Nếu trạng thái vừa được đổi sang "Từ chối" mới hiện Popup xác nhận.
       if (!wasRejected) {
         setConfirmType("reject");
         return;
@@ -387,22 +390,7 @@ export default function PatientFormModal({
     doSave();
   };
 
-  /* [OLD CODE COMMENTED OUT — doSave không async, không await onSave, không try/catch]
-  const doSave = () => {
-    const nowStr = new Date().toISOString().replace("T", " ").substring(0, 19);
-    onSave({...});
-    setConfirmType(null);
-    onClose();
-  };
-  */
-
-  // [BUG FIX] doSave phải là async để await onSave() — nếu không await thì lỗi API bị nuốt im lặng,
-  // modal đóng mà không biết cập nhật đã thất bại hay chưa.
-  // [BUG FIX] nowStr phải dùng .toISOString() chuẩn ISO 8601 (có chữ T, không dấu space).
-  //   Trước đây: new Date().toISOString().replace("T", " ") → "2026-08-10 11:54:23"
-  //   → C# System.Text.Json KHÔNG parse được DateTime? → 400 Bad Request → update thất bại hoàn toàn.
   const doSave = async () => {
-    // ISO 8601 chuẩn: "2026-08-10T11:54:23.000Z" — C# DateTime? chấp nhận format này
     const nowStr = new Date().toISOString();
     try {
       await onSave({
@@ -418,7 +406,6 @@ export default function PatientFormModal({
         specialty: initialData?.specialty || "Nội khoa",
         status: verificationStatus === "Từ chối" ? "Đã khóa" : status,
         verificationStatus,
-        // [BUG FIX] Gửi null khi "Chờ duyệt" để backend xóa verifiedAt; gửi ISO string khi duyệt/từ chối
         verifiedAt: verificationStatus === "Chờ duyệt" ? null : nowStr,
         verifiedBy:
           verificationStatus === "Chờ duyệt"
@@ -437,7 +424,7 @@ export default function PatientFormModal({
       setConfirmType(null);
       onClose();
     } catch (err) {
-      alert(
+      notifyError(
         "Cập nhật thất bại: " +
           (err instanceof Error ? err.message : String(err)),
       );

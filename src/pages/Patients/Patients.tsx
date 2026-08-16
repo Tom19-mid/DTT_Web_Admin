@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
+import { useLocation } from "react-router-dom";
 import patientApi from "../../api/patientApi";
 import type { Patient } from "./types";
 import PatientToolbar from "./components/PatientToolbar";
@@ -13,8 +14,9 @@ import type { Notification } from "../Notifications/types";
 import { Loader2 } from "lucide-react";
 
 export default function Patients() {
-  const [patients, setPatients] = useState<Patient[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
+  const location = useLocation();
+  const [patients, setPatients] = useState<Patient[]>(() => patientApi.getCachedPatients() || []);
+  const [loading, setLoading] = useState<boolean>(() => !patientApi.getCachedPatients());
   const [isFormModalOpen, setIsFormModalOpen] = useState(false);
   const [editingPatient, setEditingPatient] = useState<Patient | null>(null);
   const [viewingPatient, setViewingPatient] = useState<Patient | null>(null);
@@ -45,9 +47,9 @@ export default function Patients() {
     return undefined;
   };
 
-  const reloadPatients = useCallback(async () => {
+  const reloadPatients = useCallback(async (forceRefresh = true) => {
     try {
-      const data = await patientApi.getAll();
+      const data = await patientApi.getAll(forceRefresh);
       setPatients(data);
     } catch (err) {
       console.warn("Lỗi khi tải danh sách bệnh nhân:", err);
@@ -56,7 +58,10 @@ export default function Patients() {
 
   useEffect(() => {
     let isMounted = true;
-    const loadData = async () => {
+    const loadData = async (silent = false) => {
+      if (!silent && !patientApi.getCachedPatients()) {
+        setLoading(true);
+      }
       try {
         const data = await patientApi.getAll();
         if (isMounted) {
@@ -71,11 +76,18 @@ export default function Patients() {
       }
     };
 
-    loadData();
+    loadData(!!patientApi.getCachedPatients());
+
+    const handleFocus = () => {
+      loadData(true);
+    };
+    window.addEventListener("focus", handleFocus);
+
     return () => {
       isMounted = false;
+      window.removeEventListener("focus", handleFocus);
     };
-  }, []);
+  }, [location.key]);
 
   // Statistics based on account status (Optimized with useMemo)
   const { totalPatients, activeCount, inactiveCount, lockedCount } = useMemo(() => {
@@ -126,6 +138,26 @@ export default function Patients() {
     try {
       if (targetId) {
         // Edit mode
+        const notiData: Notification = {
+          notificationId: Date.now(),
+          title: "Cập nhật hồ sơ bệnh nhân",
+          content: `Hệ thống vừa cập nhật thông tin hồ sơ bệnh nhân "${patientName}" (Mã: #${targetId}).`,
+          type: "system",
+          isRead: false,
+          createdAt: new Date().toISOString(),
+          userId: adminUserId,
+        };
+
+        addToast({
+          type: "success",
+          title: "Cập nhật hồ sơ bệnh nhân",
+          message: `Đã cập nhật thông tin hồ sơ bệnh nhân "${patientName}" thành công!`,
+          onClick: () => setViewingNotification(notiData),
+        });
+
+        // Trigger notification immediately for instant bell badge update
+        notificationApi.create(notiData).catch((e) => console.warn("Lỗi tạo thông báo:", e));
+
         const rawDob = patientData.dob || patientData.dateOfBirth || "";
         let isoDateOfBirth: string | undefined = undefined;
         if (rawDob && rawDob.includes("/")) {
@@ -151,22 +183,31 @@ export default function Patients() {
           verificationNote: patientData.verificationNote || undefined,
           verifiedAt: patientData.verifiedAt || undefined,
         });
+      } else {
+        // Add mode
+        setEditingPatient(null);
+        setIsFormModalOpen(false);
 
-        const createdNoti = await notificationApi.create({
-          title: "Cập nhật hồ sơ bệnh nhân",
-          content: `Hệ thống vừa cập nhật thông tin hồ sơ bệnh nhân "${patientName}" (Mã: #${targetId}).`,
-          type: "system",
+        const notiData: Notification = {
+          notificationId: Date.now(),
+          title: "Thêm bệnh nhân mới",
+          content: `Đã khởi tạo thành công hồ sơ bệnh nhân "${patientName}".`,
+          type: "PATIENT_REGISTERED",
+          isRead: false,
+          createdAt: new Date().toISOString(),
           userId: adminUserId,
-        });
+        };
 
         addToast({
           type: "success",
-          title: "Cập nhật hồ sơ bệnh nhân",
-          message: `Đã cập nhật thông tin hồ sơ bệnh nhân "${patientName}" thành công!`,
-          onClick: createdNoti ? () => setViewingNotification(createdNoti) : undefined,
+          title: "Thêm bệnh nhân mới",
+          message: `Đã tạo mới hồ sơ bệnh nhân "${patientName}" thành công!`,
+          onClick: () => setViewingNotification(notiData),
         });
-      } else {
-        // Add mode
+
+        // Trigger notification immediately for instant bell badge update
+        notificationApi.create(notiData).catch((e) => console.warn("Lỗi tạo thông báo:", e));
+
         await patientApi.create({
           fullName: patientData.fullName || "Bệnh nhân mới",
           phone: patientData.phone || patientData.phoneNumber || "",
@@ -175,25 +216,12 @@ export default function Patients() {
           cccdNumber: patientData.cccdNumber || "",
           healthInsuranceNumber: patientData.healthInsuranceNumber || "",
         });
-
-        const createdNoti = await notificationApi.create({
-          title: "Thêm bệnh nhân mới",
-          content: `Đã khởi tạo thành công hồ sơ bệnh nhân "${patientName}".`,
-          type: "PATIENT_REGISTERED",
-          userId: adminUserId,
-        });
-
-        addToast({
-          type: "success",
-          title: "Thêm bệnh nhân mới",
-          message: `Đã tạo mới hồ sơ bệnh nhân "${patientName}" thành công!`,
-          onClick: createdNoti ? () => setViewingNotification(createdNoti) : undefined,
-        });
       }
 
-      await reloadPatients();
+      reloadPatients();
     } catch (err) {
       console.error("handleSavePatient error:", err);
+      reloadPatients();
       addToast({
         type: "error",
         title: "Lỗi thao tác",
@@ -215,7 +243,7 @@ export default function Patients() {
         lockedCount={lockedCount}
       />
 
-      {loading ? (
+      {loading && patients.length === 0 ? (
         <div className="py-24 flex flex-col justify-center items-center">
           <Loader2 className="animate-spin text-blue-700 mb-3" size={36} />
           <p className="text-gray-600 font-medium text-base">
@@ -244,6 +272,7 @@ export default function Patients() {
         onClose={() => setIsFormModalOpen(false)}
         onSave={handleSavePatient}
         initialData={editingPatient}
+        onAddToast={addToast}
       />
 
       {/* Notification Detail Modal triggered on Toast click */}

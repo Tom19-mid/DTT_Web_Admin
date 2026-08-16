@@ -71,6 +71,7 @@ export default function DoctorRow({
           onViewDetail={() => onViewDetail && onViewDetail(doctor)}
           onEdit={() => onEdit && onEdit(doctor)}
           onLock={() => onLock && onLock(doctor)}
+          isLocked={doctor.status === "Đã khóa" || doctor.status === "Locked"}
         />
       </td>
     </tr>

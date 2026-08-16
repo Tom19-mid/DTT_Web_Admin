@@ -20,19 +20,31 @@ export default function DoctorTable({
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedStatus, setSelectedStatus] = useState("ALL");
   const [selectedSpecialty, setSelectedSpecialty] = useState("ALL");
+  const [selectedDoctor, setSelectedDoctor] = useState("ALL");
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
 
   const specialties = useMemo(() => {
     const specSet = new Set<string>();
-    doctors.forEach((d) => specSet.add(d.specialty));
+    doctors.forEach((d) => {
+      if (d.specialty) specSet.add(d.specialty);
+    });
     return Array.from(specSet);
+  }, [doctors]);
+
+  const doctorOptions = useMemo(() => {
+    const docSet = new Set<string>();
+    doctors.forEach((d) => {
+      if (d.fullName) docSet.add(d.fullName);
+    });
+    return Array.from(docSet);
   }, [doctors]);
 
   const handleReset = () => {
     setSearchTerm("");
     setSelectedStatus("ALL");
     setSelectedSpecialty("ALL");
+    setSelectedDoctor("ALL");
     setCurrentPage(1);
   };
 
@@ -51,9 +63,12 @@ export default function DoctorTable({
       const matchesSpecialty =
         selectedSpecialty === "ALL" || doctor.specialty === selectedSpecialty;
 
-      return matchesSearch && matchesStatus && matchesSpecialty;
+      const matchesDoctor =
+        selectedDoctor === "ALL" || doctor.fullName === selectedDoctor;
+
+      return matchesSearch && matchesStatus && matchesSpecialty && matchesDoctor;
     });
-  }, [doctors, searchTerm, selectedStatus, selectedSpecialty]);
+  }, [doctors, searchTerm, selectedStatus, selectedSpecialty, selectedDoctor]);
 
   // Pagination calculation
   const totalPages = Math.ceil(filteredDoctors.length / itemsPerPage) || 1;
@@ -81,6 +96,12 @@ export default function DoctorTable({
           setCurrentPage(1);
         }}
         specialties={specialties}
+        selectedDoctor={selectedDoctor}
+        onDoctorChange={(val) => {
+          setSelectedDoctor(val);
+          setCurrentPage(1);
+        }}
+        doctorOptions={doctorOptions}
         onReset={handleReset}
       />
 
