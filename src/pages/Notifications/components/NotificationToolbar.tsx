@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { Search, Filter, ChevronDown, Check, RotateCcw, CheckCheck, Trash2, Bell, BellOff } from "lucide-react";
+import { Search, Filter, ChevronDown, Check, RotateCcw, CheckCheck, Trash2, Bell, BellOff, Plus } from "lucide-react";
 
 interface NotificationToolbarProps {
   searchTerm: string;
@@ -11,6 +11,7 @@ interface NotificationToolbarProps {
   onMarkAllAsRead: () => void;
   onClearReadNotifications: () => void;
   onShowAll: () => void;
+  onOpenCreateModal?: () => void;
 }
 
 const statusOptions = [
@@ -29,6 +30,7 @@ export default function NotificationToolbar({
   onMarkAllAsRead,
   onClearReadNotifications,
   onShowAll,
+  onOpenCreateModal,
 }: NotificationToolbarProps) {
   const [isStatusOpen, setIsStatusOpen] = useState(false);
 
@@ -59,10 +61,20 @@ export default function NotificationToolbar({
         </div>
 
         <div className="flex items-center gap-2.5">
+          {onOpenCreateModal && (
+            <button
+              onClick={onOpenCreateModal}
+              className="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-bold px-4 py-2.5 rounded-xl shadow-xs transition cursor-pointer text-base active:scale-95"
+            >
+              <Plus size={18} />
+              <span>Tạo thông báo mới</span>
+            </button>
+          )}
+
           {unreadCount > 0 && (
             <button
               onClick={onMarkAllAsRead}
-              className="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-bold px-4 py-2.5 rounded-xl shadow-sm transition cursor-pointer text-base active:scale-95"
+              className="inline-flex items-center gap-2 border border-blue-200 bg-blue-50 hover:bg-blue-100 text-blue-700 font-bold px-4 py-2.5 rounded-xl shadow-2xs transition cursor-pointer text-base active:scale-95"
             >
               <CheckCheck size={18} />
               <span>Đánh dấu tất cả đã đọc</span>

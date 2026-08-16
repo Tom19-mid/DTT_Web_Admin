@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { initialWorkSchedules } from "./data";
 import type { WorkSchedule, DoctorItem } from "./types";
 import ScheduleToolbar from "./components/ScheduleToolbar";
@@ -9,6 +9,10 @@ import WorkScheduleDetailModal from "./components/WorkScheduleDetailModal";
 import ConfirmLockScheduleModal from "./components/ConfirmLockScheduleModal";
 import workScheduleApi from "../../api/workScheduleApi";
 import doctorApi from "../../api/doctorApi";
+import ToastNotification, { type ToastMessage } from "../../components/common/ToastNotification";
+import { notificationApi } from "../../api/notificationApi";
+import NotificationDetailModal from "../Notifications/components/NotificationDetailModal";
+import type { Notification } from "../Notifications/types";
 import { CalendarDays, Clock, Loader2 } from "lucide-react";
 
 export default function WorkSchedules() {
@@ -34,6 +38,32 @@ export default function WorkSchedules() {
   const [scheduleToLock, setScheduleToLock] = useState<WorkSchedule | null>(
     null,
   );
+  const [toasts, setToasts] = useState<ToastMessage[]>([]);
+  const [viewingNotification, setViewingNotification] = useState<Notification | null>(null);
+
+  const addToast = useCallback((item: Omit<ToastMessage, "id">) => {
+    const id = Date.now().toString() + "_" + Math.random().toString(36).substring(2, 9);
+    setToasts((prev) => [{ ...item, id }, ...prev]);
+  }, []);
+
+  const removeToast = useCallback((id?: string) => {
+    if (id) {
+      setToasts((prev) => prev.filter((t) => t.id !== id));
+    } else {
+      setToasts([]);
+    }
+  }, []);
+
+  const getLoggedInAdminUserId = (): string | undefined => {
+    try {
+      const savedUser = localStorage.getItem("user");
+      if (savedUser) {
+        const parsed = JSON.parse(savedUser);
+        return parsed?.userId || parsed?.id;
+      }
+    } catch (e) {}
+    return undefined;
+  };
 
   // Fetch data from Back-End API
   const fetchSchedules = async (showLoading = false) => {
@@ -57,10 +87,29 @@ export default function WorkSchedules() {
   };
 
   useEffect(() => {
-    fetchSchedules(true);
-    doctorApi.getAll().then((docList) => {
-      if (Array.isArray(docList)) setDoctors(docList);
-    });
+    let isMounted = true;
+    setIsLoading(true);
+    Promise.all([workScheduleApi.getAll(), doctorApi.getAll()])
+      .then(([schData, docList]) => {
+        if (!isMounted) return;
+        if (Array.isArray(schData) && schData.length > 0) {
+          setSchedules(schData);
+        } else {
+          setSchedules(initialWorkSchedules);
+        }
+        if (Array.isArray(docList)) setDoctors(docList);
+      })
+      .catch((error) => {
+        console.warn("Lỗi tải dữ liệu song song trong WorkSchedules:", error);
+        if (isMounted) setSchedules(initialWorkSchedules);
+      })
+      .finally(() => {
+        if (isMounted) setIsLoading(false);
+      });
+
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   // Statistics
@@ -109,36 +158,38 @@ export default function WorkSchedules() {
   const handleConfirmLock = async () => {
     if (!scheduleToLock?.scheduleId) return;
 
+    const docName = scheduleToLock.doctorName || "bác sĩ";
+    const schId = scheduleToLock.scheduleId;
+    const adminUserId = getLoggedInAdminUserId();
+    const isCurrentlyLocked = scheduleToLock.status === "Không hoạt động";
+
     try {
-      const isCurrentlyLocked = scheduleToLock.status === "Không hoạt động";
       await workScheduleApi.toggleLock(
         scheduleToLock.scheduleId,
         !isCurrentlyLocked,
       );
       await fetchSchedules(false);
+
+      const createdNoti = await notificationApi.create({
+        title: "Khóa / Đổi trạng thái lịch làm việc",
+        content: `Lịch làm việc #${schId} của bác sĩ "${docName}" đã chuyển sang trạng thái ${!isCurrentlyLocked ? "Không hoạt động / Đã khóa" : "Hoạt động trở lại"}.`,
+        type: "system",
+        userId: adminUserId,
+      });
+
+      addToast({
+        type: "success",
+        title: "Khóa lịch làm việc",
+        message: `Đã cập nhật trạng thái lịch làm việc #${schId} của bác sĩ "${docName}" thành công!`,
+        onClick: createdNoti ? () => setViewingNotification(createdNoti) : undefined,
+      });
     } catch (error: any) {
       console.error("Lỗi khi khóa/mở khóa lịch làm việc:", error);
-      setSchedules((prev) =>
-        prev.map((item) => {
-          if (item.scheduleId === scheduleToLock.scheduleId) {
-            const isCurrentlyLocked = item.status === "Không hoạt động";
-            const updatedSlots = (item.timeSlots || []).map((slot) => {
-              if (slot.status === "Đã đặt lịch") return slot;
-              return !isCurrentlyLocked
-                ? { ...slot, status: "Đã đóng" as const }
-                : { ...slot, status: "Chưa đặt lịch" as const };
-            });
-            return {
-              ...item,
-              status: !isCurrentlyLocked
-                ? "Không hoạt động"
-                : "Còn lịch để đặt",
-              timeSlots: updatedSlots,
-            };
-          }
-          return item;
-        }),
-      );
+      addToast({
+        type: "error",
+        title: "Lỗi thao tác",
+        message: error.message || "Lỗi khi cập nhật trạng thái lịch làm việc!",
+      });
     } finally {
       setIsLockModalOpen(false);
       setScheduleToLock(null);
@@ -146,6 +197,9 @@ export default function WorkSchedules() {
   };
 
   const handleSaveSchedule = async (savedData: WorkSchedule) => {
+    const docName = savedData.doctorName || "bác sĩ";
+    const adminUserId = getLoggedInAdminUserId();
+
     try {
       let docId = savedData.doctorId || 1;
       if (savedData.doctorName && doctors.length > 0) {
@@ -162,7 +216,8 @@ export default function WorkSchedules() {
       }
 
       if (editingSchedule && editingSchedule.scheduleId) {
-        await workScheduleApi.update(editingSchedule.scheduleId, {
+        const schId = editingSchedule.scheduleId;
+        await workScheduleApi.update(schId, {
           doctorId: docId,
           doctorName: savedData.doctorName,
           workDate: savedData.workDate,
@@ -170,6 +225,20 @@ export default function WorkSchedules() {
           endTime: savedData.endTime,
           status: savedData.status,
           timeSlots: savedData.timeSlots,
+        });
+
+        const createdNoti = await notificationApi.create({
+          title: "Cập nhật lịch làm việc",
+          content: `Hệ thống vừa cập nhật thông tin lịch làm việc #${schId} của bác sĩ "${docName}".`,
+          type: "system",
+          userId: adminUserId,
+        });
+
+        addToast({
+          type: "success",
+          title: "Cập nhật lịch làm việc",
+          message: `Đã cập nhật lịch làm việc #${schId} của bác sĩ "${docName}" thành công!`,
+          onClick: createdNoti ? () => setViewingNotification(createdNoti) : undefined,
         });
       } else {
         await workScheduleApi.create({
@@ -180,24 +249,37 @@ export default function WorkSchedules() {
           endTime: savedData.endTime || "12:00",
           status: savedData.status || "Trống lịch",
         });
+
+        const createdNoti = await notificationApi.create({
+          title: "Thêm lịch làm việc mới",
+          content: `Đã tạo mới thành công lịch làm việc cho bác sĩ "${docName}" vào ngày ${savedData.workDate || ""}.`,
+          type: "system",
+          userId: adminUserId,
+        });
+
+        addToast({
+          type: "success",
+          title: "Thêm lịch làm việc",
+          message: `Đã thêm mới lịch làm việc của bác sĩ "${docName}" thành công!`,
+          onClick: createdNoti ? () => setViewingNotification(createdNoti) : undefined,
+        });
       }
       await fetchSchedules(false);
     } catch (error: any) {
       console.error("Lỗi khi lưu lịch làm việc:", error);
-      if (editingSchedule) {
-        setSchedules((prev) =>
-          prev.map((item) =>
-            item.scheduleId === savedData.scheduleId ? savedData : item,
-          ),
-        );
-      } else {
-        setSchedules((prev) => [...prev, savedData]);
-      }
+      addToast({
+        type: "error",
+        title: "Lỗi thao tác",
+        message: error.message || "Lỗi khi lưu thông tin lịch làm việc!",
+      });
     }
   };
 
   return (
-    <div className="p-7 bg-[#f4f6f9] min-h-screen">
+    <div className="p-7 bg-[#f4f6f9] min-h-screen relative">
+      {/* Top-Right 3s Stacked Toast Notifications */}
+      <ToastNotification toasts={toasts} onClose={removeToast} />
+
       {/* Navigation Header & Main 2 Tabs */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
         <div>
@@ -297,6 +379,16 @@ export default function WorkSchedules() {
           setScheduleToLock(null);
         }}
         onConfirm={handleConfirmLock}
+      />
+
+      {/* Notification Detail Modal triggered on Toast click */}
+      <NotificationDetailModal
+        notification={viewingNotification}
+        onClose={() => setViewingNotification(null)}
+        onDelete={async (id) => {
+          await notificationApi.delete(id);
+          setViewingNotification(null);
+        }}
       />
     </div>
   );

@@ -1,10 +1,14 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import userApi from "../../api/userApi";
 import type { User } from "./types";
 import UserToolbar from "./components/UserToolbar";
 import UserTable from "./components/UserTable";
 import UserFormModal from "./components/UserFormModal";
 import ConfirmLockModal from "./components/ConfirmLockModal";
+import ToastNotification, { type ToastMessage } from "../../components/common/ToastNotification";
+import { notificationApi } from "../../api/notificationApi";
+import NotificationDetailModal from "../Notifications/components/NotificationDetailModal";
+import type { Notification } from "../Notifications/types";
 import { Loader2 } from "lucide-react";
 
 export default function Users() {
@@ -13,6 +17,32 @@ export default function Users() {
   const [isFormModalOpen, setIsFormModalOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [lockingUser, setLockingUser] = useState<User | null>(null);
+  const [toasts, setToasts] = useState<ToastMessage[]>([]);
+  const [viewingNotification, setViewingNotification] = useState<Notification | null>(null);
+
+  const addToast = useCallback((item: Omit<ToastMessage, "id">) => {
+    const id = Date.now().toString() + "_" + Math.random().toString(36).substring(2, 9);
+    setToasts((prev) => [{ ...item, id }, ...prev]);
+  }, []);
+
+  const removeToast = useCallback((id?: string) => {
+    if (id) {
+      setToasts((prev) => prev.filter((t) => t.id !== id));
+    } else {
+      setToasts([]);
+    }
+  }, []);
+
+  const getLoggedInAdminUserId = (): string | undefined => {
+    try {
+      const savedUser = localStorage.getItem("user");
+      if (savedUser) {
+        const parsed = JSON.parse(savedUser);
+        return parsed?.userId || parsed?.id;
+      }
+    } catch (e) {}
+    return undefined;
+  };
 
   const reloadUsers = useCallback(async () => {
     try {
@@ -46,11 +76,24 @@ export default function Users() {
     };
   }, []);
 
-  // Statistics
-  const totalUsers = users.length;
-  const activeCount = users.filter((u) => u.status === "Đang hoạt động" || u.status === "Active").length;
-  const inactiveCount = users.filter((u) => u.status === "Ngưng hoạt động" || u.status === "Inactive").length;
-  const lockedCount = users.filter((u) => u.status === "Đã khóa" || u.status === "Locked").length;
+  // Statistics based on account status (Optimized with useMemo)
+  const { totalUsers, activeCount, inactiveCount, lockedCount } = useMemo(() => {
+    let active = 0,
+      inactive = 0,
+      locked = 0;
+    users.forEach((u) => {
+      const st = u.status || "Active";
+      if (st === "Active" || st === "Đang hoạt động") active++;
+      else if (st === "Inactive" || st === "Ngưng hoạt động") inactive++;
+      else if (st === "Locked" || st === "Đã khóa") locked++;
+    });
+    return {
+      totalUsers: users.length,
+      activeCount: active,
+      inactiveCount: inactive,
+      lockedCount: locked,
+    };
+  }, [users]);
 
   // Open modal for adding new user
   const handleOpenAddModal = () => {
@@ -65,22 +108,12 @@ export default function Users() {
   };
 
   // Save (Add or Edit) user
-  const handleSaveUser = async (userData: Omit<User, "id" | "stt"> & { id?: string | number }): Promise<void> => {
-    const roleToIdMap: Record<string, number> = {
-      Admin: 1,
-      "Quản trị viên": 1,
-      "Bác sĩ": 2,
-      Doctor: 2,
-      "Bệnh nhân": 3,
-      Patient: 3,
-      "Lễ tân tiếp đón": 4,
-      "Điều dưỡng": 5,
-      "Kỹ thuật viên CLS": 6,
-      "Dược sĩ": 7,
-    };
-
-    const targetRoleId = roleToIdMap[String(userData.role)] || 3;
+  const handleSaveUser = async (userData: any) => {
     const targetUserId = userData.userId || userData.id;
+    const userName = userData.fullName || userData.email || "Tài khoản";
+    const roleName = userData.roleName || (userData.roleId === 1 ? "Admin" : userData.roleId === 2 ? "Bác sĩ" : "Bệnh nhân");
+    const targetRoleId = Number(userData.roleId) || 3;
+    const adminUserId = getLoggedInAdminUserId();
 
     if (targetUserId) {
       // Edit mode
@@ -88,8 +121,22 @@ export default function Users() {
         email: userData.email,
         phone: userData.phone || userData.phoneNumber,
         roleId: targetRoleId,
-        fullName: userData.fullName || userData.email?.split("@")[0] || "Người dùng",
+        fullName: userName,
         status: userData.status,
+      });
+
+      const createdNoti = await notificationApi.create({
+        title: "Cập nhật tài khoản",
+        content: `Hệ thống vừa cập nhật thông tin tài khoản "${userName}" (${roleName}).`,
+        type: "system",
+        userId: adminUserId,
+      });
+
+      addToast({
+        type: "success",
+        title: "Cập nhật tài khoản",
+        message: `Đã cập nhật thông tin tài khoản "${userName}" thành công!`,
+        onClick: createdNoti ? () => setViewingNotification(createdNoti) : undefined,
       });
     } else {
       // Add mode
@@ -97,8 +144,22 @@ export default function Users() {
         email: userData.email || "",
         phone: userData.phone || userData.phoneNumber || "",
         roleId: targetRoleId,
-        fullName: userData.fullName || userData.email?.split("@")[0] || "Người dùng mới",
+        fullName: userName,
         status: userData.status || "Active",
+      });
+
+      const createdNoti = await notificationApi.create({
+        title: "Thêm tài khoản mới",
+        content: `Đã tạo mới thành công tài khoản "${userName}" với vai trò ${roleName}.`,
+        type: "PATIENT_REGISTERED",
+        userId: adminUserId,
+      });
+
+      addToast({
+        type: "success",
+        title: "Thêm mới tài khoản",
+        message: `Đã thêm mới tài khoản "${userName}" (${roleName}) thành công!`,
+        onClick: createdNoti ? () => setViewingNotification(createdNoti) : undefined,
       });
     }
 
@@ -114,13 +175,34 @@ export default function Users() {
   const handleConfirmLock = async () => {
     if (lockingUser) {
       const targetUserId = lockingUser.userId || lockingUser.id;
+      const userName = lockingUser.fullName || lockingUser.email || "Tài khoản";
+      const adminUserId = getLoggedInAdminUserId();
+
       if (targetUserId) {
         try {
           await userApi.updateStatus(targetUserId, "Đã khóa");
           await reloadUsers();
+
+          const createdNoti = await notificationApi.create({
+            title: "Khóa tài khoản",
+            content: `Tài khoản "${userName}" đã được chuyển sang trạng thái Đã khóa.`,
+            type: "system",
+            userId: adminUserId,
+          });
+
+          addToast({
+            type: "success",
+            title: "Khóa tài khoản",
+            message: `Đã khóa tài khoản "${userName}" thành công!`,
+            onClick: createdNoti ? () => setViewingNotification(createdNoti) : undefined,
+          });
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         } catch (err: any) {
-          alert(err?.message || "Không thể khóa tài khoản.");
+          addToast({
+            type: "error",
+            title: "Lỗi thao tác",
+            message: err?.message || "Không thể khóa tài khoản.",
+          });
         }
       }
       setLockingUser(null);
@@ -128,7 +210,10 @@ export default function Users() {
   };
 
   return (
-    <div className="p-7 bg-[#f4f6f9] min-h-screen">
+    <div className="p-7 bg-[#f4f6f9] min-h-screen relative">
+      {/* Top-Right 3s Stacked Toast Notifications */}
+      <ToastNotification toasts={toasts} onClose={removeToast} />
+
       <UserToolbar
         onAddUser={handleOpenAddModal}
         totalUsers={totalUsers}
@@ -164,6 +249,16 @@ export default function Users() {
         user={lockingUser}
         onClose={() => setLockingUser(null)}
         onConfirm={handleConfirmLock}
+      />
+
+      {/* Notification Detail Modal triggered on Toast click */}
+      <NotificationDetailModal
+        notification={viewingNotification}
+        onClose={() => setViewingNotification(null)}
+        onDelete={async (id) => {
+          await notificationApi.delete(id);
+          setViewingNotification(null);
+        }}
       />
     </div>
   );

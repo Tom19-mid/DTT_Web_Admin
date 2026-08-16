@@ -9,6 +9,10 @@ import ConfirmLockModal from "./components/ConfirmLockModal";
 import DoctorLeaves from "../DoctorLeaves/DoctorLeaves";
 import { doctorApi } from "../../api/doctorApi";
 import { specialtyApi } from "../../api/specialtyApi";
+import ToastNotification, { type ToastMessage } from "../../components/common/ToastNotification";
+import { notificationApi } from "../../api/notificationApi";
+import NotificationDetailModal from "../Notifications/components/NotificationDetailModal";
+import type { Notification } from "../Notifications/types";
 
 interface DoctorsProps {
   defaultTab?: "doctors" | "leaves";
@@ -32,6 +36,32 @@ export default function Doctors({ defaultTab = "doctors" }: DoctorsProps) {
   const [editingDoctor, setEditingDoctor] = useState<Doctor | null>(null);
   const [viewingDoctor, setViewingDoctor] = useState<Doctor | null>(null);
   const [lockingDoctor, setLockingDoctor] = useState<Doctor | null>(null);
+  const [toasts, setToasts] = useState<ToastMessage[]>([]);
+  const [viewingNotification, setViewingNotification] = useState<Notification | null>(null);
+
+  const addToast = useCallback((item: Omit<ToastMessage, "id">) => {
+    const id = Date.now().toString() + "_" + Math.random().toString(36).substring(2, 9);
+    setToasts((prev) => [{ ...item, id }, ...prev]);
+  }, []);
+
+  const removeToast = useCallback((id?: string) => {
+    if (id) {
+      setToasts((prev) => prev.filter((t) => t.id !== id));
+    } else {
+      setToasts([]);
+    }
+  }, []);
+
+  const getLoggedInAdminUserId = (): string | undefined => {
+    try {
+      const savedUser = localStorage.getItem("user");
+      if (savedUser) {
+        const parsed = JSON.parse(savedUser);
+        return parsed?.userId || parsed?.id;
+      }
+    } catch (e) {}
+    return undefined;
+  };
 
   // Fetch doctors list from Backend API
   const fetchDoctors = useCallback(async () => {
@@ -131,6 +161,8 @@ export default function Doctors({ defaultTab = "doctors" }: DoctorsProps) {
   // Save (Add or Edit) doctor via API
   const handleSaveDoctor = async (doctorData: any) => {
     const targetId = doctorData.doctorId || doctorData.id;
+    const docName = doctorData.fullName || "bác sĩ";
+    const adminUserId = getLoggedInAdminUserId();
 
     // Find specialtyId by matched name
     let selectedSpecId = doctorData.specialtyId;
@@ -145,48 +177,85 @@ export default function Doctors({ defaultTab = "doctors" }: DoctorsProps) {
 
     const avatarValue = doctorData.avatar || doctorData.avatarUrl || "";
 
-    if (targetId) {
-      // Edit mode
-      await doctorApi.update(targetId, {
-        fullName: doctorData.fullName,
-        degree: doctorData.degree || doctorData.qualifications,
-        experienceYears:
-          Number(doctorData.experienceYears || doctorData.experience) || 0,
-        clinicRoom: doctorData.clinicRoom,
-        specialtyId: selectedSpecId,
-        phone: doctorData.phone,
-        email: doctorData.email,
-        status: doctorData.status,
-        avatar: avatarValue,
-        avatarUrl: avatarValue,
-        leaveStartDate: doctorData.leaveStartDate,
-        leaveEndDate: doctorData.leaveEndDate,
-        leaveReason: doctorData.leaveReason,
-        leaveStatus: doctorData.leaveStatus,
-      });
-    } else {
-      // Add mode
-      await doctorApi.create({
-        fullName: doctorData.fullName,
-        degree: doctorData.degree || doctorData.qualifications,
-        experienceYears:
-          Number(doctorData.experienceYears || doctorData.experience) || 0,
-        clinicRoom: doctorData.clinicRoom,
-        specialtyId: selectedSpecId || 1,
-        phone: doctorData.phone || "",
-        email: doctorData.email,
-        status: doctorData.status || "Active",
-        avatar: avatarValue,
-        avatarUrl: avatarValue,
-        leaveStartDate: doctorData.leaveStartDate,
-        leaveEndDate: doctorData.leaveEndDate,
-        leaveReason: doctorData.leaveReason,
-        leaveStatus: doctorData.leaveStatus,
+    try {
+      if (targetId) {
+        // Edit mode
+        await doctorApi.update(targetId, {
+          fullName: doctorData.fullName,
+          degree: doctorData.degree || doctorData.qualifications,
+          experienceYears:
+            Number(doctorData.experienceYears || doctorData.experience) || 0,
+          clinicRoom: doctorData.clinicRoom,
+          specialtyId: selectedSpecId,
+          phone: doctorData.phone,
+          email: doctorData.email,
+          status: doctorData.status,
+          avatar: avatarValue,
+          avatarUrl: avatarValue,
+          leaveStartDate: doctorData.leaveStartDate,
+          leaveEndDate: doctorData.leaveEndDate,
+          leaveReason: doctorData.leaveReason,
+          leaveStatus: doctorData.leaveStatus,
+        });
+
+        const createdNoti = await notificationApi.create({
+          title: "Cập nhật thông tin bác sĩ",
+          content: `Hệ thống vừa cập nhật thông tin bác sĩ "${docName}".`,
+          type: "system",
+          userId: adminUserId,
+        });
+
+        addToast({
+          type: "success",
+          title: "Cập nhật bác sĩ",
+          message: `Đã cập nhật thông tin bác sĩ "${docName}" thành công!`,
+          onClick: createdNoti ? () => setViewingNotification(createdNoti) : undefined,
+        });
+      } else {
+        // Add mode
+        await doctorApi.create({
+          fullName: doctorData.fullName,
+          degree: doctorData.degree || doctorData.qualifications,
+          experienceYears:
+            Number(doctorData.experienceYears || doctorData.experience) || 0,
+          clinicRoom: doctorData.clinicRoom,
+          specialtyId: selectedSpecId || 1,
+          phone: doctorData.phone || "",
+          email: doctorData.email,
+          status: doctorData.status || "Active",
+          avatar: avatarValue,
+          avatarUrl: avatarValue,
+          leaveStartDate: doctorData.leaveStartDate,
+          leaveEndDate: doctorData.leaveEndDate,
+          leaveReason: doctorData.leaveReason,
+          leaveStatus: doctorData.leaveStatus,
+        });
+
+        const createdNoti = await notificationApi.create({
+          title: "Thêm bác sĩ mới",
+          content: `Đã tạo mới hồ sơ thông tin bác sĩ "${docName}".`,
+          type: "system",
+          userId: adminUserId,
+        });
+
+        addToast({
+          type: "success",
+          title: "Thêm bác sĩ mới",
+          message: `Đã thêm mới bác sĩ "${docName}" thành công!`,
+          onClick: createdNoti ? () => setViewingNotification(createdNoti) : undefined,
+        });
+      }
+
+      // Refresh list from Backend
+      await fetchDoctors();
+    } catch (error: any) {
+      console.error("Lỗi lưu thông tin bác sĩ:", error);
+      addToast({
+        type: "error",
+        title: "Lỗi thao tác",
+        message: "Không thể lưu thông tin bác sĩ. Vui lòng thử lại.",
       });
     }
-
-    // Refresh list from Backend
-    await fetchDoctors();
   };
 
   // Open lock confirmation modal
@@ -198,12 +267,34 @@ export default function Doctors({ defaultTab = "doctors" }: DoctorsProps) {
   const handleConfirmLock = async () => {
     if (lockingDoctor) {
       const targetId = lockingDoctor.doctorId || lockingDoctor.id;
+      const docName = lockingDoctor.fullName || "bác sĩ";
+      const adminUserId = getLoggedInAdminUserId();
+
       if (targetId) {
         try {
           await doctorApi.updateStatus(targetId, "Đã khóa");
           await fetchDoctors();
+
+          const createdNoti = await notificationApi.create({
+            title: "Khóa tài khoản bác sĩ",
+            content: `Tài khoản bác sĩ "${docName}" đã chuyển sang trạng thái Đã khóa.`,
+            type: "system",
+            userId: adminUserId,
+          });
+
+          addToast({
+            type: "success",
+            title: "Khóa tài khoản bác sĩ",
+            message: `Đã khóa tài khoản bác sĩ "${docName}" thành công!`,
+            onClick: createdNoti ? () => setViewingNotification(createdNoti) : undefined,
+          });
         } catch (error) {
           console.error("Lỗi khi khóa tài khoản bác sĩ:", error);
+          addToast({
+            type: "error",
+            title: "Lỗi thao tác",
+            message: "Không thể khóa tài khoản bác sĩ.",
+          });
         }
       }
       setLockingDoctor(null);
@@ -211,7 +302,9 @@ export default function Doctors({ defaultTab = "doctors" }: DoctorsProps) {
   };
 
   return (
-    <div className="p-7 bg-[#f4f6f9] min-h-screen">
+    <div className="p-7 bg-[#f4f6f9] min-h-screen relative">
+      {/* Top-Right 3s Stacked Toast Notifications */}
+      <ToastNotification toasts={toasts} onClose={removeToast} />
       {/* Navigation Header & Main 2 Tabs */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
         <div>
@@ -311,6 +404,16 @@ export default function Doctors({ defaultTab = "doctors" }: DoctorsProps) {
 
       {/* Tab 2: Doctor Leave Management View */}
       {activeTab === "leaves" && <DoctorLeaves />}
+
+      {/* Notification Detail Modal triggered on Toast click */}
+      <NotificationDetailModal
+        notification={viewingNotification}
+        onClose={() => setViewingNotification(null)}
+        onDelete={async (id) => {
+          await notificationApi.delete(id);
+          setViewingNotification(null);
+        }}
+      />
     </div>
   );
 }
