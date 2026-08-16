@@ -1,5 +1,7 @@
+import { useEffect } from "react";
 import { X, Calendar, Clock, User, Check, Trash2, Tag, Info } from "lucide-react";
 import type { Notification } from "../types";
+import { notificationApi } from "../../../api/notificationApi";
 
 interface NotificationDetailModalProps {
   notification: Notification | null;
@@ -12,6 +14,12 @@ export default function NotificationDetailModal({
   onClose,
   onDelete,
 }: NotificationDetailModalProps) {
+  useEffect(() => {
+    if (notification && !notification.isRead) {
+      notificationApi.markAsRead(notification.notificationId);
+    }
+  }, [notification]);
+
   if (!notification) return null;
 
   const getTypeBadge = () => {

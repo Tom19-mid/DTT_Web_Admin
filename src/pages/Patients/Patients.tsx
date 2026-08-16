@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import patientApi from "../../api/patientApi";
 import type { Patient } from "./types";
 import PatientToolbar from "./components/PatientToolbar";
@@ -6,6 +6,10 @@ import PatientTable from "./components/PatientTable";
 import PatientFormModal from "./components/PatientFormModal";
 import PatientDetailModal from "./components/PatientDetailModal";
 import { getPatientAccountStatus } from "./components/PatientRow";
+import ToastNotification, { type ToastMessage } from "../../components/common/ToastNotification";
+import { notificationApi } from "../../api/notificationApi";
+import NotificationDetailModal from "../Notifications/components/NotificationDetailModal";
+import type { Notification } from "../Notifications/types";
 import { Loader2 } from "lucide-react";
 
 export default function Patients() {
@@ -14,6 +18,32 @@ export default function Patients() {
   const [isFormModalOpen, setIsFormModalOpen] = useState(false);
   const [editingPatient, setEditingPatient] = useState<Patient | null>(null);
   const [viewingPatient, setViewingPatient] = useState<Patient | null>(null);
+  const [toasts, setToasts] = useState<ToastMessage[]>([]);
+  const [viewingNotification, setViewingNotification] = useState<Notification | null>(null);
+
+  const addToast = useCallback((item: Omit<ToastMessage, "id">) => {
+    const id = Date.now().toString() + "_" + Math.random().toString(36).substring(2, 9);
+    setToasts((prev) => [{ ...item, id }, ...prev]);
+  }, []);
+
+  const removeToast = useCallback((id?: string) => {
+    if (id) {
+      setToasts((prev) => prev.filter((t) => t.id !== id));
+    } else {
+      setToasts([]);
+    }
+  }, []);
+
+  const getLoggedInAdminUserId = (): string | undefined => {
+    try {
+      const savedUser = localStorage.getItem("user");
+      if (savedUser) {
+        const parsed = JSON.parse(savedUser);
+        return parsed?.userId || parsed?.id;
+      }
+    } catch (e) {}
+    return undefined;
+  };
 
   const reloadPatients = useCallback(async () => {
     try {
@@ -47,17 +77,24 @@ export default function Patients() {
     };
   }, []);
 
-  // Statistics based on account status
-  const totalPatients = patients.length;
-  const activeCount = patients.filter(
-    (p) => getPatientAccountStatus(p) === "Đang hoạt động",
-  ).length;
-  const inactiveCount = patients.filter(
-    (p) => getPatientAccountStatus(p) === "Ngưng hoạt động",
-  ).length;
-  const lockedCount = patients.filter(
-    (p) => getPatientAccountStatus(p) === "Đã khóa",
-  ).length;
+  // Statistics based on account status (Optimized with useMemo)
+  const { totalPatients, activeCount, inactiveCount, lockedCount } = useMemo(() => {
+    let active = 0,
+      inactive = 0,
+      locked = 0;
+    patients.forEach((p) => {
+      const st = getPatientAccountStatus(p);
+      if (st === "Đang hoạt động") active++;
+      else if (st === "Ngưng hoạt động") inactive++;
+      else if (st === "Đã khóa") locked++;
+    });
+    return {
+      totalPatients: patients.length,
+      activeCount: active,
+      inactiveCount: inactive,
+      lockedCount: locked,
+    };
+  }, [patients]);
 
   // Open modal for adding new patient
   const handleOpenAddModal = () => {
@@ -83,40 +120,50 @@ export default function Patients() {
   ): Promise<void> => {
     const targetId =
       patientData.id || patientData.patientId || patientData.patient_id;
+    const patientName = patientData.fullName || "Bệnh nhân";
+    const adminUserId = getLoggedInAdminUserId();
 
     try {
       if (targetId) {
         // Edit mode
-        // [BUG FIX] Thêm dateOfBirth vào payload — trước đây bị thiếu hoàn toàn nên ngày sinh không bao giờ được lưu.
-        // Form gửi dob dạng "DD/MM/YYYY" (ví dụ: "15/03/1990") — cần convert sang "YYYY-MM-DD" để C# DateTime? parse được.
         const rawDob = patientData.dob || patientData.dateOfBirth || "";
         let isoDateOfBirth: string | undefined = undefined;
         if (rawDob && rawDob.includes("/")) {
           const parts = rawDob.split("/");
           if (parts.length === 3) {
             const [d, m, y] = parts;
-            isoDateOfBirth = `${y}-${m.padStart(2, "0")}-${d.padStart(2, "0")}`; // "1990-03-15"
+            isoDateOfBirth = `${y}-${m.padStart(2, "0")}-${d.padStart(2, "0")}`;
           }
         } else if (rawDob && rawDob.includes("-")) {
-          isoDateOfBirth = rawDob; // đã là ISO format, giữ nguyên
+          isoDateOfBirth = rawDob;
         }
 
         await patientApi.update(targetId, {
           fullName: patientData.fullName || "",
           phone: patientData.phone || patientData.phoneNumber,
-          // [BUG FIX] Không dùng fallback "Nam" khi gender rỗng/null —
-          // nếu gửi "Nam" lên API thì backend sẽ ghi đè gender=NULL trong DB thành "Nam"
-          // dù người dùng không thay đổi giới tính.
-          // Gửi undefined để backend bỏ qua field này khi gender chưa được chọn.
           gender: patientData.gender || undefined,
           address: patientData.address,
           cccdNumber: patientData.cccdNumber,
           healthInsuranceNumber: patientData.healthInsuranceNumber,
-          dateOfBirth: isoDateOfBirth, // [BUG FIX] đã thêm — "YYYY-MM-DD" hoặc undefined
+          dateOfBirth: isoDateOfBirth,
           verificationStatus: patientData.verificationStatus,
           verifiedBy: "Lễ tân",
           verificationNote: patientData.verificationNote || undefined,
           verifiedAt: patientData.verifiedAt || undefined,
+        });
+
+        const createdNoti = await notificationApi.create({
+          title: "Cập nhật hồ sơ bệnh nhân",
+          content: `Hệ thống vừa cập nhật thông tin hồ sơ bệnh nhân "${patientName}" (Mã: #${targetId}).`,
+          type: "system",
+          userId: adminUserId,
+        });
+
+        addToast({
+          type: "success",
+          title: "Cập nhật hồ sơ bệnh nhân",
+          message: `Đã cập nhật thông tin hồ sơ bệnh nhân "${patientName}" thành công!`,
+          onClick: createdNoti ? () => setViewingNotification(createdNoti) : undefined,
         });
       } else {
         // Add mode
@@ -128,18 +175,38 @@ export default function Patients() {
           cccdNumber: patientData.cccdNumber || "",
           healthInsuranceNumber: patientData.healthInsuranceNumber || "",
         });
+
+        const createdNoti = await notificationApi.create({
+          title: "Thêm bệnh nhân mới",
+          content: `Đã khởi tạo thành công hồ sơ bệnh nhân "${patientName}".`,
+          type: "PATIENT_REGISTERED",
+          userId: adminUserId,
+        });
+
+        addToast({
+          type: "success",
+          title: "Thêm bệnh nhân mới",
+          message: `Đã tạo mới hồ sơ bệnh nhân "${patientName}" thành công!`,
+          onClick: createdNoti ? () => setViewingNotification(createdNoti) : undefined,
+        });
       }
 
       await reloadPatients();
     } catch (err) {
       console.error("handleSavePatient error:", err);
-      // [BUG FIX] Phải throw err để doSave() trong PatientFormModal bắt được và alert() thông báo lỗi rõ ràng.
+      addToast({
+        type: "error",
+        title: "Lỗi thao tác",
+        message: "Không thể lưu thông tin bệnh nhân. Vui lòng thử lại.",
+      });
       throw err;
     }
   };
 
   return (
-    <div className="p-7 bg-[#f4f6f9] min-h-screen">
+    <div className="p-7 bg-[#f4f6f9] min-h-screen relative">
+      {/* Top-Right 3s Stacked Toast Notifications */}
+      <ToastNotification toasts={toasts} onClose={removeToast} />
       <PatientToolbar
         onAddPatient={handleOpenAddModal}
         totalPatients={totalPatients}
@@ -177,6 +244,16 @@ export default function Patients() {
         onClose={() => setIsFormModalOpen(false)}
         onSave={handleSavePatient}
         initialData={editingPatient}
+      />
+
+      {/* Notification Detail Modal triggered on Toast click */}
+      <NotificationDetailModal
+        notification={viewingNotification}
+        onClose={() => setViewingNotification(null)}
+        onDelete={async (id) => {
+          await notificationApi.delete(id);
+          setViewingNotification(null);
+        }}
       />
     </div>
   );

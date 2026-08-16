@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Pill, Boxes, Plus } from "lucide-react";
 import type { Medicine, MedicineCategory } from "./types";
 import medicineApi from "../../api/medicineApi";
@@ -9,6 +9,10 @@ import MedicineDetailModal from "./components/MedicineDetailModal";
 import ConfirmStatusModal from "./components/ConfirmStatusModal";
 import CategoryManagementModal from "./components/CategoryManagementModal";
 import CategoryTableView from "./components/CategoryTableView";
+import ToastNotification, { type ToastMessage } from "../../components/common/ToastNotification";
+import { notificationApi } from "../../api/notificationApi";
+import NotificationDetailModal from "../Notifications/components/NotificationDetailModal";
+import type { Notification } from "../Notifications/types";
 
 export default function Medicines() {
   const [activeTab, setActiveTab] = useState<"medicines" | "categories">(
@@ -26,6 +30,32 @@ export default function Medicines() {
   const [viewingMedicine, setViewingMedicine] = useState<Medicine | null>(null);
   const [statusTogglingMedicine, setStatusTogglingMedicine] =
     useState<Medicine | null>(null);
+  const [toasts, setToasts] = useState<ToastMessage[]>([]);
+  const [viewingNotification, setViewingNotification] = useState<Notification | null>(null);
+
+  const addToast = useCallback((item: Omit<ToastMessage, "id">) => {
+    const id = Date.now().toString() + "_" + Math.random().toString(36).substring(2, 9);
+    setToasts((prev) => [{ ...item, id }, ...prev]);
+  }, []);
+
+  const removeToast = useCallback((id?: string) => {
+    if (id) {
+      setToasts((prev) => prev.filter((t) => t.id !== id));
+    } else {
+      setToasts([]);
+    }
+  }, []);
+
+  const getLoggedInAdminUserId = (): string | undefined => {
+    try {
+      const savedUser = localStorage.getItem("user");
+      if (savedUser) {
+        const parsed = JSON.parse(savedUser);
+        return parsed?.userId || parsed?.id;
+      }
+    } catch (e) {}
+    return undefined;
+  };
 
   const fetchAllData = async () => {
     setLoading(true);
@@ -115,20 +145,58 @@ export default function Medicines() {
       };
 
       const targetId = medicineData.medicineId || medicineData.id;
+      const medName = payload.medicineName || "Thuốc";
+      const adminUserId = getLoggedInAdminUserId();
+
       if (targetId && editingMedicine) {
         await medicineApi.update(targetId, payload);
+
+        const createdNoti = await notificationApi.create({
+          title: "Cập nhật thông tin thuốc",
+          content: `Hệ thống vừa cập nhật thông tin thuốc "${medName}".`,
+          type: "system",
+          userId: adminUserId,
+        });
+
+        addToast({
+          type: "success",
+          title: "Cập nhật thuốc",
+          message: `Đã cập nhật thông tin thuốc "${medName}" thành công!`,
+          onClick: createdNoti ? () => setViewingNotification(createdNoti) : undefined,
+        });
       } else {
         await medicineApi.create(payload);
+
+        const createdNoti = await notificationApi.create({
+          title: "Thêm thuốc mới",
+          content: `Đã tạo mới thành công thuốc "${medName}".`,
+          type: "system",
+          userId: adminUserId,
+        });
+
+        addToast({
+          type: "success",
+          title: "Thêm thuốc mới",
+          message: `Đã thêm mới thuốc "${medName}" thành công!`,
+          onClick: createdNoti ? () => setViewingNotification(createdNoti) : undefined,
+        });
       }
       await fetchAllData();
     } catch (err: any) {
-      alert(err.message || "Lỗi khi lưu thông tin thuốc!");
+      addToast({
+        type: "error",
+        title: "Lỗi thao tác",
+        message: err.message || "Lỗi khi lưu thông tin thuốc!",
+      });
     }
   };
 
   // Confirm status toggle action (khóa / mở với hình ổ khóa màu vàng)
   const handleConfirmStatusToggle = async () => {
     if (statusTogglingMedicine) {
+      const medName = statusTogglingMedicine.medicineName || statusTogglingMedicine.name || "Thuốc";
+      const adminUserId = getLoggedInAdminUserId();
+
       try {
         const targetId =
           statusTogglingMedicine.medicineId || statusTogglingMedicine.id!;
@@ -139,8 +207,26 @@ export default function Medicines() {
 
         await medicineApi.toggleStatus(targetId, nextStatus);
         await fetchAllData();
+
+        const createdNoti = await notificationApi.create({
+          title: "Khóa / Đổi trạng thái thuốc",
+          content: `Thuốc "${medName}" đã được chuyển sang trạng thái ${nextStatus === "Active" ? "Đang hoạt động" : "Đã khóa/Ngưng hoạt động"}.`,
+          type: "system",
+          userId: adminUserId,
+        });
+
+        addToast({
+          type: "success",
+          title: "Khóa thuốc",
+          message: `Đã cập nhật trạng thái thuốc "${medName}" thành công!`,
+          onClick: createdNoti ? () => setViewingNotification(createdNoti) : undefined,
+        });
       } catch (err: any) {
-        alert(err.message || "Lỗi khi đổi trạng thái thuốc!");
+        addToast({
+          type: "error",
+          title: "Lỗi thao tác",
+          message: err.message || "Lỗi khi đổi trạng thái thuốc!",
+        });
       } finally {
         setStatusTogglingMedicine(null);
       }
@@ -153,7 +239,10 @@ export default function Medicines() {
       : 1;
 
   return (
-    <div className="p-7 bg-[#f4f6f9] min-h-screen">
+    <div className="p-7 bg-[#f4f6f9] min-h-screen relative">
+      {/* Top-Right 3s Stacked Toast Notifications */}
+      <ToastNotification toasts={toasts} onClose={removeToast} />
+
       {/* Navigation Header & Main 2 Tabs */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
         <div>
@@ -220,6 +309,8 @@ export default function Medicines() {
           categories={categories}
           loading={loading}
           onRefreshData={fetchAllData}
+          onAddToast={addToast}
+          onViewNotification={setViewingNotification}
         />
       )}
 
@@ -258,6 +349,16 @@ export default function Medicines() {
         isOpen={isCategoryModalOpen}
         onClose={() => setIsCategoryModalOpen(false)}
         onCategoriesUpdated={fetchAllData}
+      />
+
+      {/* Notification Detail Modal triggered on Toast click */}
+      <NotificationDetailModal
+        notification={viewingNotification}
+        onClose={() => setViewingNotification(null)}
+        onDelete={async (id) => {
+          await notificationApi.delete(id);
+          setViewingNotification(null);
+        }}
       />
     </div>
   );

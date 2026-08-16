@@ -24,11 +24,16 @@ import {
 import type { MedicineCategory } from "../types";
 import medicineApi from "../../../api/medicineApi";
 import StatusBadge from "./StatusBadge";
+import type { ToastMessage } from "../../../components/common/ToastNotification";
+import { notificationApi } from "../../../api/notificationApi";
+import type { Notification } from "../../Notifications/types";
 
 interface CategoryTableViewProps {
   categories: MedicineCategory[];
   loading: boolean;
   onRefreshData: () => void;
+  onAddToast?: (toast: Omit<ToastMessage, "id">) => void;
+  onViewNotification?: (notification: Notification) => void;
 }
 
 const statusOptions = [
@@ -41,11 +46,24 @@ export default function CategoryTableView({
   categories,
   loading,
   onRefreshData,
+  onAddToast,
+  onViewNotification,
 }: CategoryTableViewProps) {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedStatus, setSelectedStatus] = useState("ALL");
   const [isStatusOpen, setIsStatusOpen] = useState(false);
   const statusRef = useRef<HTMLDivElement>(null);
+
+  const getLoggedInAdminUserId = (): string | undefined => {
+    try {
+      const savedUser = localStorage.getItem("user");
+      if (savedUser) {
+        const parsed = JSON.parse(savedUser);
+        return parsed?.userId || parsed?.id;
+      }
+    } catch (e) {}
+    return undefined;
+  };
 
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
@@ -150,30 +168,73 @@ export default function CategoryTableView({
   const handleSubmitCategoryForm = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim()) {
-      alert("Vui lòng nhập Tên danh mục thuốc!");
+      if (onAddToast) {
+        onAddToast({
+          type: "error",
+          title: "Thiếu thông tin",
+          message: "Vui lòng nhập Tên danh mục thuốc!",
+        });
+      } else {
+        alert("Vui lòng nhập Tên danh mục thuốc!");
+      }
       return;
     }
 
     setSubmitting(true);
+    const catName = name.trim();
+    const adminUserId = getLoggedInAdminUserId();
+
     try {
       if (editingCategory) {
         const id = editingCategory.categoryId || editingCategory.id!;
         await medicineApi.updateCategory(id, {
-          categoryName: name.trim(),
+          categoryName: catName,
           description: description.trim(),
           status: status === "Ngưng hoạt động" ? "Inactive" : "Active",
         });
+
+        const createdNoti = await notificationApi.create({
+          title: "Cập nhật danh mục thuốc",
+          content: `Hệ thống vừa cập nhật thông tin danh mục thuốc "${catName}".`,
+          type: "system",
+          userId: adminUserId,
+        });
+
+        onAddToast?.({
+          type: "success",
+          title: "Cập nhật danh mục thuốc",
+          message: `Đã cập nhật thông tin danh mục "${catName}" thành công!`,
+          onClick: createdNoti ? () => onViewNotification?.(createdNoti) : undefined,
+        });
       } else {
         await medicineApi.createCategory({
-          categoryName: name.trim(),
+          categoryName: catName,
           description: description.trim(),
           status: status === "Ngưng hoạt động" ? "Inactive" : "Active",
+        });
+
+        const createdNoti = await notificationApi.create({
+          title: "Thêm danh mục thuốc mới",
+          content: `Đã tạo mới thành công danh mục thuốc "${catName}".`,
+          type: "system",
+          userId: adminUserId,
+        });
+
+        onAddToast?.({
+          type: "success",
+          title: "Thêm danh mục mới",
+          message: `Đã thêm mới danh mục "${catName}" thành công!`,
+          onClick: createdNoti ? () => onViewNotification?.(createdNoti) : undefined,
         });
       }
       setIsFormModalOpen(false);
       onRefreshData();
     } catch (err: any) {
-      alert(err.message || "Lỗi khi lưu thông tin danh mục thuốc!");
+      onAddToast?.({
+        type: "error",
+        title: "Lỗi thao tác",
+        message: err.message || "Lỗi khi lưu thông tin danh mục thuốc!",
+      });
     } finally {
       setSubmitting(false);
     }
@@ -185,6 +246,9 @@ export default function CategoryTableView({
 
   const handleConfirmCategoryStatusToggle = async () => {
     if (statusTogglingCategory) {
+      const catName = statusTogglingCategory.categoryName || statusTogglingCategory.name || "Danh mục";
+      const adminUserId = getLoggedInAdminUserId();
+
       try {
         const id = statusTogglingCategory.categoryId || statusTogglingCategory.id!;
         const isCurrentActive =
@@ -194,8 +258,26 @@ export default function CategoryTableView({
 
         await medicineApi.toggleCategoryStatus(id, nextStatus);
         onRefreshData();
+
+        const createdNoti = await notificationApi.create({
+          title: "Khóa / Đổi trạng thái danh mục",
+          content: `Danh mục thuốc "${catName}" đã được chuyển sang trạng thái ${nextStatus === "Active" ? "Đang hoạt động" : "Đã khóa/Ngưng hoạt động"}.`,
+          type: "system",
+          userId: adminUserId,
+        });
+
+        onAddToast?.({
+          type: "success",
+          title: "Khóa danh mục thuốc",
+          message: `Đã cập nhật trạng thái danh mục "${catName}" thành công!`,
+          onClick: createdNoti ? () => onViewNotification?.(createdNoti) : undefined,
+        });
       } catch (err: any) {
-        alert(err.message || "Lỗi khi đổi trạng thái danh mục!");
+        onAddToast?.({
+          type: "error",
+          title: "Lỗi thao tác",
+          message: err.message || "Lỗi khi đổi trạng thái danh mục!",
+        });
       } finally {
         setStatusTogglingCategory(null);
       }

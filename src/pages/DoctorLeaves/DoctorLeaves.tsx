@@ -1,5 +1,9 @@
 import { useState, useEffect, useRef } from "react";
 import Pagination from "../../components/common/Pagination";
+import ToastNotification, { type ToastMessage } from "../../components/common/ToastNotification";
+import { notificationApi } from "../../api/notificationApi";
+import NotificationDetailModal from "../Notifications/components/NotificationDetailModal";
+import type { Notification } from "../Notifications/types";
 import {
   CalendarX,
   CheckCircle2,
@@ -39,6 +43,32 @@ export default function DoctorLeaves() {
   const [selectedStatus, setSelectedStatus] = useState("Tất cả");
   const [isStatusOpen, setIsStatusOpen] = useState(false);
   const statusRef = useRef<HTMLDivElement>(null);
+  const [toasts, setToasts] = useState<ToastMessage[]>([]);
+  const [viewingNotification, setViewingNotification] = useState<Notification | null>(null);
+
+  const addToast = useCallback((item: Omit<ToastMessage, "id">) => {
+    const id = Date.now().toString() + "_" + Math.random().toString(36).substring(2, 9);
+    setToasts((prev) => [{ ...item, id }, ...prev]);
+  }, []);
+
+  const removeToast = useCallback((id?: string) => {
+    if (id) {
+      setToasts((prev) => prev.filter((t) => t.id !== id));
+    } else {
+      setToasts([]);
+    }
+  }, []);
+
+  const getLoggedInAdminUserId = (): string | undefined => {
+    try {
+      const savedUser = localStorage.getItem("user");
+      if (savedUser) {
+        const parsed = JSON.parse(savedUser);
+        return parsed?.userId || parsed?.id;
+      }
+    } catch (e) {}
+    return undefined;
+  };
 
   // Modal states
   const [actionLeave, setActionLeave] = useState<DoctorLeaveItem | null>(null);
@@ -54,20 +84,20 @@ export default function DoctorLeaves() {
     setCurrentPage(1);
   }, [searchQuery, selectedStatus]);
 
-  const fetchLeaves = async () => {
-    setLoading(true);
+  const fetchLeaves = async (showLoading = true) => {
+    if (showLoading) setLoading(true);
     try {
       const data = await doctorLeaveApi.getAll();
       setLeaves(data);
     } catch (err) {
       console.error("Lỗi lấy danh sách đơn nghỉ phép:", err);
     } finally {
-      setLoading(false);
+      if (showLoading) setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchLeaves();
+    fetchLeaves(true);
   }, []);
 
   useEffect(() => {
@@ -109,13 +139,80 @@ export default function DoctorLeaves() {
   const handleUpdateStatus = async (newStatus: "Approved" | "Rejected" | "Cancelled") => {
     if (!actionLeave) return;
     setIsSubmitting(true);
+    const docName = actionLeave.doctorName || "bác sĩ";
+    const adminUserId = getLoggedInAdminUserId();
+    const targetLeaveId = actionLeave.leaveId;
+
+    // Optimistic UI status string
+    const newViStatus =
+      newStatus === "Approved" ? "Đã duyệt" : newStatus === "Rejected" ? "Từ chối" : "Đã hủy";
+
+    // Optimistically update local state immediately
+    setLeaves((prev) =>
+      prev.map((item) => (item.leaveId === targetLeaveId ? { ...item, status: newViStatus } : item))
+    );
+
     try {
       await doctorLeaveApi.updateStatus(actionLeave.leaveId, newStatus);
-      await fetchLeaves();
+      // Re-fetch silently in background without showing full-page loading spinner
+      fetchLeaves(false);
+
+      let createdNoti: Notification | null = null;
+
+      if (newStatus === "Approved") {
+        createdNoti = await notificationApi.create({
+          title: "Duyệt đơn nghỉ phép bác sĩ",
+          content: `Đơn xin nghỉ phép của bác sĩ ${docName} (Mã đơn: #${actionLeave.leaveId}) đã được duyệt.`,
+          type: "system",
+          userId: adminUserId,
+        });
+
+        addToast({
+          type: "success",
+          title: "Duyệt đơn nghỉ phép",
+          message: `Đã phê duyệt đơn nghỉ phép của bác sĩ "${docName}"!`,
+          onClick: createdNoti ? () => setViewingNotification(createdNoti) : undefined,
+        });
+      } else if (newStatus === "Rejected") {
+        createdNoti = await notificationApi.create({
+          title: "Từ chối đơn nghỉ phép bác sĩ",
+          content: `Đơn xin nghỉ phép của bác sĩ ${docName} (Mã đơn: #${actionLeave.leaveId}) đã bị từ chối.`,
+          type: "system",
+          userId: adminUserId,
+        });
+
+        addToast({
+          type: "error",
+          title: "Từ chối đơn nghỉ phép",
+          message: `Đã từ chối đơn nghỉ phép của bác sĩ "${docName}"!`,
+          onClick: createdNoti ? () => setViewingNotification(createdNoti) : undefined,
+        });
+      } else if (newStatus === "Cancelled") {
+        createdNoti = await notificationApi.create({
+          title: "Hủy lịch nghỉ bác sĩ",
+          content: `Lịch nghỉ phép của bác sĩ ${docName} (Mã đơn: #${actionLeave.leaveId}) đã bị hủy.`,
+          type: "system",
+          userId: adminUserId,
+        });
+
+        addToast({
+          type: "info",
+          title: "Hủy lịch nghỉ",
+          message: `Đã hủy lịch nghỉ của bác sĩ "${docName}"!`,
+          onClick: createdNoti ? () => setViewingNotification(createdNoti) : undefined,
+        });
+      }
+
       setActionLeave(null);
       setActionType(null);
     } catch (err: any) {
-      alert(err.message || "Lỗi khi cập nhật trạng thái đơn!");
+      addToast({
+        type: "error",
+        title: "Lỗi thao tác",
+        message: err.message || "Lỗi khi cập nhật trạng thái đơn!",
+      });
+      // Rollback on error
+      fetchLeaves(false);
     } finally {
       setIsSubmitting(false);
     }
@@ -141,7 +238,9 @@ export default function DoctorLeaves() {
   };
 
   return (
-    <div className="space-y-6 select-none">
+    <div className="space-y-6 select-none relative">
+      {/* Top-Right 3s Stacked Toast Notifications */}
+      <ToastNotification toasts={toasts} onClose={removeToast} />
       {/* Stat Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="bg-white p-5 rounded-2xl border border-gray-100/80 shadow-xs flex items-center justify-between">
@@ -634,6 +733,16 @@ export default function DoctorLeaves() {
           </div>
         </div>
       )}
+
+      {/* Notification Detail Modal triggered on Toast click */}
+      <NotificationDetailModal
+        notification={viewingNotification}
+        onClose={() => setViewingNotification(null)}
+        onDelete={async (id) => {
+          await notificationApi.delete(id);
+          setViewingNotification(null);
+        }}
+      />
     </div>
   );
 }
