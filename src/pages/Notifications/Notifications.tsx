@@ -66,11 +66,11 @@ export default function Notifications() {
   }, []);
 
   const handleCreateNotification = async (payload: CreateNotificationPayload): Promise<boolean> => {
-    const adminUserId = getLoggedInAdminUserId();
-    const result = await notificationApi.create({
-      ...payload,
-      userId: payload.userId || adminUserId,
-    });
+    // Không tự fallback về userId của Admin đang đăng nhập nữa — trước đây làm vậy khiến MỌI
+    // thông báo "phát" từ màn này chỉ gửi tới chính Admin, không bao giờ tới bệnh nhân nào (màn tạo
+    // thông báo không có ô chọn người nhận cụ thể). Khi payload.userId để trống, backend giờ hiểu
+    // đúng là "phát cho tất cả bệnh nhân đang hoạt động".
+    const result = await notificationApi.create(payload);
     if (result) {
       await fetchNotifications();
       window.dispatchEvent(new Event("notification_updated"));
