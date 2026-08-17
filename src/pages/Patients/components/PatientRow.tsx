@@ -1,3 +1,4 @@
+import { memo } from "react";
 import type { Patient } from "../types";
 import StatusBadge from "./StatusBadge";
 import ActionButtons from "./ActionButtons";
@@ -26,7 +27,9 @@ export const getPatientAccountStatus = (patient: Patient) => {
   }
 };
 
-export default function PatientRow({
+// React.memo — trước đây mỗi thay đổi state ở trang cha (vd: đóng/mở modal, toast) khiến TOÀN BỘ
+// hàng trong bảng render lại dù dữ liệu patient của từng hàng không đổi.
+function PatientRow({
   patient,
   onViewDetail,
   onEdit,
@@ -88,3 +91,5 @@ export default function PatientRow({
     </tr>
   );
 }
+
+export default memo(PatientRow);

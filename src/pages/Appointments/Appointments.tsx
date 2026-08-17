@@ -179,18 +179,19 @@ export default function Appointments() {
     setIsFormModalOpen(true);
   };
 
-  const handleOpenEditModal = (app: Appointment) => {
+  // useCallback — giữ identity ổn định để React.memo trên AppointmentRow phát huy tác dụng.
+  const handleOpenEditModal = useCallback((app: Appointment) => {
     setEditingAppointment(app);
     setIsFormModalOpen(true);
-  };
+  }, []);
 
-  const handleOpenDetailModal = (app: Appointment) => {
+  const handleOpenDetailModal = useCallback((app: Appointment) => {
     setViewingAppointment(app);
-  };
+  }, []);
 
-  const handleOpenCancelModal = (app: Appointment) => {
+  const handleOpenCancelModal = useCallback((app: Appointment) => {
     setCancellingAppointment(app);
-  };
+  }, []);
 
   // Save (Create or Update) appointment via API
   const handleSaveAppointment = async (appData: Appointment) => {

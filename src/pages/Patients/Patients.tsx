@@ -115,16 +115,18 @@ export default function Patients() {
   };
 
   // Open modal for viewing detail
-  const handleOpenDetailModal = (patient: Patient) => {
+  // useCallback — giữ nguyên identity giữa các lần render để React.memo trên PatientRow phát huy
+  // tác dụng (hàm mới mỗi render sẽ khiến mọi hàng re-render dù được memo).
+  const handleOpenDetailModal = useCallback((patient: Patient) => {
     setViewingPatient(patient);
-  };
+  }, []);
 
   // Open modal for editing patient
-  const handleOpenEditModal = (patient: Patient) => {
+  const handleOpenEditModal = useCallback((patient: Patient) => {
     setViewingPatient(null);
     setEditingPatient(patient);
     setIsFormModalOpen(true);
-  };
+  }, []);
 
   // Save (Add or Edit) patient
   const handleSavePatient = async (

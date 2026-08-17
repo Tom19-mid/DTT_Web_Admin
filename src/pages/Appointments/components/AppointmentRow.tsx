@@ -1,3 +1,4 @@
+import { memo } from "react";
 import { Eye, Pencil, LockKeyhole } from "lucide-react";
 import type { Appointment } from "../types";
 import StatusBadge from "./StatusBadge";
@@ -9,7 +10,9 @@ interface AppointmentRowProps {
   onCancelAppointment: (app: Appointment) => void;
 }
 
-export default function AppointmentRow({
+// React.memo — cùng lý do PatientRow: tránh re-render toàn bảng khi state không liên quan ở trang
+// cha thay đổi (đây là màn giao dịch nhiều nhất trong hệ thống theo audit hiệu năng).
+function AppointmentRow({
   appointment,
   onViewDetail,
   onEdit,
@@ -91,3 +94,5 @@ export default function AppointmentRow({
     </tr>
   );
 }
+
+export default memo(AppointmentRow);
