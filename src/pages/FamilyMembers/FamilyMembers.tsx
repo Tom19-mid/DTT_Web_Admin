@@ -60,10 +60,10 @@ export default function FamilyMembers() {
     return undefined;
   };
 
-  const reloadData = useCallback(async (forceRefresh = true) => {
+  const reloadData = useCallback(async () => {
     try {
       const [membersData, ownersData] = await Promise.all([
-        familyMemberApi.getAll(forceRefresh),
+        familyMemberApi.getAll(),
         familyMemberApi.getPatientOwners(),
       ]);
       setMembers(membersData);
@@ -75,9 +75,9 @@ export default function FamilyMembers() {
 
   useEffect(() => {
     let isMounted = true;
-    const loadData = async () => {
+    const loadData = async (silent = false) => {
       const cached = familyMemberApi.getCachedFamilyMembers();
-      if (!cached && members.length === 0) {
+      if (!silent && !cached && members.length === 0) {
         setLoading(true);
       }
       try {
@@ -100,10 +100,31 @@ export default function FamilyMembers() {
 
     loadData();
 
+    const handleFocus = () => {
+      loadData(true);
+    };
+
+    window.addEventListener("focus", handleFocus);
+    const handleVisibility = () => {
+      if (document.visibilityState === "visible") {
+        loadData(true);
+      }
+    };
+    document.addEventListener("visibilitychange", handleVisibility);
+
+    const interval = setInterval(() => {
+      if (document.visibilityState === "visible") {
+        loadData(true);
+      }
+    }, 5000);
+
     return () => {
       isMounted = false;
+      window.removeEventListener("focus", handleFocus);
+      document.removeEventListener("visibilitychange", handleVisibility);
+      clearInterval(interval);
     };
-  }, []);
+  }, [location.key]);
 
   // Statistics calculation
   const { totalMembers, verifiedCount, pendingCount, rejectedCount } = useMemo(() => {

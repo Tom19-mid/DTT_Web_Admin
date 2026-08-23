@@ -110,11 +110,7 @@ export const familyMemberApi = {
     }
   },
 
-  getAll: async (forceRefresh = false): Promise<FamilyMember[]> => {
-    if (!forceRefresh && familyMembersCache && familyMembersCache.length > 0) {
-      return familyMembersCache;
-    }
-
+  getAll: async (): Promise<FamilyMember[]> => {
     try {
       const response = await axiosClient.get("/patients?page=1&pageSize=100");
       const rawList = response.data?.patients || response.data?.items || response.data || [];

@@ -378,6 +378,7 @@ export default function WorkSchedules() {
           ) : (
             <ScheduleTable
               schedules={safeSchedules}
+              doctors={doctors}
               onView={handleOpenView}
               onEdit={handleOpenEdit}
               onToggleLock={handleRequestLock}
@@ -390,6 +391,7 @@ export default function WorkSchedules() {
       {activeTab === "slots" && (
         <DoctorScheduleSlotsView
           schedules={safeSchedules}
+          doctors={doctors}
           isLoading={isLoading}
         />
       )}

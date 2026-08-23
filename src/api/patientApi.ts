@@ -61,11 +61,7 @@ export const patientApi = {
     cacheTimestamp = 0;
   },
 
-  getAll: async (forceRefresh = false): Promise<Patient[]> => {
-    if (!forceRefresh && patientsCache && patientsCache.length > 0) {
-      return patientsCache;
-    }
-
+  getAll: async (): Promise<Patient[]> => {
     try {
       const response = await axiosClient.get("/patients");
       const data = Array.isArray(response.data?.patients)

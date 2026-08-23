@@ -58,12 +58,12 @@ function PatientRow({
 
       {/* 3. Ngày sinh */}
       <td className="py-4 px-4 text-gray-700 font-medium text-base text-center">
-        {patient.dob}
+        {patient.dob || "-"}
       </td>
 
       {/* 4. Số điện thoại */}
       <td className="py-4 px-4 text-gray-700 font-medium text-base text-center">
-        {patient.phone}
+        {patient.phone || "-"}
       </td>
 
       {/* 5. Giới tính */}

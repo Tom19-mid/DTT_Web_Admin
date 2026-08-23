@@ -47,9 +47,9 @@ export default function Patients() {
     return undefined;
   };
 
-  const reloadPatients = useCallback(async (forceRefresh = true) => {
+  const reloadPatients = useCallback(async () => {
     try {
-      const data = await patientApi.getAll(forceRefresh);
+      const data = await patientApi.getAll();
       setPatients(data);
     } catch (err) {
       console.warn("Lỗi khi tải danh sách bệnh nhân:", err);
@@ -58,9 +58,9 @@ export default function Patients() {
 
   useEffect(() => {
     let isMounted = true;
-    const loadData = async () => {
+    const loadData = async (silent = false) => {
       const cached = patientApi.getCachedPatients();
-      if (!cached && patients.length === 0) {
+      if (!silent && !cached && patients.length === 0) {
         setLoading(true);
       }
       try {
@@ -79,10 +79,31 @@ export default function Patients() {
 
     loadData();
 
+    const handleFocus = () => {
+      loadData(true);
+    };
+
+    window.addEventListener("focus", handleFocus);
+    const handleVisibility = () => {
+      if (document.visibilityState === "visible") {
+        loadData(true);
+      }
+    };
+    document.addEventListener("visibilitychange", handleVisibility);
+
+    const interval = setInterval(() => {
+      if (document.visibilityState === "visible") {
+        loadData(true);
+      }
+    }, 5000);
+
     return () => {
       isMounted = false;
+      window.removeEventListener("focus", handleFocus);
+      document.removeEventListener("visibilitychange", handleVisibility);
+      clearInterval(interval);
     };
-  }, []);
+  }, [location.key]);
 
   // Statistics based on account status (Optimized with useMemo)
   const { totalPatients, activeCount, inactiveCount, lockedCount } = useMemo(() => {

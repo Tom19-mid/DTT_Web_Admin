@@ -27,6 +27,8 @@ import {
   ChevronRight,
 } from "lucide-react";
 import { doctorLeaveApi, type DoctorLeaveItem } from "../../api/doctorLeaveApi";
+import doctorApi from "../../api/doctorApi";
+import type { Doctor } from "../Doctors/types";
 
 const statusOptions = [
   { value: "Tất cả", label: "Tất cả trạng thái", dotColor: "bg-gray-400" },
@@ -43,6 +45,7 @@ interface DoctorLeavesProps {
 export default function DoctorLeaves({ onLeaveUpdated }: DoctorLeavesProps = {}) {
   const [leaves, setLeaves] = useState<DoctorLeaveItem[]>(() => doctorLeaveApi.getCachedLeaves() || []);
   const [loading, setLoading] = useState(() => !doctorLeaveApi.getCachedLeaves());
+  const [doctors, setDoctors] = useState<Doctor[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedStatus, setSelectedStatus] = useState("Tất cả");
   const [isStatusOpen, setIsStatusOpen] = useState(false);
@@ -87,14 +90,21 @@ export default function DoctorLeaves({ onLeaveUpdated }: DoctorLeavesProps = {})
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
 
-  // Extract unique doctor names
+  // Extract unique doctor names from doctors list and leaves list
   const doctorOptions = useMemo(() => {
     const docSet = new Set<string>();
-    leaves.forEach((l) => {
-      if (l.doctorName) docSet.add(l.doctorName);
-    });
-    return Array.from(docSet);
-  }, [leaves]);
+    if (Array.isArray(doctors) && doctors.length > 0) {
+      doctors.forEach((d) => {
+        if (d?.fullName) docSet.add(d.fullName);
+      });
+    }
+    if (Array.isArray(leaves) && leaves.length > 0) {
+      leaves.forEach((l) => {
+        if (l.doctorName) docSet.add(l.doctorName);
+      });
+    }
+    return Array.from(docSet).sort((a, b) => a.localeCompare(b, "vi"));
+  }, [leaves, doctors]);
 
   // Reset to page 1 when filter or search changes
   useEffect(() => {
@@ -115,6 +125,9 @@ export default function DoctorLeaves({ onLeaveUpdated }: DoctorLeavesProps = {})
 
   useEffect(() => {
     fetchLeaves(leaves.length === 0);
+    doctorApi.getAll().then((docList) => {
+      if (Array.isArray(docList)) setDoctors(docList);
+    }).catch(() => {});
   }, []);
 
   useEffect(() => {

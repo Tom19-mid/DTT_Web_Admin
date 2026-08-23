@@ -1,11 +1,13 @@
 import { useState, useMemo } from "react";
 import type { WorkSchedule } from "../types";
+import type { Doctor } from "../../Doctors/types";
 import ScheduleSearch from "./ScheduleSearch";
 import ScheduleRow from "./ScheduleRow";
 import Pagination from "../../../components/common/Pagination";
 
 interface ScheduleTableProps {
   schedules: WorkSchedule[];
+  doctors?: Doctor[];
   onView: (schedule: WorkSchedule) => void;
   onEdit: (schedule: WorkSchedule) => void;
   onToggleLock: (schedule: WorkSchedule) => void;
@@ -13,6 +15,7 @@ interface ScheduleTableProps {
 
 export default function ScheduleTable({
   schedules,
+  doctors,
   onView,
   onEdit,
   onToggleLock,
@@ -25,13 +28,19 @@ export default function ScheduleTable({
   const itemsPerPage = 10;
 
   const doctorOptions = useMemo(() => {
-    if (!Array.isArray(schedules)) return [];
     const names = new Set<string>();
-    schedules.forEach((s) => {
-      if (s?.doctorName) names.add(s.doctorName);
-    });
-    return Array.from(names).sort();
-  }, [schedules]);
+    if (Array.isArray(doctors) && doctors.length > 0) {
+      doctors.forEach((d) => {
+        if (d?.fullName) names.add(d.fullName);
+      });
+    }
+    if (Array.isArray(schedules) && schedules.length > 0) {
+      schedules.forEach((s) => {
+        if (s?.doctorName) names.add(s.doctorName);
+      });
+    }
+    return Array.from(names).sort((a, b) => a.localeCompare(b, "vi"));
+  }, [schedules, doctors]);
 
   const handleShowAll = () => {
     setSearchTerm("");

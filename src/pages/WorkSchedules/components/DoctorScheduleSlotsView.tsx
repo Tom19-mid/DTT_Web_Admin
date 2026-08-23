@@ -1,5 +1,6 @@
 import { useState, useMemo, useRef, useEffect } from "react";
 import type { WorkSchedule, TimeSlot } from "../types";
+import type { Doctor } from "../../Doctors/types";
 import { SlotStatusBadge } from "./ScheduleStatusBadge";
 import Pagination from "../../../components/common/Pagination";
 import { DateFilterPicker } from "./ScheduleSearch";
@@ -17,6 +18,7 @@ import {
 
 interface DoctorScheduleSlotsViewProps {
   schedules: WorkSchedule[];
+  doctors?: Doctor[];
   isLoading?: boolean;
 }
 
@@ -41,12 +43,13 @@ const slotStatusOptions = [
   {
     value: "Đã đóng",
     label: "Đã đóng",
-    dotColor: "bg-rose-500",
+    dotColor: "bg-gray-400",
   },
 ];
 
 export default function DoctorScheduleSlotsView({
   schedules,
+  doctors,
   isLoading = false,
 }: DoctorScheduleSlotsViewProps) {
   const [searchTerm, setSearchTerm] = useState("");
@@ -97,14 +100,21 @@ export default function DoctorScheduleSlotsView({
     return result;
   }, [schedules]);
 
-  // Dynamic doctor options list from all slots
+  // Dynamic doctor options list from all slots and doctors list
   const doctorOptions = useMemo(() => {
     const names = new Set<string>();
-    allSlots.forEach((s) => {
-      if (s.doctorName) names.add(s.doctorName);
-    });
-    return Array.from(names).sort();
-  }, [allSlots]);
+    if (Array.isArray(doctors) && doctors.length > 0) {
+      doctors.forEach((d) => {
+        if (d?.fullName) names.add(d.fullName);
+      });
+    }
+    if (Array.isArray(allSlots) && allSlots.length > 0) {
+      allSlots.forEach((s) => {
+        if (s.doctorName) names.add(s.doctorName);
+      });
+    }
+    return Array.from(names).sort((a, b) => a.localeCompare(b, "vi"));
+  }, [allSlots, doctors]);
 
   // Statistics
   const totalSlots = allSlots.length;
