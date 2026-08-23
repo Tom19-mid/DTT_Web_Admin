@@ -19,7 +19,7 @@ export default function WorkSchedules() {
   const [activeTab, setActiveTab] = useState<"schedules" | "slots">(
     "schedules",
   );
-  const [schedules, setSchedules] = useState<WorkSchedule[]>(() => workScheduleApi.getCachedSchedules() || initialWorkSchedules);
+  const [schedules, setSchedules] = useState<WorkSchedule[]>(() => workScheduleApi.getCachedSchedules() || []);
   const [doctors, setDoctors] = useState<DoctorItem[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(() => !workScheduleApi.getCachedSchedules());
 
@@ -66,15 +66,15 @@ export default function WorkSchedules() {
   };
 
   // Fetch data from Back-End API
+  // Trước đây khi API trả về mảng RỖNG HỢP LỆ (đúng nghĩa là chưa có lịch làm việc nào) cũng bị thay
+  // bằng initialWorkSchedules (dữ liệu mẫu giả — bác sĩ "BS. Nguyễn Văn Bình" không có thật) như thể
+  // đó là lịch thật, khiến Admin tưởng nhầm hệ thống đã có sẵn lịch. Chỉ dùng dữ liệu mẫu khi API THẬT
+  // SỰ LỖI (catch), không dùng khi API trả về thành công nhưng danh sách rỗng.
   const fetchSchedules = async (showLoading = false) => {
     if (showLoading && !workScheduleApi.getCachedSchedules()) setIsLoading(true);
     try {
       const data = await workScheduleApi.getAll();
-      if (Array.isArray(data) && data.length > 0) {
-        setSchedules(data);
-      } else {
-        setSchedules(initialWorkSchedules);
-      }
+      setSchedules(Array.isArray(data) ? data : []);
     } catch (error) {
       console.warn(
         "Lỗi khi tải lịch làm việc từ API, sử dụng mock data fallback:",
@@ -94,10 +94,8 @@ export default function WorkSchedules() {
     Promise.all([workScheduleApi.getAll(), doctorApi.getAll()])
       .then(([schData, docList]) => {
         if (!isMounted) return;
-        if (Array.isArray(schData) && schData.length > 0) {
+        if (Array.isArray(schData)) {
           setSchedules(schData);
-        } else if (!workScheduleApi.getCachedSchedules()) {
-          setSchedules(initialWorkSchedules);
         }
         if (Array.isArray(docList)) setDoctors(docList);
       })

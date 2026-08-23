@@ -12,6 +12,7 @@ export interface CreateDoctorPayload {
   status?: string;
   avatar?: string;
   avatarUrl?: string;
+  isTestData?: boolean;
   leaveStartDate?: string;
   leaveEndDate?: string;
   leaveReason?: string;
@@ -29,6 +30,7 @@ export interface UpdateDoctorPayload {
   status?: string;
   avatar?: string;
   avatarUrl?: string;
+  isTestData?: boolean;
   leaveStartDate?: string;
   leaveEndDate?: string;
   leaveReason?: string;

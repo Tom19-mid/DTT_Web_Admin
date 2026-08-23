@@ -8,6 +8,8 @@ export interface CreateNotificationPayload {
   type?: string | null;
   relatedId?: number | null;
   relatedType?: string | null;
+  // "PATIENT" (mặc định) hoặc "DOCTOR" — chỉ áp dụng khi userId bỏ trống (phát rộng).
+  targetRole?: "PATIENT" | "DOCTOR" | null;
 }
 
 let notificationsCache: Notification[] | null = null;
@@ -165,6 +167,7 @@ export const notificationApi = {
         userId: payload.userId,
         relatedId: payload.relatedId,
         relatedType: payload.relatedType,
+        targetRole: payload.targetRole,
       });
       const serverNoti = response.data?.data || response.data;
       if (serverNoti && serverNoti.notificationId) {

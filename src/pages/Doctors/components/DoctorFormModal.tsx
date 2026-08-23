@@ -16,16 +16,21 @@ interface DoctorFormModalProps {
   }) => void;
 }
 
+// Fallback CHỈ dùng khi /api/specialties chưa tải xong/lỗi — trước đây 9 tên này không khớp tên
+// thật trong DB (vd "Nội khoa" thay vì "Nội tổng quát", "Chấn thương chỉnh hình" thay vì "Cơ xương
+// khớp"), lại thiếu Chẩn đoán hình ảnh. Khớp đúng nguyên văn 11 tên thật trong bảng specialties.
 const specialtiesList = [
-  "Tim mạch",
-  "Thần kinh học",
-  "Nội khoa",
-  "Da liễu",
-  "Chấn thương chỉnh hình",
-  "Phụ khoa",
-  "Nhãn khoa",
-  "Tai Mũi Họng",
+  "Nội tổng quát",
   "Nhi khoa",
+  "Sản phụ khoa",
+  "Cơ xương khớp",
+  "Tim mạch",
+  "Thần kinh",
+  "Da liễu",
+  "Chẩn đoán hình ảnh",
+  "Răng hàm mặt",
+  "Tai-Mũi-Họng",
+  "Mắt",
 ];
 
 const monthNames = [
@@ -339,6 +344,7 @@ export default function DoctorFormModal({
   const [email, setEmail] = useState("");
   const [clinicRoom, setClinicRoom] = useState("");
   const [status, setStatus] = useState<DoctorStatus>("Đang hoạt động");
+  const [isTestData, setIsTestData] = useState(false);
 
   // Leave fields
   const [leaveStartDate, setLeaveStartDate] = useState("");
@@ -365,6 +371,7 @@ export default function DoctorFormModal({
       setEmail(initialData.email || initialData.userEmail || "");
       setClinicRoom(initialData.clinicRoom || "");
       setStatus(initialData.status);
+      setIsTestData(!!initialData.isTestData);
       setLeaveStartDate(initialData.leaveStartDate || getTodayFormatted());
       setLeaveEndDate(initialData.leaveEndDate || getTodayFormatted());
       setLeaveReason(initialData.leaveReason || "");
@@ -379,6 +386,7 @@ export default function DoctorFormModal({
       setEmail("");
       setClinicRoom("");
       setStatus("Đang hoạt động");
+      setIsTestData(false);
       setLeaveStartDate(getTodayFormatted());
       setLeaveEndDate(getTodayFormatted());
       setLeaveReason("");
@@ -405,6 +413,25 @@ export default function DoctorFormModal({
     if (!fullName.trim()) {
       notifyError("Vui lòng nhập Họ tên bác sĩ!", "Lỗi thao tác");
       return;
+    }
+
+    // "Chuyên khoa" (dropdown, dữ liệu thật) và "Trình độ chuyên môn" (nhập tay tự do) là 2 field
+    // độc lập, không có gì đối chiếu — đây chính là cách 1 bác sĩ có thể bị lưu specialtyId trỏ
+    // 1 khoa (vd Tim mạch) trong khi Trình độ chuyên môn lại ghi tên 1 khoa KHÁC (vd "Cơ xương
+    // khớp"), khiến bác sĩ hiện sai chuyên khoa trên Mobile. Cảnh báo mềm (không chặn cứng, vì
+    // "Tiến sĩ Y khoa" hay các mô tả chung chung khác vẫn hợp lệ) khi phát hiện tên 1 chuyên khoa
+    // KHÁC xuất hiện trong Trình độ chuyên môn.
+    const mismatchedSpecialty = specialtiesOptions?.find(
+      (s) =>
+        s.specialtyId !== specialtyId &&
+        qualifications.trim() !== "" &&
+        qualifications.toLowerCase().includes(s.specialtyName.toLowerCase())
+    );
+    if (mismatchedSpecialty) {
+      const proceed = window.confirm(
+        `Trình độ chuyên môn đang nhắc tới "${mismatchedSpecialty.specialtyName}", nhưng Chuyên khoa đã chọn là "${specialty}". Có thể bạn đã chọn nhầm chuyên khoa.\n\nBạn có chắc chắn muốn lưu như vậy không?`
+      );
+      if (!proceed) return;
     }
 
     if (status === "Nghỉ phép") {
@@ -458,6 +485,7 @@ export default function DoctorFormModal({
         email: email.trim(),
         clinicRoom: clinicRoom.trim(),
         status,
+        isTestData,
         ratingAverage: initialData?.ratingAverage || initialData?.rating || 5.0,
         totalReviews: initialData?.totalReviews || initialData?.reviewCount || 0,
         leaveStartDate: status === "Nghỉ phép" ? leaveStartDate : undefined,
@@ -671,6 +699,20 @@ export default function DoctorFormModal({
                 </select>
               </div>
             )}
+
+            {/* Dữ liệu test — QA tự đánh dấu khi tạo bác sĩ để thử nghiệm, tự động ẩn khỏi App Bệnh
+                nhân mà không cần khóa tài khoản (vẫn đăng nhập/dùng thử WinForms bình thường). */}
+            <label className="flex items-center gap-2.5 p-3 bg-amber-50/70 border border-amber-100 rounded-xl cursor-pointer select-none">
+              <input
+                type="checkbox"
+                checked={isTestData}
+                onChange={(e) => setIsTestData(e.target.checked)}
+                className="w-4.5 h-4.5 rounded border-gray-300 text-amber-600 focus:ring-amber-500/40 cursor-pointer"
+              />
+              <span className="text-sm font-semibold text-amber-900">
+                Đây là hồ sơ dữ liệu test (ẩn khỏi App Bệnh nhân)
+              </span>
+            </label>
 
             {/* Phân vùng Thông tin Nghỉ phép (CHỈ hiển thị khi status === "Nghỉ phép") */}
             {status === "Nghỉ phép" && (

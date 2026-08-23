@@ -496,8 +496,10 @@ export default function AppointmentFormModal({
 
     onSave({
       appointmentId: initialData?.appointmentId ?? initialData?.id ?? nextAppointmentId,
-      patientId: initialData?.patientId ?? 1,
-      doctorId: initialData?.doctorId ?? 1,
+      // Không còn fallback "?? 1" (âm thầm trỏ vào bệnh nhân/bác sĩ #1) — Appointments.tsx.handleSaveAppointment
+      // giờ tự đối chiếu patientName/doctorName với DB thật và báo lỗi rõ ràng nếu không khớp được ai.
+      patientId: initialData?.patientId,
+      doctorId: initialData?.doctorId,
       id: initialData?.id ?? nextAppointmentId,
       patientName: patientName.trim(),
       doctorName,

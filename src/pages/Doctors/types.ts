@@ -49,6 +49,9 @@ export interface Doctor {
   leaveEndDate?: string | null;
   leaveReason?: string | null;
   leaveStatus?: LeaveStatus | string;
+
+  // Hồ sơ test QA tự tạo — tự động ẩn khỏi App Bệnh nhân khi bật.
+  isTestData?: boolean;
 }
 
 export interface DoctorLeave {

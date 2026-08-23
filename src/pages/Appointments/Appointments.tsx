@@ -201,22 +201,51 @@ export default function Appointments() {
       const doctorName = appData.doctorName || "Bác sĩ";
       const adminUserId = getLoggedInAdminUserId();
 
-      // Find matching patient ID from dbPatients list
-      let matchedPatientId = appData.patientId || 1;
+      // Find matching patient ID from dbPatients list — trước đây khi tên gõ vào KHÔNG khớp bệnh
+      // nhân/bác sĩ nào thật trong hệ thống (typo, bệnh nhân mới chưa có tài khoản...), code ÂM THẦM
+      // gán về patientId/doctorId = 1 (người ĐẦU TIÊN trong DB, hoàn toàn không liên quan) thay vì báo
+      // lỗi — lịch hẹn bị gán nhầm cho người khác mà không ai biết. Giờ chặn lưu và báo lỗi rõ ràng.
+      let matchedPatientId = appData.patientId;
       if (appData.patientName) {
         const foundP = dbPatients.find(
           (p) => p.fullName?.toLowerCase().trim() === appData.patientName?.toLowerCase().trim()
         );
-        if (foundP) matchedPatientId = foundP.patientId || foundP.id || matchedPatientId;
+        if (foundP) {
+          matchedPatientId = foundP.patientId || foundP.id;
+        } else {
+          addToast({
+            type: "error",
+            title: "Không tìm thấy bệnh nhân",
+            message: `Không tìm thấy bệnh nhân tên "${appData.patientName}" trong hệ thống. Vui lòng kiểm tra lại tên hoặc tạo tài khoản bệnh nhân trước khi đặt lịch.`,
+          });
+          return;
+        }
+      }
+      if (!matchedPatientId) {
+        addToast({ type: "error", title: "Thiếu thông tin bệnh nhân", message: "Vui lòng nhập tên bệnh nhân." });
+        return;
       }
 
       // Find matching doctor ID from dbDoctors list
-      let matchedDoctorId = appData.doctorId || 1;
+      let matchedDoctorId = appData.doctorId;
       if (appData.doctorName) {
         const foundD = dbDoctors.find(
           (d) => d.fullName?.toLowerCase().trim() === appData.doctorName?.toLowerCase().trim()
         );
-        if (foundD) matchedDoctorId = foundD.doctorId || foundD.id || matchedDoctorId;
+        if (foundD) {
+          matchedDoctorId = foundD.doctorId || foundD.id;
+        } else {
+          addToast({
+            type: "error",
+            title: "Không tìm thấy bác sĩ",
+            message: `Không tìm thấy bác sĩ tên "${appData.doctorName}" trong hệ thống. Vui lòng chọn lại bác sĩ.`,
+          });
+          return;
+        }
+      }
+      if (!matchedDoctorId) {
+        addToast({ type: "error", title: "Thiếu thông tin bác sĩ", message: "Vui lòng chọn bác sĩ." });
+        return;
       }
 
       // Map status name to statusId

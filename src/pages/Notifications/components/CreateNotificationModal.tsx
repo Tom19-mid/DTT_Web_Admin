@@ -16,6 +16,10 @@ export default function CreateNotificationModal({
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
   const [type, setType] = useState("system");
+  // Trước đây modal này không có ô chọn đối tượng nhận — backend luôn ngầm hiểu "phát cho bệnh
+  // nhân", nên Bác sĩ KHÔNG BAO GIỜ nhận được thông báo Admin tạo (đúng như QA report "Admin tạo
+  // thông báo nhưng trên winforms bác sĩ không thấy thông báo đó").
+  const [targetRole, setTargetRole] = useState<"PATIENT" | "DOCTOR">("PATIENT");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
 
@@ -39,12 +43,14 @@ export default function CreateNotificationModal({
         title: title.trim(),
         content: content.trim(),
         type: type,
+        targetRole,
       });
 
       if (success) {
         setTitle("");
         setContent("");
         setType("system");
+        setTargetRole("PATIENT");
         onClose();
       } else {
         setErrorMsg("Tạo thông báo thất bại. Vui lòng thử lại.");
@@ -85,6 +91,20 @@ export default function CreateNotificationModal({
               {errorMsg}
             </div>
           )}
+
+          <div>
+            <label className="block text-base font-bold text-gray-800 mb-2">
+              Đối tượng nhận <span className="text-rose-500">*</span>
+            </label>
+            <select
+              value={targetRole}
+              onChange={(e) => setTargetRole(e.target.value as "PATIENT" | "DOCTOR")}
+              className="w-full px-5 py-3.5 rounded-2xl border border-gray-200 bg-gray-50/50 text-gray-900 font-medium text-base focus:outline-none focus:border-blue-500 focus:bg-white transition"
+            >
+              <option value="PATIENT">Tất cả Bệnh nhân (App Mobile)</option>
+              <option value="DOCTOR">Tất cả Bác sĩ (WinForms)</option>
+            </select>
+          </div>
 
           <div>
             <label className="block text-base font-bold text-gray-800 mb-2">
