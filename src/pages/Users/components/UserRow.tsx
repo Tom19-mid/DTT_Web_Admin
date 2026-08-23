@@ -38,7 +38,7 @@ export default function UserRow({ user, onEdit, onLock }: UserRowProps) {
         {user.phoneNumber || user.phone}
       </td>
       <td className="py-4 px-4">
-        <RoleBadge role={user.role} />
+        <RoleBadge role={user.role || "Bệnh nhân"} />
       </td>
       <td className="py-4 px-4 text-gray-600 font-medium text-base">
         {formatDisplayDate(user.createdAt)}
@@ -47,7 +47,7 @@ export default function UserRow({ user, onEdit, onLock }: UserRowProps) {
         {formatDisplayDate(user.updatedAt || user.lastLogin)}
       </td>
       <td className="py-4 px-4">
-        <StatusBadge status={user.status} />
+        <StatusBadge status={user.status || "Active"} />
       </td>
       <td className="py-4 px-4 text-center">
         <ActionButtons

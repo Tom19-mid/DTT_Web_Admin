@@ -12,6 +12,7 @@ const ForgotPassword = lazy(() => import("../pages/ForgotPassword/ForgotPassword
 const Dashboard = lazy(() => import("../pages/Dashboard/Dashboard"));
 const Users = lazy(() => import("../pages/Users/Users"));
 const Patients = lazy(() => import("../pages/Patients/Patients"));
+const FamilyMembers = lazy(() => import("../pages/FamilyMembers/FamilyMembers"));
 const Doctors = lazy(() => import("../pages/Doctors/Doctors"));
 const Specialties = lazy(() => import("../pages/Specialties/Specialties"));
 const Medicines = lazy(() => import("../pages/Medicines/Medicines"));
@@ -35,6 +36,7 @@ export default function AppRoutes() {
                 <Route path="/dashboard" element={<Dashboard />} />
                 <Route path="/users" element={<Users />} />
                 <Route path="/patients" element={<Patients />} />
+                <Route path="/family-members" element={<FamilyMembers />} />
                 <Route path="/doctors" element={<Doctors />} />
                 <Route path="/doctor-leaves" element={<Doctors defaultTab="leaves" />} />
                 <Route path="/specialties" element={<Specialties />} />

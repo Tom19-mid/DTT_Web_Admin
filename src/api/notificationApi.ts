@@ -2,12 +2,12 @@ import axiosClient from "./axiosClient";
 import type { Notification } from "../pages/Notifications/types";
 
 export interface CreateNotificationPayload {
-  userId?: string;
+  userId?: string | null;
   title: string;
   content: string;
-  type?: string;
-  relatedId?: number;
-  relatedType?: string;
+  type?: string | null;
+  relatedId?: number | null;
+  relatedType?: string | null;
 }
 
 let notificationsCache: Notification[] | null = null;

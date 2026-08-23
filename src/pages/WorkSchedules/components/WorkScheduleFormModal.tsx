@@ -1,7 +1,6 @@
 import { useState, useEffect, useRef } from "react";
-import { X, Calendar, ChevronLeft, ChevronRight, Save, Clock, ChevronDown, Check, AlertTriangle, AlertCircle } from "lucide-react";
+import { X, Calendar, ChevronLeft, ChevronRight, Save, Clock, ChevronDown, Check } from "lucide-react";
 import type { WorkSchedule, TimeSlot } from "../types";
-import { doctorsList } from "../data";
 import doctorApi from "../../../api/doctorApi";
 
 interface WorkScheduleFormModalProps {

@@ -17,7 +17,7 @@ export default function ConfirmLockScheduleModal({
   if (!isOpen || !schedule) return null;
 
   const isCurrentlyLocked = schedule.status === "Không hoạt động";
-  const bookedSlotsCount = schedule.timeSlots.filter(
+  const bookedSlotsCount = (schedule.timeSlots || []).filter(
     (s) => s.status === "Đã đặt lịch"
   ).length;
 

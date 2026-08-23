@@ -23,7 +23,9 @@ export default function UserTable({
 
   const roles = useMemo(() => {
     const roleSet = new Set<string>();
-    users.forEach((u) => roleSet.add(u.role));
+    users.forEach((u) => {
+      if (u.role) roleSet.add(u.role);
+    });
     return Array.from(roleSet);
   }, [users]);
 

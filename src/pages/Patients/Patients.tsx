@@ -58,8 +58,9 @@ export default function Patients() {
 
   useEffect(() => {
     let isMounted = true;
-    const loadData = async (silent = false) => {
-      if (!silent && !patientApi.getCachedPatients()) {
+    const loadData = async () => {
+      const cached = patientApi.getCachedPatients();
+      if (!cached && patients.length === 0) {
         setLoading(true);
       }
       try {
@@ -76,18 +77,12 @@ export default function Patients() {
       }
     };
 
-    loadData(!!patientApi.getCachedPatients());
-
-    const handleFocus = () => {
-      loadData(true);
-    };
-    window.addEventListener("focus", handleFocus);
+    loadData();
 
     return () => {
       isMounted = false;
-      window.removeEventListener("focus", handleFocus);
     };
-  }, [location.key]);
+  }, []);
 
   // Statistics based on account status (Optimized with useMemo)
   const { totalPatients, activeCount, inactiveCount, lockedCount } = useMemo(() => {

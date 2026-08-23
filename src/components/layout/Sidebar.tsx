@@ -7,6 +7,7 @@ import {
   UserRound,
   Stethoscope,
   HeartPulse,
+  HeartHandshake,
   Pill,
   CalendarDays,
   CalendarClock,
@@ -31,6 +32,11 @@ const menus = [
     title: "Quản lý bệnh nhân",
     icon: UserRound,
     path: "/patients",
+  },
+  {
+    title: "Người thân của bệnh nhân",
+    icon: HeartHandshake,
+    path: "/family-members",
   },
   {
     title: "Quản lý bác sĩ",
@@ -74,7 +80,7 @@ export default function Sidebar() {
   };
 
   return (
-    <aside className="w-72 bg-blue-900 text-white flex flex-col h-screen select-none shrink-0">
+    <aside className="w-80 bg-blue-900 text-white flex flex-col h-screen select-none shrink-0">
       {/* Header */}
       <div className="h-24 flex items-center px-4 border-b border-white">
         <div className="w-18 h-18 rounded-2xl overflow-hidden bg-white flex items-center justify-center shrink-0 border border-white/20">
@@ -118,7 +124,7 @@ export default function Sidebar() {
               {({ isActive }) => (
                 <>
                   <Icon size={22} className="shrink-0" />
-                  <span className="truncate">{item.title}</span>
+                  <span className="whitespace-nowrap flex-1">{item.title}</span>
                   {isActive && <ChevronRight size={18} className="ml-auto shrink-0" />}
                 </>
               )}

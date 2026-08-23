@@ -32,6 +32,7 @@ export interface User {
 
   // Joined / UI fields for backward-compatibility
   id?: string | number;
+  fullName?: string;
   stt?: number;
   phone?: string;
   role?: UserRole;

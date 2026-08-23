@@ -2,7 +2,7 @@ export type NotificationType = string;
 
 export interface Notification {
   notificationId: number;
-  userId: string;
+  userId?: string | null;
   title: string;
   content: string;
   type: NotificationType;

@@ -6,7 +6,9 @@ import UserToolbar from "./components/UserToolbar";
 import UserTable from "./components/UserTable";
 import UserFormModal from "./components/UserFormModal";
 import ConfirmLockModal from "./components/ConfirmLockModal";
-import ToastNotification, { type ToastMessage } from "../../components/common/ToastNotification";
+import ToastNotification, {
+  type ToastMessage,
+} from "../../components/common/ToastNotification";
 import { notificationApi } from "../../api/notificationApi";
 import NotificationDetailModal from "../Notifications/components/NotificationDetailModal";
 import type { Notification } from "../Notifications/types";
@@ -14,16 +16,22 @@ import { Loader2 } from "lucide-react";
 
 export default function Users() {
   const location = useLocation();
-  const [users, setUsers] = useState<User[]>(() => userApi.getCachedUsers() || []);
-  const [loading, setLoading] = useState<boolean>(() => !userApi.getCachedUsers());
+  const [users, setUsers] = useState<User[]>(
+    () => userApi.getCachedUsers() || [],
+  );
+  const [loading, setLoading] = useState<boolean>(
+    () => !userApi.getCachedUsers(),
+  );
   const [isFormModalOpen, setIsFormModalOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [lockingUser, setLockingUser] = useState<User | null>(null);
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
-  const [viewingNotification, setViewingNotification] = useState<Notification | null>(null);
+  const [viewingNotification, setViewingNotification] =
+    useState<Notification | null>(null);
 
   const addToast = useCallback((item: Omit<ToastMessage, "id">) => {
-    const id = Date.now().toString() + "_" + Math.random().toString(36).substring(2, 9);
+    const id =
+      Date.now().toString() + "_" + Math.random().toString(36).substring(2, 9);
     setToasts((prev) => [{ ...item, id }, ...prev]);
   }, []);
 
@@ -89,23 +97,30 @@ export default function Users() {
   }, [location.key]);
 
   // Statistics based on account status (Optimized with useMemo)
-  const { totalUsers, activeCount, inactiveCount, lockedCount } = useMemo(() => {
-    let active = 0,
-      inactive = 0,
-      locked = 0;
-    users.forEach((u) => {
-      const st = u.status || "Active";
-      if (st === "Active" || st === "Đang hoạt động") active++;
-      else if (st === "Inactive" || st === "Ngưng hoạt động" || st === "OnLeave" || st === "Nghỉ phép") inactive++;
-      else if (st === "Locked" || st === "Đã khóa") locked++;
-    });
-    return {
-      totalUsers: users.length,
-      activeCount: active,
-      inactiveCount: inactive,
-      lockedCount: locked,
-    };
-  }, [users]);
+  const { totalUsers, activeCount, inactiveCount, lockedCount } =
+    useMemo(() => {
+      let active = 0,
+        inactive = 0,
+        locked = 0;
+      users.forEach((u) => {
+        const st = u.status || "Active";
+        if (st === "Active" || st === "Đang hoạt động") active++;
+        else if (
+          st === "Inactive" ||
+          st === "Ngưng hoạt động" ||
+          st === "OnLeave" ||
+          st === "Nghỉ phép"
+        )
+          inactive++;
+        else if (st === "Locked" || st === "Đã khóa") locked++;
+      });
+      return {
+        totalUsers: users.length,
+        activeCount: active,
+        inactiveCount: inactive,
+        lockedCount: locked,
+      };
+    }, [users]);
 
   // Open modal for adding new user
   const handleOpenAddModal = () => {
@@ -140,22 +155,26 @@ export default function Users() {
     const roleName =
       userData.roleName ||
       userData.role ||
-      (targetRoleId === 1 ? "Admin" : targetRoleId === 2 ? "Bác sĩ" : "Bệnh nhân");
+      (targetRoleId === 1
+        ? "Admin"
+        : targetRoleId === 2
+          ? "Bác sĩ"
+          : "Bệnh nhân");
     const adminUserId = getLoggedInAdminUserId();
 
     try {
       if (targetUserId) {
         // Edit mode
         setEditingUser(null);
-        setIsModalOpen(false);
+        setIsFormModalOpen(false);
 
         // Optimistic update
         setUsers((prev) =>
           prev.map((u) =>
             u.userId === targetUserId || u.id === targetUserId
               ? { ...u, ...userData, fullName: userName, roleName }
-              : u
-          )
+              : u,
+          ),
         );
 
         const notiData: Notification = {
@@ -176,7 +195,9 @@ export default function Users() {
         });
 
         // Trigger notification immediately for instant bell badge update
-        notificationApi.create(notiData).catch((e) => console.warn("Lỗi tạo thông báo:", e));
+        notificationApi
+          .create(notiData)
+          .catch((e) => console.warn("Lỗi tạo thông báo:", e));
 
         await userApi.update(targetUserId, {
           email: userData.email,
@@ -188,7 +209,7 @@ export default function Users() {
       } else {
         // Add mode
         setEditingUser(null);
-        setIsModalOpen(false);
+        setIsFormModalOpen(false);
 
         const notiData: Notification = {
           notificationId: Date.now(),
@@ -208,7 +229,9 @@ export default function Users() {
         });
 
         // Trigger notification immediately for instant bell badge update
-        notificationApi.create(notiData).catch((e) => console.warn("Lỗi tạo thông báo:", e));
+        notificationApi
+          .create(notiData)
+          .catch((e) => console.warn("Lỗi tạo thông báo:", e));
 
         await userApi.create({
           email: userData.email || "",
@@ -224,7 +247,9 @@ export default function Users() {
       addToast({
         type: "error",
         title: "Lỗi thao tác",
-        message: error.message || "Không thể lưu thông tin tài khoản. Vui lòng thử lại.",
+        message:
+          error.message ||
+          "Không thể lưu thông tin tài khoản. Vui lòng thử lại.",
       });
     }
   };
@@ -242,7 +267,9 @@ export default function Users() {
       const isCurrentlyLocked =
         lockingUser.status === "Đã khóa" || lockingUser.status === "Locked";
       const newStatus = isCurrentlyLocked ? "Active" : "Đã khóa";
-      const actionTitle = isCurrentlyLocked ? "Mở khóa tài khoản" : "Khóa tài khoản";
+      const actionTitle = isCurrentlyLocked
+        ? "Mở khóa tài khoản"
+        : "Khóa tài khoản";
       const actionMessage = isCurrentlyLocked
         ? `Đã mở khóa tài khoản "${userName}" thành công!`
         : `Đã khóa tài khoản "${userName}" thành công!`;
@@ -270,8 +297,8 @@ export default function Users() {
           prev.map((u) =>
             u.userId === targetUserId || u.id === targetUserId
               ? { ...u, status: newStatus }
-              : u
-          )
+              : u,
+          ),
         );
 
         // 3. Show Toast immediately with onClick
@@ -285,7 +312,9 @@ export default function Users() {
         // 4. Background execution
         try {
           await userApi.updateStatus(targetUserId, newStatus);
-          notificationApi.create(notiData).catch((e) => console.warn("Lỗi tạo thông báo:", e));
+          notificationApi
+            .create(notiData)
+            .catch((e) => console.warn("Lỗi tạo thông báo:", e));
 
           reloadUsers();
         } catch (err: any) {
@@ -318,7 +347,9 @@ export default function Users() {
       {loading && users.length === 0 ? (
         <div className="py-24 flex flex-col justify-center items-center">
           <Loader2 className="animate-spin text-blue-700 mb-3" size={36} />
-          <p className="text-gray-600 font-medium text-base">Đang tải danh sách tài khoản người dùng...</p>
+          <p className="text-gray-600 font-medium text-base">
+            Đang tải danh sách tài khoản người dùng...
+          </p>
         </div>
       ) : (
         <UserTable

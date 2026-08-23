@@ -11,9 +11,6 @@ import {
   Clock,
   Calendar as CalendarIcon,
   RotateCcw,
-  X,
-  ChevronLeft,
-  ChevronRight,
   Loader2,
   User,
 } from "lucide-react";

@@ -50,8 +50,7 @@ const CACHE_TTL_MS = 60 * 1000; // 60 seconds
 
 export const patientApi = {
   getCachedPatients: (): Patient[] | null => {
-    const now = Date.now();
-    if (patientsCache && now - cacheTimestamp < CACHE_TTL_MS) {
+    if (patientsCache && patientsCache.length > 0) {
       return patientsCache;
     }
     return null;
@@ -63,8 +62,7 @@ export const patientApi = {
   },
 
   getAll: async (forceRefresh = false): Promise<Patient[]> => {
-    const now = Date.now();
-    if (!forceRefresh && patientsCache && now - cacheTimestamp < CACHE_TTL_MS) {
+    if (!forceRefresh && patientsCache && patientsCache.length > 0) {
       return patientsCache;
     }
 
@@ -76,7 +74,14 @@ export const patientApi = {
         ? response.data
         : [];
 
-      const mappedPatients = data.map((p: Record<string, unknown>, index: number) => {
+      // Lọc chỉ lấy hồ sơ Bệnh nhân chính (Bản thân) cho trang Quản lý bệnh nhân
+      const primaryData = data.filter((p: Record<string, unknown>) => {
+        const recType = String(p.recordType || p.record_type || "").toLowerCase();
+        const rel = String(p.relationship || "").trim().toLowerCase();
+        return recType !== "family_member" || rel === "bản thân";
+      });
+
+      const mappedPatients = primaryData.map((p: Record<string, unknown>, index: number) => {
         const pId = Number(p.id || p.patientId || p.patient_id || index + 1);
         const rawVer = String(p.verificationStatus || p.verification_status || "pending").toLowerCase();
         let displayVer = "Chờ duyệt";

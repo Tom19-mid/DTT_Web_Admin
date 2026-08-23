@@ -71,7 +71,7 @@ export default function WorkScheduleDetailModal({
             <span className="text-xs font-extrabold text-gray-500 uppercase tracking-wider">
               Trạng thái ca làm việc:
             </span>
-            <ScheduleStatusBadge status={schedule.status} />
+            <ScheduleStatusBadge status={schedule.status || "Đang hoạt động"} />
           </div>
         </div>
 
