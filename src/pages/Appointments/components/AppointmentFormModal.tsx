@@ -377,6 +377,7 @@ const statusOptions: { value: AppointmentStatusName; label: string }[] = [
   { value: "WaitingDoctor", label: "Đang chờ bác sĩ" },
   { value: "InProgress", label: "Đang khám" },
   { value: "WaitingTestResults", label: "Đang chờ kết quả xét nghiệm" },
+  { value: "PendingDispensing", label: "Đang chờ phát thuốc" },
   { value: "Completed", label: "Đã hoàn thành" },
   { value: "Cancelled", label: "Đã hủy" },
   { value: "NoShow", label: "Không đến khám" },

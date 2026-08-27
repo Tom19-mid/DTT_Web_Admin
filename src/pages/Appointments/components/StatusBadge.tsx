@@ -16,14 +16,19 @@ function formatStatusText(status: AppointmentStatusName): string {
     case "Đang chờ khám":
       return "Đang chờ khám";
     case "WaitingDoctor":
+    case "WaitingForDoctor":
     case "Đang chờ bác sĩ":
       return "Đang chờ bác sĩ";
     case "InProgress":
     case "Đang khám":
       return "Đang khám";
     case "WaitingTestResults":
+    case "AwaitingTestResults":
     case "Đang chờ kết quả xét nghiệm":
       return "Đang chờ kết quả xét nghiệm";
+    case "PendingDispensing":
+    case "Đang chờ phát thuốc":
+      return "Đang chờ phát thuốc";
     case "Completed":
     case "Đã hoàn thành":
       return "Đã hoàn thành";
@@ -51,14 +56,19 @@ export default function StatusBadge({ status }: StatusBadgeProps) {
       case "Đang chờ khám":
         return "bg-amber-100 text-amber-700 border border-amber-200/50";
       case "WaitingDoctor":
+      case "WaitingForDoctor":
       case "Đang chờ bác sĩ":
         return "bg-sky-100 text-sky-700 border border-sky-200/50";
       case "InProgress":
       case "Đang khám":
         return "bg-indigo-100 text-indigo-700 border border-indigo-200/50";
       case "WaitingTestResults":
+      case "AwaitingTestResults":
       case "Đang chờ kết quả xét nghiệm":
         return "bg-purple-100 text-purple-700 border border-purple-200/50";
+      case "PendingDispensing":
+      case "Đang chờ phát thuốc":
+        return "bg-orange-100 text-orange-700 border border-orange-200/50";
       case "Completed":
       case "Đã hoàn thành":
         return "bg-emerald-100 text-emerald-700 border border-emerald-200/50";

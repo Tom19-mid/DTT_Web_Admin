@@ -49,10 +49,18 @@ export default function AppointmentTable({
       if (selectedStatus !== "ALL") {
         if (selectedStatus === "Scheduled" || selectedStatus === "Đã đặt lịch") {
           matchesStatus = app.status === "Scheduled" || app.status === "Đã đặt lịch";
+        } else if (selectedStatus === "CheckedIn" || selectedStatus === "Đã check in") {
+          matchesStatus = app.status === "CheckedIn" || app.status === "Đã check in";
         } else if (selectedStatus === "Waiting" || selectedStatus === "Đang chờ khám") {
           matchesStatus = app.status === "Waiting" || app.status === "Đang chờ khám";
+        } else if (selectedStatus === "WaitingDoctor" || selectedStatus === "WaitingForDoctor" || selectedStatus === "Đang chờ bác sĩ") {
+          matchesStatus = app.status === "WaitingDoctor" || app.status === "WaitingForDoctor" || app.status === "Đang chờ bác sĩ";
         } else if (selectedStatus === "InProgress" || selectedStatus === "Đang khám") {
           matchesStatus = app.status === "InProgress" || app.status === "Đang khám";
+        } else if (selectedStatus === "WaitingTestResults" || selectedStatus === "AwaitingTestResults" || selectedStatus === "Đang chờ kết quả xét nghiệm") {
+          matchesStatus = app.status === "WaitingTestResults" || app.status === "AwaitingTestResults" || app.status === "Đang chờ kết quả xét nghiệm";
+        } else if (selectedStatus === "PendingDispensing" || selectedStatus === "Đang chờ phát thuốc") {
+          matchesStatus = app.status === "PendingDispensing" || app.status === "Đang chờ phát thuốc";
         } else if (selectedStatus === "Completed" || selectedStatus === "Đã hoàn thành") {
           matchesStatus = app.status === "Completed" || app.status === "Đã hoàn thành";
         } else if (selectedStatus === "Cancelled" || selectedStatus === "Đã hủy") {

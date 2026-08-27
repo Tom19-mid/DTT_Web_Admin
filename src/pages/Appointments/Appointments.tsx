@@ -19,7 +19,10 @@ const mapBackendStatus = (st?: string): string => {
   const lower = st.toLowerCase();
   if (lower === "confirmed" || lower === "scheduled" || lower === "đã đặt lịch") return "Scheduled";
   if (lower === "checkedin" || lower === "đã check in") return "CheckedIn";
-  if (lower === "waitingfordoctor" || lower === "waiting" || lower === "đang chờ khám") return "Waiting";
+  if (lower === "waitingfordoctor" || lower === "waitingdoctor" || lower === "đang chờ bác sĩ") return "WaitingDoctor";
+  if (lower === "awaitingtestresults" || lower === "waitingtestresults" || lower === "đang chờ kết quả xét nghiệm") return "WaitingTestResults";
+  if (lower === "pendingdispensing" || lower === "đang chờ phát thuốc") return "PendingDispensing";
+  if (lower === "waiting" || lower === "đang chờ khám") return "Waiting";
   if (lower === "inprogress" || lower === "đang khám") return "InProgress";
   if (lower === "completed" || lower === "đã hoàn thành") return "Completed";
   if (lower === "cancelled" || lower === "đã hủy") return "Cancelled";
@@ -164,7 +167,21 @@ export default function Appointments() {
   // Statistics
   const totalAppointments = appointments.length;
   const waitingAndExaminingCount = appointments.filter(
-    (a) => a.status === "Waiting" || a.status === "InProgress" || a.status === "CheckedIn" || a.status === "Đang chờ khám" || a.status === "Đang khám"
+    (a) =>
+      a.status === "Waiting" ||
+      a.status === "InProgress" ||
+      a.status === "CheckedIn" ||
+      a.status === "WaitingDoctor" ||
+      a.status === "WaitingForDoctor" ||
+      a.status === "WaitingTestResults" ||
+      a.status === "AwaitingTestResults" ||
+      a.status === "PendingDispensing" ||
+      a.status === "Đang chờ khám" ||
+      a.status === "Đã check in" ||
+      a.status === "Đang chờ bác sĩ" ||
+      a.status === "Đang chờ kết quả xét nghiệm" ||
+      a.status === "Đang chờ phát thuốc" ||
+      a.status === "Đang khám"
   ).length;
   const completedCount = appointments.filter(
     (a) => a.status === "Completed" || a.status === "Đã hoàn thành"
@@ -248,15 +265,19 @@ export default function Appointments() {
         return;
       }
 
-      // Map status name to statusId
+      // Map status name to statusId (1: Scheduled, 2: Waiting, 3: InProgress, 4: Completed, 5: Cancelled, 6: NoShow, 7: CheckedIn, 8: WaitingForDoctor, 9: AwaitingTestResults, 10: PendingDispensing)
       let statusId = 1;
       const st = String(appData.status || "Scheduled").toLowerCase();
-      if (st.includes("completed") || st.includes("hoàn thành")) statusId = 4;
-      else if (st.includes("cancelled") || st.includes("hủy")) statusId = 5;
-      else if (st.includes("noshow") || st.includes("không đến")) statusId = 6;
+      if (st.includes("pendingdispensing") || st.includes("phát thuốc")) statusId = 10;
+      else if (st.includes("awaitingtestresults") || st.includes("waitingtestresults") || st.includes("xét nghiệm")) statusId = 9;
+      else if (st.includes("waitingfordoctor") || st.includes("waitingdoctor") || st.includes("chờ bác sĩ")) statusId = 8;
       else if (st.includes("checkedin") || st.includes("check in")) statusId = 7;
-      else if (st.includes("waiting") || st.includes("chờ")) statusId = 2;
+      else if (st.includes("noshow") || st.includes("không đến")) statusId = 6;
+      else if (st.includes("cancelled") || st.includes("hủy")) statusId = 5;
+      else if (st.includes("completed") || st.includes("hoàn thành")) statusId = 4;
       else if (st.includes("inprogress") || st.includes("đang khám")) statusId = 3;
+      else if (st.includes("waiting") || st.includes("chờ")) statusId = 2;
+      else statusId = 1;
 
       if (targetId && editingAppointment) {
         // Edit mode API

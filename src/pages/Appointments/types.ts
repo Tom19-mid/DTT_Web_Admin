@@ -5,6 +5,7 @@ export type AppointmentStatusName =
   | "Đang chờ bác sĩ"
   | "Đang khám"
   | "Đang chờ kết quả xét nghiệm"
+  | "Đang chờ phát thuốc"
   | "Đã hoàn thành"
   | "Đã hủy"
   | "Không đến khám"
