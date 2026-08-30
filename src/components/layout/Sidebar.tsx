@@ -11,7 +11,6 @@ import {
   Pill,
   CalendarDays,
   CalendarClock,
-  CalendarX,
   Bell,
   LogOut,
   ChevronRight,

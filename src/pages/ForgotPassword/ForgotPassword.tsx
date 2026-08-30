@@ -35,7 +35,7 @@ export default function ForgotPassword() {
 
   // Timer countdown for Step 2
   useEffect(() => {
-    let timer: NodeJS.Timeout;
+    let timer: ReturnType<typeof setInterval>;
     if (step === 2 && countdown > 0) {
       timer = setInterval(() => {
         setCountdown((prev) => prev - 1);

@@ -50,7 +50,11 @@ const CACHE_TTL_MS = 60 * 1000; // 60 seconds
 
 export const patientApi = {
   getCachedPatients: (): Patient[] | null => {
-    if (patientsCache && patientsCache.length > 0) {
+    if (
+      patientsCache &&
+      patientsCache.length > 0 &&
+      Date.now() - cacheTimestamp < CACHE_TTL_MS
+    ) {
       return patientsCache;
     }
     return null;

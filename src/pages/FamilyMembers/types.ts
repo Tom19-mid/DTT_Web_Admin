@@ -56,6 +56,7 @@ export interface CreateFamilyMemberPayload {
   bhyt?: string;
   address?: string;
   verificationStatus?: string;
+  verificationNote?: string | null;
 }
 
 export interface UpdateFamilyMemberPayload {
@@ -70,4 +71,7 @@ export interface UpdateFamilyMemberPayload {
   bhyt?: string;
   address?: string;
   verificationStatus?: string;
+  verifiedAt?: string | null;
+  verifiedBy?: string | null;
+  verificationNote?: string | null;
 }

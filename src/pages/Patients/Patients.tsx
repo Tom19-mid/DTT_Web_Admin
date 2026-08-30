@@ -190,7 +190,7 @@ export default function Patients() {
 
         await patientApi.update(targetId, {
           fullName: patientData.fullName || "",
-          phone: patientData.phone || patientData.phoneNumber,
+          phone: patientData.phone || patientData.phoneNumber || undefined,
           gender: patientData.gender || undefined,
           address: patientData.address,
           cccdNumber: patientData.cccdNumber,

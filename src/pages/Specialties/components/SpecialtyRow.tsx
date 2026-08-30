@@ -28,7 +28,7 @@ export default function SpecialtyRow({
         {specialty.doctorCount}
       </td>
       <td className="py-4 px-4">
-        <StatusBadge status={specialty.status} />
+        <StatusBadge status={specialty.status ?? "Đang hoạt động"} />
       </td>
       <td className="py-4 px-4 text-center">
         <ActionButtons
@@ -37,7 +37,6 @@ export default function SpecialtyRow({
           isLocked={
             specialty.status === "Ngưng hoạt động" ||
             specialty.status === "Inactive" ||
-            specialty.rawStatus === false ||
             specialty.status === false
           }
         />

@@ -1,13 +1,12 @@
 import { useState, useMemo } from "react";
-import type { WorkSchedule } from "../types";
-import type { Doctor } from "../../Doctors/types";
+import type { WorkSchedule, DoctorItem } from "../types";
 import ScheduleSearch from "./ScheduleSearch";
 import ScheduleRow from "./ScheduleRow";
 import Pagination from "../../../components/common/Pagination";
 
 interface ScheduleTableProps {
   schedules: WorkSchedule[];
-  doctors?: Doctor[];
+  doctors?: DoctorItem[];
   onView: (schedule: WorkSchedule) => void;
   onEdit: (schedule: WorkSchedule) => void;
   onToggleLock: (schedule: WorkSchedule) => void;

@@ -17,12 +17,14 @@ import type {
   VerificationStatus,
 } from "../types";
 import { formatGenderVi } from "../../../api/patientApi";
+import type { ToastMessage } from "../../../components/common/ToastNotification";
 
 interface PatientFormModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSave: (patientData: Omit<Patient, "id"> & { id?: number }) => void;
   initialData?: Patient | null;
+  onAddToast?: (toast: Omit<ToastMessage, "id">) => void;
 }
 
 const monthNames = [

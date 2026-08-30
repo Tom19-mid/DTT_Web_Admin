@@ -38,10 +38,10 @@ export default function AppointmentTable({
       const term = searchTerm.toLowerCase().trim();
       const matchesSearch =
         !term ||
-        app.id.toString().includes(term) ||
-        app.patientName.toLowerCase().includes(term) ||
-        app.doctorName.toLowerCase().includes(term) ||
-        app.reason.toLowerCase().includes(term) ||
+        (app.id ?? "").toString().includes(term) ||
+        (app.patientName || "").toLowerCase().includes(term) ||
+        (app.doctorName || "").toLowerCase().includes(term) ||
+        (app.reason || "").toLowerCase().includes(term) ||
         (app.notes && app.notes.toLowerCase().includes(term));
 
       // Status filter (match DB code or Vietnamese)

@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { Pill, Boxes, Plus } from "lucide-react";
+import { Pill, Boxes } from "lucide-react";
 import type { Medicine, MedicineCategory } from "./types";
 import medicineApi from "../../api/medicineApi";
 import MedicineToolbar from "./components/MedicineToolbar";
@@ -126,7 +126,7 @@ export default function Medicines() {
       if (medicineData.medicineId || medicineData.id) {
         const targetId = medicineData.medicineId || medicineData.id!;
         setEditingMedicine(null);
-        setIsModalOpen(false);
+        setIsFormModalOpen(false);
 
         // Optimistic update
         setMedicines((prev) =>
@@ -159,11 +159,16 @@ export default function Medicines() {
 
         await medicineApi.update(targetId, {
           ...medicineData,
+          categoryId: medicineData.categoryId ?? 1,
+          medicineName: medName,
+          unit: medicineData.unit || "Viên",
+          unitPrice: medicineData.unitPrice ?? 0,
+          stockQuantity: medicineData.stockQuantity ?? 0,
           status: targetStatus,
         });
       } else {
         setEditingMedicine(null);
-        setIsModalOpen(false);
+        setIsFormModalOpen(false);
 
         const notiData: Notification = {
           notificationId: Date.now(),
@@ -187,6 +192,11 @@ export default function Medicines() {
 
         await medicineApi.create({
           ...medicineData,
+          categoryId: medicineData.categoryId ?? 1,
+          medicineName: medName,
+          unit: medicineData.unit || "Viên",
+          unitPrice: medicineData.unitPrice ?? 0,
+          stockQuantity: medicineData.stockQuantity ?? 0,
           status: targetStatus,
         });
       }

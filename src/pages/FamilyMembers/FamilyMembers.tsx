@@ -298,10 +298,10 @@ export default function FamilyMembers() {
       }
 
       // Tải lại nền trong background để đồng bộ dữ liệu ngầm
-      reloadData(true);
+      reloadData();
     } catch (err: any) {
       console.error("handleSaveMember error:", err);
-      reloadData(true);
+      reloadData();
       addToast({
         type: "error",
         title: "Lỗi thao tác",
@@ -352,10 +352,10 @@ export default function FamilyMembers() {
       });
 
       notificationApi.create(notiData).catch((e) => console.warn("Lỗi tạo thông báo:", e));
-      reloadData(true);
+      reloadData();
     } catch (err: any) {
       console.error("handleVerifyMember error:", err);
-      reloadData(true);
+      reloadData();
       addToast({
         type: "error",
         title: "Lỗi xác thực",
@@ -385,10 +385,10 @@ export default function FamilyMembers() {
         message: `Đã xóa hồ sơ người thân "${memberName}" thành công!`,
       });
 
-      reloadData(true);
+      reloadData();
     } catch (err: any) {
       console.error("handleDeleteMember error:", err);
-      reloadData(true);
+      reloadData();
       addToast({
         type: "error",
         title: "Lỗi xóa hồ sơ",

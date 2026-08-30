@@ -303,6 +303,20 @@ export default function FamilyMemberDetailModal({
             Đóng
           </button>
 
+          {onVerify && isPending && (
+            <button
+              type="button"
+              onClick={() => {
+                onClose();
+                onVerify(member);
+              }}
+              className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-emerald-600 text-white font-bold hover:bg-emerald-700 shadow-sm transition cursor-pointer text-base"
+            >
+              <ShieldCheck size={18} />
+              <span>Xác thực CCCD</span>
+            </button>
+          )}
+
           {onEdit && (
             <button
               type="button"

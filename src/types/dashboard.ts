@@ -37,11 +37,14 @@ export interface AppointmentRecord {
   patientId?: number;
   patientName?: string;
   patient_name?: string;
+  doctorId?: number;
+  doctor_id?: number;
   doctorName?: string;
   doctor_name?: string;
   specialtyName?: string;
   specialty_name?: string;
   date?: string;
+  reason?: string;
   status?: string;
   status_name?: string;
   statusId?: number;

@@ -53,9 +53,9 @@ export default function DoctorTable({
       const term = searchTerm.toLowerCase().trim();
       const matchesSearch =
         !term ||
-        doctor.fullName.toLowerCase().includes(term) ||
-        doctor.email.toLowerCase().includes(term) ||
-        doctor.specialty.toLowerCase().includes(term);
+        (doctor.fullName || "").toLowerCase().includes(term) ||
+        (doctor.email || "").toLowerCase().includes(term) ||
+        (doctor.specialty || "").toLowerCase().includes(term);
 
       const matchesStatus =
         selectedStatus === "ALL" || doctor.status === selectedStatus;

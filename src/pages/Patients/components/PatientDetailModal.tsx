@@ -232,7 +232,7 @@ export default function PatientDetailModal({
                 </span>
                 <div className="flex items-center justify-start">
                   <StatusBadge
-                    status={patient.verificationStatus || patient.status}
+                    status={patient.verificationStatus || patient.status || "Chờ duyệt"}
                   />
                 </div>
               </div>

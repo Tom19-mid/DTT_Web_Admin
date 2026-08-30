@@ -31,13 +31,13 @@ export default function DoctorRow({
           {doctor.avatar && !imgError ? (
             <img
               src={doctor.avatar}
-              alt={doctor.fullName}
+              alt={doctor.fullName || "Bác sĩ"}
               onError={() => setImgError(true)}
               className="w-9 h-9 rounded-full object-cover border border-gray-200 shrink-0"
             />
           ) : (
             <div className="w-9 h-9 rounded-full bg-blue-100 text-blue-700 font-bold flex items-center justify-center text-sm shrink-0">
-              {doctor.fullName.charAt(0)}
+              {(doctor.fullName || "?").charAt(0)}
             </div>
           )}
           <span>{doctor.fullName}</span>

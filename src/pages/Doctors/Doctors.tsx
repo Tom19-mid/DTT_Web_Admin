@@ -188,7 +188,7 @@ export default function Doctors({ defaultTab = "doctors" }: DoctorsProps) {
       if (targetId) {
         // Edit mode
         setEditingDoctor(null);
-        setIsModalOpen(false);
+        setIsFormModalOpen(false);
 
         // Optimistic update
         setDoctors((prev) =>
@@ -240,7 +240,7 @@ export default function Doctors({ defaultTab = "doctors" }: DoctorsProps) {
       } else {
         // Add mode
         setEditingDoctor(null);
-        setIsModalOpen(false);
+        setIsFormModalOpen(false);
 
         const notiData: Notification = {
           notificationId: Date.now(),

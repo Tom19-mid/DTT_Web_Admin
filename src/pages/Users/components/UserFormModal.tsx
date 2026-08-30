@@ -149,7 +149,6 @@ export default function UserFormModal({
         phoneNumber: phone.trim(),
         role,
         roleId: selectedRoleId,
-        roleName: role,
         status,
         createdAt: initialData?.createdAt || formattedDate,
         updatedAt: initialData?.updatedAt || formattedDate,

@@ -4,7 +4,7 @@ import type {
   CreateFamilyMemberPayload,
   UpdateFamilyMemberPayload,
 } from "../pages/FamilyMembers/types";
-import { formatGenderVi, patientApi } from "./patientApi";
+import { formatGenderVi } from "./patientApi";
 
 // Helper extract error message
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -48,7 +48,11 @@ let patientOwnersCache: PatientOwnerOption[] | null = null;
 
 export const familyMemberApi = {
   getCachedFamilyMembers: (): FamilyMember[] | null => {
-    if (familyMembersCache && familyMembersCache.length > 0) {
+    if (
+      familyMembersCache &&
+      familyMembersCache.length > 0 &&
+      Date.now() - cacheTimestamp < CACHE_TTL_MS
+    ) {
       return familyMembersCache;
     }
     return null;

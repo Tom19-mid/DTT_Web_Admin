@@ -12,8 +12,6 @@ import {
   MinusCircle,
   Pill,
   Loader2,
-  ChevronLeft,
-  ChevronRight,
   RotateCcw,
   X,
   Save,
@@ -186,6 +184,7 @@ export default function CategoryTableView({
     const targetStatus = status === "Ngưng hoạt động" ? "Inactive" : "Active";
 
     setIsFormModalOpen(false);
+    setSubmitting(true);
 
     try {
       if (editingCategory) {
@@ -254,6 +253,8 @@ export default function CategoryTableView({
         title: "Lỗi thao tác",
         message: err.message || "Lỗi khi lưu thông tin danh mục thuốc!",
       });
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -269,8 +270,7 @@ export default function CategoryTableView({
         "Danh mục";
       const isCurrentlyLocked =
         statusTogglingCategory.status === "Ngưng hoạt động" ||
-        statusTogglingCategory.status === "Inactive" ||
-        statusTogglingCategory.status === false;
+        statusTogglingCategory.status === "Inactive";
       const nextStatus = isCurrentlyLocked ? "Active" : "Inactive";
       const actionTitle = isCurrentlyLocked
         ? "Mở lại danh mục thuốc"
@@ -546,7 +546,7 @@ export default function CategoryTableView({
 
                       {/* Trạng thái */}
                       <td className="py-4 px-4">
-                        <StatusBadge status={cat.status} />
+                        <StatusBadge status={cat.status || "Đang hoạt động"} />
                       </td>
 
                       {/* Chỉnh sửa (Actions: Eye, Pencil, Lock/Unlock) */}
@@ -756,7 +756,7 @@ export default function CategoryTableView({
                     Trạng thái
                   </label>
                   <div className="mt-1">
-                    <StatusBadge status={viewingCategory.status} />
+                    <StatusBadge status={viewingCategory.status || "Đang hoạt động"} />
                   </div>
                 </div>
 
@@ -823,8 +823,7 @@ export default function CategoryTableView({
       {statusTogglingCategory && (() => {
         const isCurrentlyLocked =
           statusTogglingCategory.status === "Ngưng hoạt động" ||
-          statusTogglingCategory.status === "Inactive" ||
-          statusTogglingCategory.status === false;
+          statusTogglingCategory.status === "Inactive";
         const catName =
           statusTogglingCategory.categoryName ||
           statusTogglingCategory.name ||

@@ -22,6 +22,7 @@ interface CustomDatePickerProps {
   value: string; // Accepts "dd/MM/yyyy" or "yyyy-MM-dd"
   onChange: (val: string) => void; // Returns "dd/MM/yyyy"
   placeholder?: string;
+  className?: string;
 }
 
 export default function CustomDatePicker({

@@ -19,7 +19,6 @@ export default function ConfirmLockModal({
   const isCurrentlyLocked =
     specialty.status === "Ngưng hoạt động" ||
     specialty.status === "Inactive" ||
-    specialty.rawStatus === false ||
     specialty.status === false;
 
   return (

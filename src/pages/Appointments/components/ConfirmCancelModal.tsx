@@ -30,7 +30,7 @@ export default function ConfirmCancelModal({
   const handleConfirm = (e: React.FormEvent) => {
     e.preventDefault();
     onConfirmCancel(
-      appointment.appointmentId ?? appointment.id,
+      appointment.appointmentId ?? appointment.id ?? 0,
       cancelReason.trim() || "Lễ tân hủy lịch",
       cancelledBy.trim() || "Lễ tân"
     );

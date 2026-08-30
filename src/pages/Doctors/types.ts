@@ -29,6 +29,7 @@ export interface Doctor {
   status: DoctorStatus;
   userEmail?: string;
   email?: string;
+  phone?: string;
   avatarUrl?: string | null;
   rating?: number;
   reviewCount?: number;

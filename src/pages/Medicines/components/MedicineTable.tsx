@@ -3,7 +3,7 @@ import type { Medicine, MedicineCategory } from "../types";
 import MedicineSearch from "./MedicineSearch";
 import MedicineRow from "./MedicineRow";
 import Pagination from "../../../components/common/Pagination";
-import { ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
+import { Loader2 } from "lucide-react";
 
 interface MedicineTableProps {
   medicines: Medicine[];

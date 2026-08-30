@@ -1,12 +1,13 @@
 import { memo } from "react";
 import type { FamilyMember } from "../types";
 import StatusBadge from "./StatusBadge";
-import { Eye, Pencil, Trash2 } from "lucide-react";
+import { Eye, Pencil, ShieldCheck, Trash2 } from "lucide-react";
 
 interface FamilyMemberRowProps {
   member: FamilyMember;
   onViewDetail?: (member: FamilyMember) => void;
   onEdit?: (member: FamilyMember) => void;
+  onVerify?: (member: FamilyMember) => void;
   onDelete?: (member: FamilyMember) => void;
 }
 
@@ -25,9 +26,13 @@ function FamilyMemberRow({
   member,
   onViewDetail,
   onEdit,
+  onVerify,
   onDelete,
 }: FamilyMemberRowProps) {
   const displayRel = member.relationship?.toLowerCase() === "cha" ? "Bố" : member.relationship || "Bố";
+  const isPending =
+    member.verificationStatus === "pending" ||
+    member.verificationStatus === "Chờ duyệt";
 
   return (
     <tr className="border-b border-gray-100 hover:bg-gray-50/60 transition-colors">
@@ -109,6 +114,17 @@ function FamilyMemberRow({
               title="Chỉnh sửa hồ sơ"
             >
               <Pencil size={20} />
+            </button>
+          )}
+
+          {/* Xác thực CCCD (chỉ hiển thị khi hồ sơ đang Chờ duyệt) */}
+          {onVerify && isPending && (
+            <button
+              onClick={() => onVerify(member)}
+              className="p-2 text-emerald-500 hover:text-emerald-700 hover:bg-emerald-50 rounded-lg transition-colors cursor-pointer"
+              title="Xác thực CCCD"
+            >
+              <ShieldCheck size={20} />
             </button>
           )}
 

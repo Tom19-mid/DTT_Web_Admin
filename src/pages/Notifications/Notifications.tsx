@@ -1,5 +1,4 @@
 import { useState, useMemo, useEffect } from "react";
-import { initialNotifications } from "./data";
 import type { Notification } from "./types";
 import NotificationToolbar from "./components/NotificationToolbar";
 import NotificationCard from "./components/NotificationCard";
@@ -7,7 +6,7 @@ import NotificationDetailModal from "./components/NotificationDetailModal";
 import ConfirmDeleteNotificationModal from "./components/ConfirmDeleteNotificationModal";
 import CreateNotificationModal from "./components/CreateNotificationModal";
 import Pagination from "../../components/common/Pagination";
-import { ChevronLeft, ChevronRight, BellOff, Loader2 } from "lucide-react";
+import { BellOff, Loader2 } from "lucide-react";
 import { notificationApi, type CreateNotificationPayload } from "../../api/notificationApi";
 
 export default function Notifications() {

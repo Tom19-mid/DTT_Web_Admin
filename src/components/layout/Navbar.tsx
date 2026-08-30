@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { Bell, ChevronRight, CheckCheck, Loader2, Calendar, Clock, User, Info, X } from "lucide-react";
+import { Bell, ChevronRight } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import Avarta from "../../assets/images/Avarta.png";
 import { useAuth } from "../../context/AuthContext";
@@ -21,7 +21,7 @@ export default function Navbar() {
   // Fetch notifications for the logged-in Admin
   const fetchNotifications = async () => {
     try {
-      const data = await notificationApi.getAll(user?.userId ? { userId: user.userId } : undefined);
+      const data = await notificationApi.getAll(user?.userId ? { userId: String(user.userId) } : undefined);
       if (Array.isArray(data)) {
         setNotifications(data);
       }

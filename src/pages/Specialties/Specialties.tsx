@@ -61,8 +61,8 @@ export default function Specialties() {
 
   // Statistics
   const totalSpecialties = specialties.length;
-  const activeCount = specialties.filter((s) => s.status === "Đang hoạt động" || s.rawStatus === true).length;
-  const inactiveCount = specialties.filter((s) => s.status === "Ngưng hoạt động" || s.rawStatus === false).length;
+  const activeCount = specialties.filter((s) => s.status === "Đang hoạt động").length;
+  const inactiveCount = specialties.filter((s) => s.status === "Ngưng hoạt động").length;
 
   // Open modal for adding new specialty
   const handleOpenAddModal = () => {
@@ -89,7 +89,7 @@ export default function Specialties() {
         // Edit mode
         const targetId = specialtyData.specialtyId || specialtyData.id!;
         setEditingSpecialty(null);
-        setIsModalOpen(false);
+        setIsFormModalOpen(false);
 
         // Optimistic update
         const notiData: Notification = {
@@ -120,7 +120,7 @@ export default function Specialties() {
       } else {
         // Add mode
         setEditingSpecialty(null);
-        setIsModalOpen(false);
+        setIsFormModalOpen(false);
 
         const notiData: Notification = {
           notificationId: Date.now(),
@@ -171,7 +171,6 @@ export default function Specialties() {
       const isCurrentlyLocked =
         lockingSpecialty.status === "Ngưng hoạt động" ||
         lockingSpecialty.status === "Inactive" ||
-        lockingSpecialty.rawStatus === false ||
         lockingSpecialty.status === false;
       const newBoolStatus = isCurrentlyLocked;
       const actionTitle = isCurrentlyLocked
@@ -203,7 +202,7 @@ export default function Specialties() {
       setSpecialties((prev) =>
         prev.map((s) =>
           s.specialtyId === targetId || s.id === targetId
-            ? { ...s, status: newBoolStatus ? "Đang hoạt động" : "Ngưng hoạt động", rawStatus: newBoolStatus }
+            ? { ...s, status: newBoolStatus ? "Đang hoạt động" : "Ngưng hoạt động" }
             : s
         )
       );

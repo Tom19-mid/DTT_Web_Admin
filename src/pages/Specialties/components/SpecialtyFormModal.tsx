@@ -27,10 +27,10 @@ export default function SpecialtyFormModal({
     setPrevInitialData(initialData);
     setPrevIsOpen(isOpen);
     if (initialData) {
-      setName(initialData.name);
-      setDescription(initialData.description);
-      setDoctorCount(initialData.doctorCount);
-      setStatus(initialData.status);
+      setName(initialData.name ?? "");
+      setDescription(initialData.description ?? "");
+      setDoctorCount(initialData.doctorCount ?? 0);
+      setStatus(initialData.status ?? "Đang hoạt động");
     } else {
       setName("");
       setDescription("");

@@ -319,11 +319,11 @@ export default function Appointments() {
           reason: appData.reason,
           fee: appData.fee,
           statusId,
-          cancelReason: appData.cancelReason || appData.cancel_reason,
-          cancelledBy: appData.cancelledBy || appData.cancelled_by,
-          note: appData.notes || appData.note,
-          notes: appData.notes || appData.note,
-          nurseNote: appData.nurseNote || appData.nurse_note,
+          cancelReason: appData.cancelReason || appData.cancel_reason || undefined,
+          cancelledBy: appData.cancelledBy || appData.cancelled_by || undefined,
+          note: appData.notes || appData.note || undefined,
+          notes: appData.notes || appData.note || undefined,
+          nurseNote: appData.nurseNote || appData.nurse_note || undefined,
         });
 
         // Also update status if explicitly changed to a new status

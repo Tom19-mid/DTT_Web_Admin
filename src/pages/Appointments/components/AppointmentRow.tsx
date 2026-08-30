@@ -62,7 +62,7 @@ function AppointmentRow({
 
       {/* 8. Trạng thái */}
       <td className="py-4 px-4">
-        <StatusBadge status={appointment.status} />
+        <StatusBadge status={appointment.status || "Đã đặt lịch"} />
       </td>
 
       {/* 9. Hành động (Chỉnh sửa) */}

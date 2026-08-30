@@ -448,13 +448,13 @@ export default function AppointmentFormModal({
     setPrevInitialData(initialData);
     setPrevIsOpen(isOpen);
     if (initialData) {
-      setPatientName(initialData.patientName);
-      setDoctorName(initialData.doctorName);
-      setAppointmentDate(initialData.appointmentDate);
-      setAppointmentTime(initialData.appointmentTime);
-      setReason(initialData.reason);
-      setQueueNumber(initialData.queueNumber);
-      setStatus(initialData.status);
+      setPatientName(initialData.patientName || "");
+      setDoctorName(initialData.doctorName || doctors[0] || "BS. Trần Minh Tuấn");
+      setAppointmentDate(initialData.appointmentDate || getTodayFormatted());
+      setAppointmentTime(initialData.appointmentTime || "08:00 - 08:30");
+      setReason(initialData.reason || "");
+      setQueueNumber(initialData.queueNumber ?? 1);
+      setStatus(initialData.status || "Scheduled");
       setNotes(initialData.notes || initialData.note || "");
       setCancelReason(initialData.cancelReason || initialData.cancel_reason || "");
       setNurseNote(formatNurseNoteForEdit(initialData.nurseNote || initialData.nurse_note));

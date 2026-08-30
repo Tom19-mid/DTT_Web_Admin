@@ -7,7 +7,6 @@ import {
   UserCheck,
   FileText,
   AlertCircle,
-  Hash,
   Activity,
   Users,
 } from "lucide-react";
@@ -99,7 +98,7 @@ export default function AppointmentDetailModal({
                   STTK: #{appointment.queueNumber}
                 </span>
                 <span className="text-gray-300">•</span>
-                <StatusBadge status={appointment.status} />
+                <StatusBadge status={appointment.status || "Đã đặt lịch"} />
               </div>
             </div>
           </div>
@@ -189,9 +188,9 @@ export default function AppointmentDetailModal({
                     Lý do hủy:
                   </span>
                   <span className="font-normal text-rose-950 text-base block leading-snug">
-                    {appointment.cancelReason ||
-                      appointment.cancel_reason ||
-                      "-"}
+                    {cleanCancelReason(
+                      appointment.cancelReason || appointment.cancel_reason
+                    )}
                   </span>
                 </div>
                 <div>

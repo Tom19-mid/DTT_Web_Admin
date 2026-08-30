@@ -70,12 +70,12 @@ export default function DoctorDetailModal({
               {doctor.avatar ? (
                 <img
                   src={doctor.avatar}
-                  alt={doctor.fullName}
+                  alt={doctor.fullName || "Bác sĩ"}
                   className="w-24 h-24 rounded-2xl object-cover border-4 border-white/30 shadow-md bg-white"
                 />
               ) : (
                 <div className="w-24 h-24 rounded-2xl bg-white/20 border-4 border-white/30 flex items-center justify-center text-white text-3xl font-bold shadow-md">
-                  {doctor.fullName.charAt(0)}
+                  {(doctor.fullName || "?").charAt(0)}
                 </div>
               )}
             </div>

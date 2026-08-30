@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { X, Save, Calendar, ChevronLeft, ChevronRight } from "lucide-react";
+import { X, Save, Calendar, ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
 import type { Doctor, DoctorStatus } from "../types";
 import ConfirmLockModal from "./ConfirmLockModal";
 
@@ -767,15 +767,21 @@ export default function DoctorFormModal({
               <button
                 type="button"
                 onClick={onClose}
-                className="px-6 py-2.5 border border-gray-300 rounded-xl text-gray-700 font-bold hover:bg-gray-50 transition cursor-pointer text-base"
+                disabled={isSubmitting}
+                className="px-6 py-2.5 border border-gray-300 rounded-xl text-gray-700 font-bold hover:bg-gray-50 transition cursor-pointer text-base disabled:opacity-50"
               >
                 Hủy
               </button>
               <button
                 type="submit"
-                className="inline-flex items-center gap-2 px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl shadow-sm transition cursor-pointer text-base"
+                disabled={isSubmitting}
+                className="inline-flex items-center gap-2 px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl shadow-sm transition cursor-pointer text-base disabled:opacity-50"
               >
-                <Save size={18} />
+                {isSubmitting ? (
+                  <Loader2 size={18} className="animate-spin" />
+                ) : (
+                  <Save size={18} />
+                )}
                 <span>{initialData ? "Cập nhật" : "Tạo bác sĩ"}</span>
               </button>
             </div>

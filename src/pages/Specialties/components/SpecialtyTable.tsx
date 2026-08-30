@@ -3,7 +3,7 @@ import type { Specialty } from "../types";
 import SpecialtySearch from "./SpecialtySearch";
 import SpecialtyRow from "./SpecialtyRow";
 import Pagination from "../../../components/common/Pagination";
-import { ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
+import { Loader2 } from "lucide-react";
 
 interface SpecialtyTableProps {
   specialties: Specialty[];

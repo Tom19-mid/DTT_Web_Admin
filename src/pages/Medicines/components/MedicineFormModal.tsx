@@ -278,13 +278,13 @@ export default function MedicineFormModal({
     setPrevInitialData(initialData);
     setPrevIsOpen(isOpen);
     if (initialData) {
-      setCategoryId(initialData.categoryId);
-      setMedicineName(initialData.medicineName);
-      setUnit(initialData.unit);
-      setDescription(initialData.description);
-      setDefaultUsage(initialData.defaultUsage);
+      setCategoryId(initialData.categoryId ?? 1);
+      setMedicineName(initialData.medicineName ?? "");
+      setUnit(initialData.unit ?? "");
+      setDescription(initialData.description ?? "");
+      setDefaultUsage(initialData.defaultUsage ?? "");
       setUnitPriceStr(initialData.unitPrice ? initialData.unitPrice.toLocaleString("vi-VN") : "");
-      setExpiryDate(initialData.expiryDate);
+      setExpiryDate(initialData.expiryDate ?? getTodayFormatted());
     } else {
       setCategoryId(1);
       setMedicineName("");

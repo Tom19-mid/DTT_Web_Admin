@@ -67,22 +67,22 @@ export default function MedicineRow({
 
       {/* 7. Đơn giá */}
       <td className="py-4 px-4 font-bold text-emerald-600 text-base whitespace-nowrap">
-        {medicine.unitPrice.toLocaleString("vi-VN")} đ
+        {(medicine.unitPrice ?? 0).toLocaleString("vi-VN")} đ
       </td>
 
       {/* 8. Số lượng tồn kho */}
       <td className="py-4 px-4 text-center font-bold text-gray-900 text-base">
-        {medicine.stockQuantity.toLocaleString("vi-VN")}
+        {(medicine.stockQuantity ?? 0).toLocaleString("vi-VN")}
       </td>
 
       {/* 9. Hạn sử dụng */}
       <td className="py-4 px-4 text-base text-gray-600 font-medium whitespace-nowrap">
-        {formatDate(medicine.expiryDate)}
+        {medicine.expiryDate ? formatDate(medicine.expiryDate) : "-"}
       </td>
 
       {/* 10. Trạng thái */}
       <td className="py-4 px-4">
-        <StatusBadge status={medicine.status} />
+        <StatusBadge status={medicine.status || "Đang hoạt động"} />
       </td>
 
       {/* 11. Chỉnh sửa (Actions) */}

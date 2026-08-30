@@ -23,8 +23,6 @@ import {
   ChevronDown,
   Check,
   Loader2,
-  ChevronLeft,
-  ChevronRight,
 } from "lucide-react";
 import { doctorLeaveApi, type DoctorLeaveItem } from "../../api/doctorLeaveApi";
 import doctorApi from "../../api/doctorApi";
@@ -245,6 +243,7 @@ export default function DoctorLeaves({ onLeaveUpdated }: DoctorLeavesProps = {})
     notificationApi.create(notiData).catch((e) => console.warn("Lỗi tạo thông báo:", e));
 
     // 5. Background execution
+    setIsSubmitting(true);
     try {
       await doctorLeaveApi.updateStatus(targetLeaveId, newStatus);
       fetchLeaves(false);
@@ -257,6 +256,8 @@ export default function DoctorLeaves({ onLeaveUpdated }: DoctorLeavesProps = {})
       });
       // Rollback on error
       fetchLeaves(false);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 

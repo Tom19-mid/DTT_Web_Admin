@@ -1,6 +1,5 @@
 import { useState, useMemo, useRef, useEffect } from "react";
-import type { WorkSchedule, TimeSlot } from "../types";
-import type { Doctor } from "../../Doctors/types";
+import type { WorkSchedule, TimeSlot, DoctorItem } from "../types";
 import { SlotStatusBadge } from "./ScheduleStatusBadge";
 import Pagination from "../../../components/common/Pagination";
 import { DateFilterPicker } from "./ScheduleSearch";
@@ -18,7 +17,7 @@ import {
 
 interface DoctorScheduleSlotsViewProps {
   schedules: WorkSchedule[];
-  doctors?: Doctor[];
+  doctors?: DoctorItem[];
   isLoading?: boolean;
 }
 
