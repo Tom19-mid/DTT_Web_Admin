@@ -1,5 +1,4 @@
 import { useState, useEffect, useCallback } from "react";
-import { initialWorkSchedules } from "./data";
 import type { WorkSchedule, DoctorItem } from "./types";
 import ScheduleToolbar from "./components/ScheduleToolbar";
 import ScheduleTable from "./components/ScheduleTable";
@@ -66,21 +65,21 @@ export default function WorkSchedules() {
   };
 
   // Fetch data from Back-End API
-  // Trước đây khi API trả về mảng RỖNG HỢP LỆ (đúng nghĩa là chưa có lịch làm việc nào) cũng bị thay
-  // bằng initialWorkSchedules (dữ liệu mẫu giả — bác sĩ "BS. Nguyễn Văn Bình" không có thật) như thể
-  // đó là lịch thật, khiến Admin tưởng nhầm hệ thống đã có sẵn lịch. Chỉ dùng dữ liệu mẫu khi API THẬT
-  // SỰ LỖI (catch), không dùng khi API trả về thành công nhưng danh sách rỗng.
+  // Không dùng dữ liệu mẫu giả (initialWorkSchedules) khi API lỗi — chỉ console.warn và giữ
+  // nguyên danh sách hiện có (rỗng nếu chưa tải được lần nào), giống cách các trang khác trong
+  // app (Doctors, Patients, FamilyMembers, Users, Appointments) xử lý lỗi tải danh sách.
   const fetchSchedules = async (showLoading = false) => {
     if (showLoading && !workScheduleApi.getCachedSchedules()) setIsLoading(true);
     try {
       const data = await workScheduleApi.getAll();
       setSchedules(Array.isArray(data) ? data : []);
     } catch (error) {
-      console.warn(
-        "Lỗi khi tải lịch làm việc từ API, sử dụng mock data fallback:",
-        error,
-      );
-      setSchedules(initialWorkSchedules);
+      console.warn("Lỗi khi tải lịch làm việc từ API:", error);
+      addToast({
+        type: "error",
+        title: "Lỗi tải dữ liệu",
+        message: "Không thể tải danh sách lịch làm việc từ máy chủ. Vui lòng thử lại sau.",
+      });
     } finally {
       setIsLoading(false);
     }

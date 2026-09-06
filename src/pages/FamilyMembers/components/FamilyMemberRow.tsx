@@ -1,13 +1,14 @@
 import { memo } from "react";
 import type { FamilyMember } from "../types";
 import StatusBadge from "./StatusBadge";
-import { Eye, Pencil, ShieldCheck, Trash2 } from "lucide-react";
+import { Eye, Pencil, ShieldCheck, ShieldX, Trash2 } from "lucide-react";
 
 interface FamilyMemberRowProps {
   member: FamilyMember;
   onViewDetail?: (member: FamilyMember) => void;
   onEdit?: (member: FamilyMember) => void;
   onVerify?: (member: FamilyMember) => void;
+  onReject?: (member: FamilyMember) => void;
   onDelete?: (member: FamilyMember) => void;
 }
 
@@ -27,6 +28,7 @@ function FamilyMemberRow({
   onViewDetail,
   onEdit,
   onVerify,
+  onReject,
   onDelete,
 }: FamilyMemberRowProps) {
   const displayRel = member.relationship?.toLowerCase() === "cha" ? "Bố" : member.relationship || "Bố";
@@ -125,6 +127,17 @@ function FamilyMemberRow({
               title="Xác thực CCCD"
             >
               <ShieldCheck size={20} />
+            </button>
+          )}
+
+          {/* Từ chối xác thực (chỉ hiển thị khi hồ sơ đang Chờ duyệt) */}
+          {onReject && isPending && (
+            <button
+              onClick={() => onReject(member)}
+              className="p-2 text-rose-500 hover:text-rose-700 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
+              title="Từ chối"
+            >
+              <ShieldX size={20} />
             </button>
           )}
 

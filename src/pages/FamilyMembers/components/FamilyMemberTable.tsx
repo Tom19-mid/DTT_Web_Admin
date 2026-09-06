@@ -9,6 +9,7 @@ interface FamilyMemberTableProps {
   onViewDetailMember?: (member: FamilyMember) => void;
   onEditMember?: (member: FamilyMember) => void;
   onVerifyMember?: (member: FamilyMember) => void;
+  onRejectMember?: (member: FamilyMember) => void;
   onDeleteMember?: (member: FamilyMember) => void;
 }
 
@@ -17,6 +18,7 @@ export default function FamilyMemberTable({
   onViewDetailMember,
   onEditMember,
   onVerifyMember,
+  onRejectMember,
   onDeleteMember,
 }: FamilyMemberTableProps) {
   const [searchTerm, setSearchTerm] = useState("");
@@ -121,6 +123,7 @@ export default function FamilyMemberTable({
                   onViewDetail={onViewDetailMember}
                   onEdit={onEditMember}
                   onVerify={onVerifyMember}
+                  onReject={onRejectMember}
                   onDelete={onDeleteMember}
                 />
               ))

@@ -467,6 +467,32 @@ export const familyMemberApi = {
     }
   },
 
+  reject: async (id: number | string, reason?: string): Promise<boolean> => {
+    try {
+      const memberId = Number(id);
+      if (familyMembersCache) {
+        familyMembersCache = familyMembersCache.map((m) =>
+          m.id === memberId
+            ? {
+                ...m,
+                verificationStatus: "Từ chối",
+                verifiedAt: new Date().toISOString(),
+                verifiedBy: "Lễ tân",
+                verificationNote: reason || m.verificationNote,
+              }
+            : m
+        );
+      }
+
+      await axiosClient.patch(`/familymembers/${id}/reject`, { reason });
+      return true;
+    } catch (error) {
+      const msg = extractErrorMessage(error);
+      console.error(`familyMemberApi.reject(${id}) error:`, msg);
+      throw new Error(msg, { cause: error });
+    }
+  },
+
   delete: async (id: number | string): Promise<boolean> => {
     try {
       const memberId = Number(id);

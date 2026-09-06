@@ -7,6 +7,7 @@ import FamilyMemberTable from "./components/FamilyMemberTable";
 import FamilyMemberFormModal from "./components/FamilyMemberFormModal";
 import FamilyMemberDetailModal from "./components/FamilyMemberDetailModal";
 import VerifyFamilyMemberModal from "./components/VerifyFamilyMemberModal";
+import RejectFamilyMemberModal from "./components/RejectFamilyMemberModal";
 import ConfirmDeleteModal from "./components/ConfirmDeleteModal";
 import ToastNotification, { type ToastMessage } from "../../components/common/ToastNotification";
 import { notificationApi } from "../../api/notificationApi";
@@ -30,6 +31,7 @@ export default function FamilyMembers() {
   const [editingMember, setEditingMember] = useState<FamilyMember | null>(null);
   const [viewingMember, setViewingMember] = useState<FamilyMember | null>(null);
   const [verifyingMember, setVerifyingMember] = useState<FamilyMember | null>(null);
+  const [rejectingMember, setRejectingMember] = useState<FamilyMember | null>(null);
   const [deletingMember, setDeletingMember] = useState<FamilyMember | null>(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
 
@@ -169,6 +171,10 @@ export default function FamilyMembers() {
 
   const handleOpenVerifyModal = useCallback((member: FamilyMember) => {
     setVerifyingMember(member);
+  }, []);
+
+  const handleOpenRejectModal = useCallback((member: FamilyMember) => {
+    setRejectingMember(member);
   }, []);
 
   const handleOpenDeleteModal = useCallback((member: FamilyMember) => {
@@ -365,6 +371,60 @@ export default function FamilyMembers() {
     }
   };
 
+  // Reject
+  const handleRejectMember = async (memberId: number, reason?: string): Promise<void> => {
+    const adminUserId = getLoggedInAdminUserId();
+    const memberName = rejectingMember?.fullName || "Người thân";
+
+    // Optimistic update
+    setMembers((prev) =>
+      prev.map((m) =>
+        m.id === memberId
+          ? {
+              ...m,
+              verificationStatus: "Từ chối",
+              verifiedAt: new Date().toISOString(),
+              verifiedBy: "Lễ tân",
+              verificationNote: reason || m.verificationNote,
+            }
+          : m
+      )
+    );
+
+    try {
+      await familyMemberApi.reject(memberId, reason);
+
+      const notiData: Notification = {
+        notificationId: Date.now(),
+        title: "Từ chối xác thực người thân",
+        content: `Đã từ chối xác thực hồ sơ người thân "${memberName}"${reason ? ` với lý do: ${reason}` : ""}.`,
+        type: "system",
+        isRead: false,
+        createdAt: new Date().toISOString(),
+        userId: adminUserId,
+      };
+
+      addToast({
+        type: "success",
+        title: "Đã từ chối hồ sơ",
+        message: `Đã từ chối xác thực hồ sơ người thân "${memberName}"!`,
+        onClick: () => setViewingNotification(notiData),
+      });
+
+      notificationApi.create(notiData).catch((e) => console.warn("Lỗi tạo thông báo:", e));
+      reloadData();
+    } catch (err: any) {
+      console.error("handleRejectMember error:", err);
+      reloadData();
+      addToast({
+        type: "error",
+        title: "Lỗi từ chối",
+        message: err?.message || "Không thể từ chối hồ sơ. Vui lòng thử lại.",
+      });
+      throw err;
+    }
+  };
+
   // Delete
   const handleDeleteMember = async (): Promise<void> => {
     if (!deletingMember) return;
@@ -427,6 +487,7 @@ export default function FamilyMembers() {
           onViewDetailMember={handleOpenDetailModal}
           onEditMember={handleOpenEditModal}
           onVerifyMember={handleOpenVerifyModal}
+          onRejectMember={handleOpenRejectModal}
           onDeleteMember={handleOpenDeleteModal}
         />
       )}
@@ -438,6 +499,7 @@ export default function FamilyMembers() {
         onClose={() => setViewingMember(null)}
         onEdit={handleOpenEditModal}
         onVerify={handleOpenVerifyModal}
+        onReject={handleOpenRejectModal}
       />
 
       {/* Form Modal (Add / Edit) */}
@@ -455,6 +517,14 @@ export default function FamilyMembers() {
         member={verifyingMember}
         onClose={() => setVerifyingMember(null)}
         onConfirm={handleVerifyMember}
+      />
+
+      {/* Reject Modal */}
+      <RejectFamilyMemberModal
+        isOpen={!!rejectingMember}
+        member={rejectingMember}
+        onClose={() => setRejectingMember(null)}
+        onConfirm={handleRejectMember}
       />
 
       {/* Confirm Delete Modal */}

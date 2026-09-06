@@ -5,6 +5,7 @@ import {
   FileText,
   Clock,
   ShieldCheck,
+  ShieldX,
   MapPin,
   Phone,
   CreditCard,
@@ -21,6 +22,7 @@ interface FamilyMemberDetailModalProps {
   onClose: () => void;
   onEdit?: (member: FamilyMember) => void;
   onVerify?: (member: FamilyMember) => void;
+  onReject?: (member: FamilyMember) => void;
 }
 
 export default function FamilyMemberDetailModal({
@@ -29,6 +31,7 @@ export default function FamilyMemberDetailModal({
   onClose,
   onEdit,
   onVerify,
+  onReject,
 }: FamilyMemberDetailModalProps) {
   if (!isOpen || !member) return null;
 
@@ -314,6 +317,20 @@ export default function FamilyMemberDetailModal({
             >
               <ShieldCheck size={18} />
               <span>Xác thực CCCD</span>
+            </button>
+          )}
+
+          {onReject && isPending && (
+            <button
+              type="button"
+              onClick={() => {
+                onClose();
+                onReject(member);
+              }}
+              className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-rose-600 text-white font-bold hover:bg-rose-700 shadow-sm transition cursor-pointer text-base"
+            >
+              <ShieldX size={18} />
+              <span>Từ chối</span>
             </button>
           )}
 
