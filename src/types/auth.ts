@@ -5,7 +5,9 @@ export interface AdminLoginRequest {
 
 export interface AdminLoginResponse {
   token: string;
-  userId: number;
+  // Backend's AdminAuthResponseDto.UserId is a C# Guid, which serializes to a
+  // GUID string over JSON (e.g. "3fa85f64-5717-4562-b3fc-2c963f66afa6"), not a number.
+  userId: string;
   roleId: number;
   roleCode: string;
   roleName: string;
@@ -15,7 +17,7 @@ export interface AdminLoginResponse {
 }
 
 export interface AuthUser {
-  userId: number;
+  userId: string;
   roleId: number;
   roleCode: string;
   roleName: string;
