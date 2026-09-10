@@ -221,25 +221,10 @@ export default function FamilyMembers() {
             : m
         )
       );
-
-      const notiData: Notification = {
-        notificationId: Date.now(),
-        title: "Cập nhật hồ sơ người thân",
-        content: `Hệ thống vừa cập nhật thông tin hồ sơ người thân "${memberName}" (${formData.relationship}).`,
-        type: "system",
-        isRead: false,
-        createdAt: new Date().toISOString(),
-        userId: adminUserId,
-      };
-
-      addToast({
-        type: "success",
-        title: "Cập nhật hồ sơ người thân",
-        message: `Đã cập nhật thông tin hồ sơ người thân "${memberName}" thành công!`,
-        onClick: () => setViewingNotification(notiData),
-      });
-
-      notificationApi.create(notiData).catch((e) => console.warn("Lỗi tạo thông báo:", e));
+      // [Old code]: toast "Cập nhật ... thành công!" hiện NGAY tại đây, TRƯỚC KHI gọi API — nếu backend
+      // sau đó từ chối (vd CCCD đã dùng cho hồ sơ khác), Admin đã thấy "thành công" trước rồi mới thấy
+      // toast lỗi (nếu có) vài trăm ms sau, dễ bị lướt qua/hiểu nhầm là 2 thao tác khác nhau. Toast
+      // thành công giờ chỉ hiện SAU KHI await API thật sự thành công, xem trong khối try bên dưới.
     }
 
     try {
@@ -259,6 +244,24 @@ export default function FamilyMembers() {
           verifiedBy: formData.verifiedBy,
           verificationNote: formData.verificationNote,
         });
+
+        // Toast + thông báo "thành công" chỉ hiện SAU KHI await ở trên thật sự không ném lỗi.
+        const editNotiData: Notification = {
+          notificationId: Date.now(),
+          title: "Cập nhật hồ sơ người thân",
+          content: `Hệ thống vừa cập nhật thông tin hồ sơ người thân "${memberName}" (${formData.relationship}).`,
+          type: "system",
+          isRead: false,
+          createdAt: new Date().toISOString(),
+          userId: adminUserId,
+        };
+        addToast({
+          type: "success",
+          title: "Cập nhật hồ sơ người thân",
+          message: `Đã cập nhật thông tin hồ sơ người thân "${memberName}" thành công!`,
+          onClick: () => setViewingNotification(editNotiData),
+        });
+        notificationApi.create(editNotiData).catch((e) => console.warn("Lỗi tạo thông báo:", e));
       } else {
         const created = await familyMemberApi.create({
           ownerPatientId: formData.ownerPatientId,

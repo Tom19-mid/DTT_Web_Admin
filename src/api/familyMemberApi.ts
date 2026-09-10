@@ -375,12 +375,16 @@ export const familyMemberApi = {
 
 
       // Nếu duyệt, gọi patch verify endpoint
+      // [Old code]: catch {} nuốt lỗi hoàn toàn — nếu backend từ chối (vd CCCD đã dùng cho hồ sơ khác,
+      // theo ràng buộc chống trùng CCCD), hàm này vẫn coi như thành công, cache lạc quan ở trên vẫn giữ
+      // "Đã duyệt" dù DB thực tế KHÔNG đổi — Admin thấy "Đã duyệt" trên giao diện nhưng CCCD chưa hề
+      // được xác thực thật. Đồng thời loại bỏ hẳn số CCCD giả cứng "079198001234" — nếu Admin chưa nhập
+      // CCCD thì không được tự ý gửi lên một số CCCD không thuộc về ai.
       if (displayVer === "Đã duyệt") {
-        try {
-          await axiosClient.patch(`/familymembers/${memberId}/verify`, { cccdNumber: data.cccd || "079198001234" });
-        } catch {
-          // Ignore
+        if (!data.cccd) {
+          throw new Error("Vui lòng nhập số CCCD trước khi duyệt xác thực.");
         }
+        await axiosClient.patch(`/familymembers/${memberId}/verify`, { cccdNumber: data.cccd });
       }
 
       // Chuẩn hoá DateOfBirth sang ISO 8601 để C# System.Text.Json không bị 400 Bad Request
@@ -423,15 +427,13 @@ export const familyMemberApi = {
       };
 
       // Gửi cập nhật API chính xác vào /familymembers/{id}
-      try {
-        await axiosClient.put(`/familymembers/${memberId}`, fullPayload);
-      } catch {
-        try {
-          await axiosClient.put(`/patients/${memberId}`, fullPayload);
-        } catch {
-          // Ignore
-        }
-      }
+      // [Old code]: nếu PUT /familymembers/{id} lỗi, fallback âm thầm sang PUT /patients/{memberId} —
+      // memberId (family_members.member_id) và patientId (patients.patient_id) là HAI không gian ID
+      // khác nhau hoàn toàn, có thể trùng số ngẫu nhiên. Fallback này có nguy cơ GHI ĐÈ NHẦM một hồ sơ
+      // BỆNH NHÂN không liên quan (nếu patients.patient_id đó trùng số với memberId đang sửa) — đã bỏ
+      // hẳn, chỉ còn đúng 1 endpoint thật sự dành cho family_members. Lỗi thật giờ được ném ra ngoài để
+      // caller (FamilyMembers.tsx) hiện đúng thông báo lỗi thay vì âm thầm coi như thành công.
+      await axiosClient.put(`/familymembers/${memberId}`, fullPayload);
 
       return true;
     } catch (error) {
