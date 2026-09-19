@@ -211,34 +211,24 @@ export default function WorkSchedules() {
     }
   };
 
-  const handleSaveSchedule = async (savedData: WorkSchedule) => {
-    const docName = savedData.doctorName || "bác sĩ";
+  const handleSaveSchedule = async (savedSchedules: WorkSchedule[]) => {
     const adminUserId = getLoggedInAdminUserId();
+    if (!savedSchedules || savedSchedules.length === 0) return;
+
+    const firstData = savedSchedules[0];
+    const docName = firstData.doctorName || "bác sĩ";
 
     setIsFormModalOpen(false);
 
-    let docId = savedData.doctorId || 1;
-    if (savedData.doctorName && doctors.length > 0) {
-      const found = doctors.find(
-        (d) =>
-          d.fullName
-            ?.toLowerCase()
-            .includes(savedData.doctorName!.toLowerCase()) ||
-          savedData
-            .doctorName!.toLowerCase()
-            .includes(d.fullName?.toLowerCase() || ""),
-      );
-      if (found) docId = found.doctorId;
-    }
-
     try {
       if (editingSchedule && editingSchedule.scheduleId) {
+        // ── EDIT MODE: always 1 schedule ──────────────────────────────────
         const schId = editingSchedule.scheduleId;
         setEditingSchedule(null);
 
         // Optimistic update
         setSchedules((prev) =>
-          prev.map((s) => (s.scheduleId === schId ? { ...s, ...savedData, doctorId: docId } : s))
+          prev.map((s) => (s.scheduleId === schId ? { ...s, ...firstData, doctorId: firstData.doctorId } : s))
         );
 
         const notiData: Notification = {
@@ -257,25 +247,31 @@ export default function WorkSchedules() {
           message: `Đã cập nhật lịch làm việc #${schId} của bác sĩ "${docName}" thành công!`,
           onClick: () => setViewingNotification(notiData),
         });
-
-        // Trigger notification immediately for instant bell badge update
         notificationApi.create(notiData).catch((e) => console.warn("Lỗi tạo thông báo:", e));
 
         await workScheduleApi.update(schId, {
-          doctorId: docId,
-          doctorName: savedData.doctorName,
-          workDate: savedData.workDate,
-          startTime: savedData.startTime,
-          endTime: savedData.endTime,
-          status: savedData.status,
-          timeSlots: savedData.timeSlots,
+          doctorId: firstData.doctorId,
+          doctorName: firstData.doctorName,
+          workDate: firstData.workDate,
+          startTime: firstData.startTime,
+          endTime: firstData.endTime,
+          status: firstData.status,
+          timeSlots: firstData.timeSlots,
         });
+
       } else {
+        // ── CREATE MODE: 1 or 2 shifts ────────────────────────────────────
         setEditingSchedule(null);
+
+        const shiftCount = savedSchedules.length;
+        const shiftLabel = shiftCount === 2
+          ? `2 ca làm việc (sáng + chiều)`
+          : `1 ca làm việc`;
+
         const notiData: Notification = {
           notificationId: Date.now(),
           title: "Thêm lịch làm việc mới",
-          content: `Đã tạo mới thành công lịch làm việc cho bác sĩ "${docName}" vào ngày ${savedData.workDate || ""}.`,
+          content: `Đã tạo thành công ${shiftLabel} cho bác sĩ "${docName}" vào ngày ${firstData.workDate || ""}.`,
           type: "system",
           isRead: false,
           createdAt: new Date().toISOString(),
@@ -285,22 +281,24 @@ export default function WorkSchedules() {
         addToast({
           type: "success",
           title: "Thêm lịch làm việc",
-          message: `Đã thêm mới lịch làm việc của bác sĩ "${docName}" thành công!`,
+          message: `Đã tạo ${shiftLabel} cho bác sĩ "${docName}" thành công!`,
           onClick: () => setViewingNotification(notiData),
         });
-
-        // Trigger notification immediately for instant bell badge update
         notificationApi.create(notiData).catch((e) => console.warn("Lỗi tạo thông báo:", e));
 
-        await workScheduleApi.create({
-          doctorId: docId,
-          doctorName: savedData.doctorName,
-          workDate: savedData.workDate || "",
-          startTime: savedData.startTime || "08:00",
-          endTime: savedData.endTime || "12:00",
-          status: savedData.status || "Trống lịch",
-        });
+        // Create each shift sequentially
+        for (const sch of savedSchedules) {
+          await workScheduleApi.create({
+            doctorId: sch.doctorId || 1,
+            doctorName: sch.doctorName,
+            workDate: sch.workDate || "",
+            startTime: sch.startTime || "07:30",
+            endTime: sch.endTime || "11:30",
+            status: sch.status || "Trống lịch",
+          });
+        }
       }
+
       fetchSchedules(false);
     } catch (error: any) {
       console.error("Lỗi khi lưu lịch làm việc:", error);

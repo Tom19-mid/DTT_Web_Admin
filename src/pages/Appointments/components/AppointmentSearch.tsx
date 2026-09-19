@@ -21,6 +21,7 @@ const statusOptions: { value: string; label: string; dotColor: string }[] = [
   { value: "InProgress", label: "Đang khám", dotColor: "bg-indigo-500" },
   { value: "WaitingTestResults", label: "Đang chờ kết quả xét nghiệm", dotColor: "bg-purple-500" },
   { value: "PendingDispensing", label: "Đang chờ phát thuốc", dotColor: "bg-orange-500" },
+  { value: "PendingPayment", label: "Chờ thanh toán", dotColor: "bg-amber-500" },
   { value: "Completed", label: "Đã hoàn thành", dotColor: "bg-emerald-500" },
   { value: "Cancelled", label: "Đã hủy", dotColor: "bg-rose-500" },
   { value: "NoShow", label: "Không đến khám", dotColor: "bg-gray-500" },
@@ -67,6 +68,7 @@ export default function AppointmentSearch({
         (s.value === "InProgress" && (selectedStatus === "Đang khám" || selectedStatus === "InProgress")) ||
         (s.value === "WaitingTestResults" && (selectedStatus === "Đang chờ kết quả xét nghiệm" || selectedStatus === "WaitingTestResults" || selectedStatus === "AwaitingTestResults")) ||
         (s.value === "PendingDispensing" && (selectedStatus === "Đang chờ phát thuốc" || selectedStatus === "PendingDispensing")) ||
+        (s.value === "PendingPayment" && (selectedStatus === "Chờ thanh toán" || selectedStatus === "PendingPayment" || selectedStatus === "Đang chờ thanh toán")) ||
         (s.value === "Completed" && (selectedStatus === "Đã hoàn thành" || selectedStatus === "Completed")) ||
         (s.value === "Cancelled" && (selectedStatus === "Đã hủy" || selectedStatus === "Cancelled")) ||
         (s.value === "NoShow" && (selectedStatus === "Không đến khám" || selectedStatus === "NoShow"))
@@ -132,6 +134,7 @@ export default function AppointmentSearch({
                     (selectedStatus === "Đang khám" && option.value === "InProgress") ||
                     (selectedStatus === "Đang chờ kết quả xét nghiệm" && (option.value === "WaitingTestResults" || option.value === "AwaitingTestResults")) ||
                     (selectedStatus === "Đang chờ phát thuốc" && option.value === "PendingDispensing") ||
+                    ((selectedStatus === "Chờ thanh toán" || selectedStatus === "Đang chờ thanh toán") && option.value === "PendingPayment") ||
                     (selectedStatus === "Đã hoàn thành" && option.value === "Completed") ||
                     (selectedStatus === "Đã hủy" && option.value === "Cancelled") ||
                     (selectedStatus === "Không đến khám" && option.value === "NoShow");

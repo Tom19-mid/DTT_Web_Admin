@@ -61,6 +61,8 @@ export default function AppointmentTable({
           matchesStatus = app.status === "WaitingTestResults" || app.status === "AwaitingTestResults" || app.status === "Đang chờ kết quả xét nghiệm";
         } else if (selectedStatus === "PendingDispensing" || selectedStatus === "Đang chờ phát thuốc") {
           matchesStatus = app.status === "PendingDispensing" || app.status === "Đang chờ phát thuốc";
+        } else if (selectedStatus === "PendingPayment" || selectedStatus === "Chờ thanh toán" || selectedStatus === "Đang chờ thanh toán") {
+          matchesStatus = app.status === "PendingPayment" || app.status === "Chờ thanh toán" || app.status === "Đang chờ thanh toán";
         } else if (selectedStatus === "Completed" || selectedStatus === "Đã hoàn thành") {
           matchesStatus = app.status === "Completed" || app.status === "Đã hoàn thành";
         } else if (selectedStatus === "Cancelled" || selectedStatus === "Đã hủy") {

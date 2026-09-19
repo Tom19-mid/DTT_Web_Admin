@@ -22,6 +22,7 @@ const mapBackendStatus = (st?: string): string => {
   if (lower === "waitingfordoctor" || lower === "waitingdoctor" || lower === "đang chờ bác sĩ") return "WaitingDoctor";
   if (lower === "awaitingtestresults" || lower === "waitingtestresults" || lower === "đang chờ kết quả xét nghiệm") return "WaitingTestResults";
   if (lower === "pendingdispensing" || lower === "đang chờ phát thuốc") return "PendingDispensing";
+  if (lower === "pendingpayment" || lower === "chờ thanh toán" || lower === "đang chờ thanh toán") return "PendingPayment";
   if (lower === "waiting" || lower === "đang chờ khám") return "Waiting";
   if (lower === "inprogress" || lower === "đang khám") return "InProgress";
   if (lower === "completed" || lower === "đã hoàn thành") return "Completed";

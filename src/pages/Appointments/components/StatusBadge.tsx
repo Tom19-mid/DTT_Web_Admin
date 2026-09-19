@@ -29,6 +29,10 @@ function formatStatusText(status: AppointmentStatusName): string {
     case "PendingDispensing":
     case "Đang chờ phát thuốc":
       return "Đang chờ phát thuốc";
+    case "PendingPayment":
+    case "Chờ thanh toán":
+    case "Đang chờ thanh toán":
+      return "Chờ thanh toán";
     case "Completed":
     case "Đã hoàn thành":
       return "Đã hoàn thành";
@@ -69,6 +73,10 @@ export default function StatusBadge({ status }: StatusBadgeProps) {
       case "PendingDispensing":
       case "Đang chờ phát thuốc":
         return "bg-orange-100 text-orange-700 border border-orange-200/50";
+      case "PendingPayment":
+      case "Chờ thanh toán":
+      case "Đang chờ thanh toán":
+        return "bg-amber-100 text-amber-800 border border-amber-300/60";
       case "Completed":
       case "Đã hoàn thành":
         return "bg-emerald-100 text-emerald-700 border border-emerald-200/50";
