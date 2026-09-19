@@ -31,6 +31,7 @@ const genderOptions = [
   { value: "ALL", label: "Tất cả giới tính" },
   { value: "Nam", label: "Nam" },
   { value: "Nữ", label: "Nữ" },
+  { value: "Khác", label: "Khác" },
 ];
 
 export default function PatientSearch({

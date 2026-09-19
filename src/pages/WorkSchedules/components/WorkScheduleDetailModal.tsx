@@ -71,14 +71,14 @@ export default function WorkScheduleDetailModal({
             <span className="text-xs font-extrabold text-gray-500 uppercase tracking-wider">
               Trạng thái ca làm việc:
             </span>
-            <ScheduleStatusBadge status={schedule.status} />
+            <ScheduleStatusBadge status={schedule.status || "Đang hoạt động"} />
           </div>
         </div>
 
         {/* Time slots detailed list */}
         <TimeSlotSubTable
-          scheduleCode={schedule.scheduleCode}
-          timeSlots={schedule.timeSlots}
+          scheduleCode={schedule.scheduleCode || String(schedule.scheduleId || "")}
+          timeSlots={schedule.timeSlots || []}
           isModal={true}
         />
 

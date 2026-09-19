@@ -1,13 +1,15 @@
-import { Pencil, LockKeyhole } from "lucide-react";
+import { Pencil, Lock, Unlock } from "lucide-react";
 
 interface ActionButtonsProps {
   onEdit?: () => void;
   onLock?: () => void;
+  isLocked?: boolean;
 }
 
 export default function ActionButtons({
   onEdit,
   onLock,
+  isLocked = false,
 }: ActionButtonsProps) {
   return (
     <div className="flex items-center justify-center gap-1.5">
@@ -20,10 +22,15 @@ export default function ActionButtons({
       </button>
       <button
         onClick={onLock}
-        title="Đổi trạng thái (Đang / Ngưng hoạt động)"
-        className="p-2 text-amber-500 hover:text-amber-700 hover:bg-amber-50 rounded-lg transition-colors cursor-pointer"
+        type="button"
+        title={isLocked ? "Mở lại chuyên khoa" : "Ngưng hoạt động chuyên khoa"}
+        className={`p-2 rounded-lg transition-colors cursor-pointer ${
+          isLocked
+            ? "text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50"
+            : "text-rose-500 hover:text-rose-700 hover:bg-rose-50"
+        }`}
       >
-        <LockKeyhole size={20} />
+        {isLocked ? <Unlock size={20} /> : <Lock size={20} />}
       </button>
     </div>
   );

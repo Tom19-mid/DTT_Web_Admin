@@ -28,12 +28,17 @@ export default function SpecialtyRow({
         {specialty.doctorCount}
       </td>
       <td className="py-4 px-4">
-        <StatusBadge status={specialty.status} />
+        <StatusBadge status={specialty.status ?? "Đang hoạt động"} />
       </td>
       <td className="py-4 px-4 text-center">
         <ActionButtons
           onEdit={() => onEdit && onEdit(specialty)}
           onLock={() => onLock && onLock(specialty)}
+          isLocked={
+            specialty.status === "Ngưng hoạt động" ||
+            specialty.status === "Inactive" ||
+            specialty.status === false
+          }
         />
       </td>
     </tr>

@@ -37,3 +37,17 @@ export interface WorkSchedule {
   updatedAt?: string;
   timeSlots?: TimeSlot[];
 }
+
+export interface DoctorItem {
+  doctorId: number;
+  fullName: string;
+  degree?: string;
+  experienceYears?: number;
+  clinicRoom?: string;
+  specialtyId?: number;
+  specialtyName?: string;
+  phone?: string;
+  email?: string;
+  status?: string;
+  avatarUrl?: string;
+}

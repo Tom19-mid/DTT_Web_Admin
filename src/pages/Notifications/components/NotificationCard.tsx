@@ -90,6 +90,10 @@ export default function NotificationCard({
         {/* Content Details - Larger text */}
         <div className="flex-1">
           <div className="flex flex-wrap items-center gap-2 mb-2">
+            <span className="text-sm font-bold px-3 py-1 rounded-full border bg-slate-100/90 text-slate-800 border-slate-200/90 shadow-2xs">
+              Mã: #{notification.notificationId}
+            </span>
+
             <span
               className={`text-sm font-bold px-3 py-1 rounded-full border ${config.badgeBg}`}
             >

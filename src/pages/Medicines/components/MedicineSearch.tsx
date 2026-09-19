@@ -122,7 +122,9 @@ export default function MedicineSearch({
                   <span className="whitespace-nowrap">Tất cả nhóm thuốc</span>
                   {selectedCategoryId === "ALL" && <Check size={18} className="text-blue-600 shrink-0" />}
                 </button>
-                {categories.map((cat) => {
+                {categories
+                  .filter((cat): cat is typeof cat & { categoryId: number } => cat.categoryId != null)
+                  .map((cat) => {
                   const isSelected = selectedCategoryId === cat.categoryId;
                   return (
                     <button

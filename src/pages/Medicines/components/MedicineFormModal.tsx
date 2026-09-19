@@ -278,13 +278,13 @@ export default function MedicineFormModal({
     setPrevInitialData(initialData);
     setPrevIsOpen(isOpen);
     if (initialData) {
-      setCategoryId(initialData.categoryId);
-      setMedicineName(initialData.medicineName);
-      setUnit(initialData.unit);
-      setDescription(initialData.description);
-      setDefaultUsage(initialData.defaultUsage);
+      setCategoryId(initialData.categoryId ?? 1);
+      setMedicineName(initialData.medicineName ?? "");
+      setUnit(initialData.unit ?? "");
+      setDescription(initialData.description ?? "");
+      setDefaultUsage(initialData.defaultUsage ?? "");
       setUnitPriceStr(initialData.unitPrice ? initialData.unitPrice.toLocaleString("vi-VN") : "");
-      setExpiryDate(initialData.expiryDate);
+      setExpiryDate(initialData.expiryDate ?? getTodayFormatted());
     } else {
       setCategoryId(1);
       setMedicineName("");
@@ -326,7 +326,7 @@ export default function MedicineFormModal({
       defaultUsage: defaultUsage.trim(),
       unitPrice: parsedPrice,
       stockQuantity: initialData ? initialData.stockQuantity : 0,
-      expiryDate: initialData ? initialData.expiryDate : expiryDate,
+      expiryDate: expiryDate,
       status: initialData?.status || "Đang hoạt động",
     });
     onClose();
@@ -450,15 +450,13 @@ export default function MedicineFormModal({
             />
           </div>
 
-          {/* Hạn sử dụng (chỉ hiển thị khi Thêm thuốc mới, dùng CustomDatePicker) */}
-          {!initialData && (
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-1">
-                Hạn sử dụng <span className="text-rose-500">*</span>
-              </label>
-              <CustomDatePicker value={expiryDate} onChange={setExpiryDate} />
-            </div>
-          )}
+          {/* Hạn sử dụng (dùng CustomDatePicker) */}
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-1">
+              Hạn sử dụng <span className="text-rose-500">*</span>
+            </label>
+            <CustomDatePicker value={expiryDate} onChange={setExpiryDate} />
+          </div>
 
           {/* Action Buttons */}
           <div className="flex items-center justify-end gap-3 pt-5 border-t border-gray-100">

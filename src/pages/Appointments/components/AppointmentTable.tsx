@@ -2,7 +2,7 @@ import { useState, useMemo } from "react";
 import type { Appointment } from "../types";
 import AppointmentSearch from "./AppointmentSearch";
 import AppointmentRow from "./AppointmentRow";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import Pagination from "../../../components/common/Pagination";
 
 interface AppointmentTableProps {
   appointments: Appointment[];
@@ -38,10 +38,10 @@ export default function AppointmentTable({
       const term = searchTerm.toLowerCase().trim();
       const matchesSearch =
         !term ||
-        app.id.toString().includes(term) ||
-        app.patientName.toLowerCase().includes(term) ||
-        app.doctorName.toLowerCase().includes(term) ||
-        app.reason.toLowerCase().includes(term) ||
+        (app.id ?? "").toString().includes(term) ||
+        (app.patientName || "").toLowerCase().includes(term) ||
+        (app.doctorName || "").toLowerCase().includes(term) ||
+        (app.reason || "").toLowerCase().includes(term) ||
         (app.notes && app.notes.toLowerCase().includes(term));
 
       // Status filter (match DB code or Vietnamese)
@@ -49,10 +49,20 @@ export default function AppointmentTable({
       if (selectedStatus !== "ALL") {
         if (selectedStatus === "Scheduled" || selectedStatus === "Đã đặt lịch") {
           matchesStatus = app.status === "Scheduled" || app.status === "Đã đặt lịch";
+        } else if (selectedStatus === "CheckedIn" || selectedStatus === "Đã check in") {
+          matchesStatus = app.status === "CheckedIn" || app.status === "Đã check in";
         } else if (selectedStatus === "Waiting" || selectedStatus === "Đang chờ khám") {
           matchesStatus = app.status === "Waiting" || app.status === "Đang chờ khám";
+        } else if (selectedStatus === "WaitingDoctor" || selectedStatus === "WaitingForDoctor" || selectedStatus === "Đang chờ bác sĩ") {
+          matchesStatus = app.status === "WaitingDoctor" || app.status === "WaitingForDoctor" || app.status === "Đang chờ bác sĩ";
         } else if (selectedStatus === "InProgress" || selectedStatus === "Đang khám") {
           matchesStatus = app.status === "InProgress" || app.status === "Đang khám";
+        } else if (selectedStatus === "WaitingTestResults" || selectedStatus === "AwaitingTestResults" || selectedStatus === "Đang chờ kết quả xét nghiệm") {
+          matchesStatus = app.status === "WaitingTestResults" || app.status === "AwaitingTestResults" || app.status === "Đang chờ kết quả xét nghiệm";
+        } else if (selectedStatus === "PendingDispensing" || selectedStatus === "Đang chờ phát thuốc") {
+          matchesStatus = app.status === "PendingDispensing" || app.status === "Đang chờ phát thuốc";
+        } else if (selectedStatus === "PendingPayment" || selectedStatus === "Chờ thanh toán" || selectedStatus === "Đang chờ thanh toán") {
+          matchesStatus = app.status === "PendingPayment" || app.status === "Chờ thanh toán" || app.status === "Đang chờ thanh toán";
         } else if (selectedStatus === "Completed" || selectedStatus === "Đã hoàn thành") {
           matchesStatus = app.status === "Completed" || app.status === "Đã hoàn thành";
         } else if (selectedStatus === "Cancelled" || selectedStatus === "Đã hủy") {
@@ -143,47 +153,14 @@ export default function AppointmentTable({
 
       {/* Pagination Footer */}
       {filteredAppointments.length > 0 && (
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mt-6 pt-4 border-t border-gray-100 text-base text-gray-600">
-          <div>
-            Hiển thị <span className="font-bold text-gray-900">{(currentPage - 1) * itemsPerPage + 1}</span> -{" "}
-            <span className="font-bold text-gray-900">
-              {Math.min(currentPage * itemsPerPage, filteredAppointments.length)}
-            </span>{" "}
-            trên <span className="font-bold text-gray-900">{filteredAppointments.length}</span> lịch hẹn
-          </div>
-
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
-              disabled={currentPage === 1}
-              className="p-2.5 border border-gray-200 rounded-xl hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition"
-            >
-              <ChevronLeft size={18} />
-            </button>
-
-            {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-              <button
-                key={page}
-                onClick={() => setCurrentPage(page)}
-                className={`px-4 py-2 rounded-xl font-bold text-base cursor-pointer transition ${
-                  currentPage === page
-                    ? "bg-blue-600 text-white shadow-xs"
-                    : "border border-gray-200 text-gray-700 hover:bg-gray-50"
-                }`}
-              >
-                {page}
-              </button>
-            ))}
-
-            <button
-              onClick={() => setCurrentPage((p) => Math.min(p + 1, totalPages))}
-              disabled={currentPage === totalPages}
-              className="p-2.5 border border-gray-200 rounded-xl hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition"
-            >
-              <ChevronRight size={18} />
-            </button>
-          </div>
-        </div>
+        <Pagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          onPageChange={(page) => setCurrentPage(page)}
+          totalItems={filteredAppointments.length}
+          itemsPerPage={itemsPerPage}
+          itemLabel="lịch hẹn"
+        />
       )}
     </div>
   );

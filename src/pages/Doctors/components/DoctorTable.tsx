@@ -2,7 +2,7 @@ import { useState, useMemo } from "react";
 import type { Doctor } from "../types";
 import DoctorSearch from "./DoctorSearch";
 import DoctorRow from "./DoctorRow";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import Pagination from "../../../components/common/Pagination";
 
 interface DoctorTableProps {
   doctors: Doctor[];
@@ -20,19 +20,31 @@ export default function DoctorTable({
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedStatus, setSelectedStatus] = useState("ALL");
   const [selectedSpecialty, setSelectedSpecialty] = useState("ALL");
+  const [selectedDoctor, setSelectedDoctor] = useState("ALL");
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
 
   const specialties = useMemo(() => {
     const specSet = new Set<string>();
-    doctors.forEach((d) => specSet.add(d.specialty));
+    doctors.forEach((d) => {
+      if (d.specialty) specSet.add(d.specialty);
+    });
     return Array.from(specSet);
+  }, [doctors]);
+
+  const doctorOptions = useMemo(() => {
+    const docSet = new Set<string>();
+    doctors.forEach((d) => {
+      if (d.fullName) docSet.add(d.fullName);
+    });
+    return Array.from(docSet);
   }, [doctors]);
 
   const handleReset = () => {
     setSearchTerm("");
     setSelectedStatus("ALL");
     setSelectedSpecialty("ALL");
+    setSelectedDoctor("ALL");
     setCurrentPage(1);
   };
 
@@ -41,9 +53,9 @@ export default function DoctorTable({
       const term = searchTerm.toLowerCase().trim();
       const matchesSearch =
         !term ||
-        doctor.fullName.toLowerCase().includes(term) ||
-        doctor.email.toLowerCase().includes(term) ||
-        doctor.specialty.toLowerCase().includes(term);
+        (doctor.fullName || "").toLowerCase().includes(term) ||
+        (doctor.email || "").toLowerCase().includes(term) ||
+        (doctor.specialty || "").toLowerCase().includes(term);
 
       const matchesStatus =
         selectedStatus === "ALL" || doctor.status === selectedStatus;
@@ -51,9 +63,12 @@ export default function DoctorTable({
       const matchesSpecialty =
         selectedSpecialty === "ALL" || doctor.specialty === selectedSpecialty;
 
-      return matchesSearch && matchesStatus && matchesSpecialty;
+      const matchesDoctor =
+        selectedDoctor === "ALL" || doctor.fullName === selectedDoctor;
+
+      return matchesSearch && matchesStatus && matchesSpecialty && matchesDoctor;
     });
-  }, [doctors, searchTerm, selectedStatus, selectedSpecialty]);
+  }, [doctors, searchTerm, selectedStatus, selectedSpecialty, selectedDoctor]);
 
   // Pagination calculation
   const totalPages = Math.ceil(filteredDoctors.length / itemsPerPage) || 1;
@@ -81,6 +96,12 @@ export default function DoctorTable({
           setCurrentPage(1);
         }}
         specialties={specialties}
+        selectedDoctor={selectedDoctor}
+        onDoctorChange={(val) => {
+          setSelectedDoctor(val);
+          setCurrentPage(1);
+        }}
+        doctorOptions={doctorOptions}
         onReset={handleReset}
       />
 
@@ -88,7 +109,7 @@ export default function DoctorTable({
         <table className="w-full text-left border-collapse min-w-[1000px]">
           <thead>
             <tr className="bg-gray-200/70 text-gray-800 font-bold text-base">
-              <th className="py-4 px-4 text-center rounded-l-xl">STT</th>
+              <th className="py-4 px-4 text-center rounded-l-xl">Mã BS</th>
               <th className="py-4 px-4">Họ và tên</th>
               <th className="py-4 px-4">Chuyên khoa</th>
               <th className="py-4 px-4">Chức danh / Trình độ</th>
@@ -126,47 +147,14 @@ export default function DoctorTable({
 
       {/* Pagination Footer */}
       {filteredDoctors.length > 0 && (
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mt-6 pt-4 border-t border-gray-100 text-base text-gray-600">
-          <div>
-            Hiển thị <span className="font-bold text-gray-900">{(currentPage - 1) * itemsPerPage + 1}</span> -{" "}
-            <span className="font-bold text-gray-900">
-              {Math.min(currentPage * itemsPerPage, filteredDoctors.length)}
-            </span>{" "}
-            trên <span className="font-bold text-gray-900">{filteredDoctors.length}</span> bác sĩ
-          </div>
-
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
-              disabled={currentPage === 1}
-              className="p-2.5 border border-gray-200 rounded-xl hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition"
-            >
-              <ChevronLeft size={18} />
-            </button>
-
-            {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-              <button
-                key={page}
-                onClick={() => setCurrentPage(page)}
-                className={`px-4 py-2 rounded-xl font-bold text-base cursor-pointer transition ${
-                  currentPage === page
-                    ? "bg-blue-600 text-white shadow-xs"
-                    : "border border-gray-200 text-gray-700 hover:bg-gray-50"
-                }`}
-              >
-                {page}
-              </button>
-            ))}
-
-            <button
-              onClick={() => setCurrentPage((p) => Math.min(p + 1, totalPages))}
-              disabled={currentPage === totalPages}
-              className="p-2.5 border border-gray-200 rounded-xl hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition"
-            >
-              <ChevronRight size={18} />
-            </button>
-          </div>
-        </div>
+        <Pagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          onPageChange={(page) => setCurrentPage(page)}
+          totalItems={filteredDoctors.length}
+          itemsPerPage={itemsPerPage}
+          itemLabel="bác sĩ"
+        />
       )}
     </div>
   );

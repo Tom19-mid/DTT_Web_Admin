@@ -1,14 +1,17 @@
-import { useState, useMemo } from "react";
-import { initialNotifications } from "./data";
+import { useState, useMemo, useEffect } from "react";
 import type { Notification } from "./types";
 import NotificationToolbar from "./components/NotificationToolbar";
 import NotificationCard from "./components/NotificationCard";
 import NotificationDetailModal from "./components/NotificationDetailModal";
 import ConfirmDeleteNotificationModal from "./components/ConfirmDeleteNotificationModal";
-import { ChevronLeft, ChevronRight, BellOff } from "lucide-react";
+import CreateNotificationModal from "./components/CreateNotificationModal";
+import Pagination from "../../components/common/Pagination";
+import { BellOff, Loader2 } from "lucide-react";
+import { notificationApi, type CreateNotificationPayload } from "../../api/notificationApi";
 
 export default function Notifications() {
-  const [notifications, setNotifications] = useState<Notification[]>(initialNotifications);
+  const [notifications, setNotifications] = useState<Notification[]>(() => notificationApi.getCachedNotifications() || []);
+  const [isLoading, setIsLoading] = useState(() => !notificationApi.getCachedNotifications());
 
   // Filters state
   const [searchTerm, setSearchTerm] = useState("");
@@ -23,6 +26,107 @@ export default function Notifications() {
   const [deletingNotification, setDeletingNotification] = useState<Notification | null>(null);
   const [isClearAllReadModalOpen, setIsClearAllReadModalOpen] = useState(false);
 
+  // Create Notification Modal state
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+
+  // Retrieve logged-in Admin's userId from localStorage
+  const getLoggedInAdminUserId = (): string | undefined => {
+    try {
+      const savedUser = localStorage.getItem("user");
+      if (savedUser) {
+        const parsed = JSON.parse(savedUser);
+        return parsed?.userId || parsed?.id;
+      }
+    } catch (e) {}
+    return undefined;
+  };
+
+  // Fetch notifications from Backend API
+  const fetchNotifications = async (showLoading = false) => {
+    if (showLoading && !notificationApi.getCachedNotifications()) {
+      setIsLoading(true);
+    }
+    try {
+      const adminUserId = getLoggedInAdminUserId();
+      const data = await notificationApi.getAll(adminUserId ? { userId: adminUserId } : undefined);
+      if (Array.isArray(data)) {
+        setNotifications(data);
+      } else {
+        setNotifications([]);
+      }
+    } catch (error) {
+      console.warn("Lỗi tải danh sách thông báo từ API:", error);
+      setNotifications([]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchNotifications(notifications.length === 0);
+
+    const handleNewNotification = (e: any) => {
+      const newNoti = e.detail as Notification;
+      if (newNoti) {
+        setNotifications((prev) => [
+          newNoti,
+          ...prev.filter((n) => n.notificationId !== newNoti.notificationId),
+        ]);
+      }
+    };
+
+    const handleNotificationRead = (e: any) => {
+      const id = e.detail as number;
+      if (id) {
+        setNotifications((prev) =>
+          prev.map((n) => (n.notificationId === id ? { ...n, isRead: true } : n))
+        );
+      }
+    };
+
+    const handleAllRead = () => {
+      setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
+    };
+
+    const handleNotificationDeleted = (e: any) => {
+      const id = e.detail as number;
+      if (id) {
+        setNotifications((prev) => prev.filter((n) => n.notificationId !== id));
+      }
+    };
+
+    const handleNotificationUpdated = () => {
+      fetchNotifications(false);
+    };
+
+    window.addEventListener("notification_updated", handleNotificationUpdated);
+    window.addEventListener("new_notification_created", handleNewNotification as EventListener);
+    window.addEventListener("notification_read", handleNotificationRead as EventListener);
+    window.addEventListener("notification_all_read", handleAllRead);
+    window.addEventListener("notification_deleted", handleNotificationDeleted as EventListener);
+    return () => {
+      window.removeEventListener("notification_updated", handleNotificationUpdated);
+      window.removeEventListener("new_notification_created", handleNewNotification as EventListener);
+      window.removeEventListener("notification_read", handleNotificationRead as EventListener);
+      window.removeEventListener("notification_all_read", handleAllRead);
+      window.removeEventListener("notification_deleted", handleNotificationDeleted as EventListener);
+    };
+  }, []);
+
+  const handleCreateNotification = async (payload: CreateNotificationPayload): Promise<boolean> => {
+    // Không tự fallback về userId của Admin đang đăng nhập nữa — trước đây làm vậy khiến MỌI
+    // thông báo "phát" từ màn này chỉ gửi tới chính Admin, không bao giờ tới bệnh nhân nào (màn tạo
+    // thông báo không có ô chọn người nhận cụ thể). Khi payload.userId để trống, backend giờ hiểu
+    // đúng là "phát cho tất cả bệnh nhân đang hoạt động".
+    const result = await notificationApi.create(payload);
+    if (result) {
+      await fetchNotifications();
+      window.dispatchEvent(new Event("notification_updated"));
+      return true;
+    }
+    return false;
+  };
+
   // Statistics calculation
   const totalCount = notifications.length;
   const unreadCount = useMemo(
@@ -36,8 +140,9 @@ export default function Notifications() {
       const term = searchTerm.toLowerCase().trim();
       const matchesSearch =
         !term ||
-        n.title.toLowerCase().includes(term) ||
-        n.content.toLowerCase().includes(term);
+        String(n.notificationId || "").includes(term) ||
+        (n.title && n.title.toLowerCase().includes(term)) ||
+        (n.content && n.content.toLowerCase().includes(term));
 
       const matchesStatus =
         selectedStatus === "ALL" ||
@@ -56,7 +161,7 @@ export default function Notifications() {
   }, [filteredNotifications, currentPage]);
 
   // Handlers
-  const handleMarkAsRead = (id: number) => {
+  const handleMarkAsRead = async (id: number) => {
     setNotifications((prev) =>
       prev.map((n) =>
         n.notificationId === id
@@ -64,25 +169,32 @@ export default function Notifications() {
           : n
       )
     );
+    await notificationApi.markAsRead(id);
+    window.dispatchEvent(new Event("notification_updated"));
   };
 
-  const handleMarkAllAsRead = () => {
+  const handleMarkAllAsRead = async () => {
     const now = new Date().toISOString();
     setNotifications((prev) =>
       prev.map((n) => ({ ...n, isRead: true, readAt: n.readAt || now }))
     );
+    await notificationApi.markAllAsRead();
+    window.dispatchEvent(new Event("notification_updated"));
   };
 
   const handleOpenDeleteConfirm = (notification: Notification) => {
     setDeletingNotification(notification);
   };
 
-  const handleConfirmDeleteSingle = () => {
+  const handleConfirmDeleteSingle = async () => {
     if (deletingNotification) {
+      const idToDelete = deletingNotification.notificationId;
       setNotifications((prev) =>
-        prev.filter((n) => n.notificationId !== deletingNotification.notificationId)
+        prev.filter((n) => n.notificationId !== idToDelete)
       );
       setDeletingNotification(null);
+      await notificationApi.delete(idToDelete);
+      window.dispatchEvent(new Event("notification_updated"));
     }
   };
 
@@ -128,77 +240,59 @@ export default function Notifications() {
         onMarkAllAsRead={handleMarkAllAsRead}
         onClearReadNotifications={handleOpenClearReadConfirm}
         onShowAll={handleResetFilters}
+        onOpenCreateModal={() => setIsCreateModalOpen(true)}
       />
 
       {/* Main Content Container */}
-      <div className="bg-white rounded-2xl border border-gray-100/80 shadow-xs p-6">
-        {paginatedNotifications.length > 0 ? (
-          <div className="space-y-3.5">
-            {paginatedNotifications.map((notification) => (
-              <NotificationCard
-                key={notification.notificationId}
-                notification={notification}
-                onViewDetail={handleViewDetail}
-                onMarkAsRead={handleMarkAsRead}
-                onDelete={() => handleOpenDeleteConfirm(notification)}
-              />
-            ))}
-          </div>
-        ) : (
-          <div className="py-14 text-center">
-            <BellOff className="mx-auto text-gray-300 mb-3" size={52} />
-            <h3 className="text-lg font-bold text-gray-800">Không tìm thấy thông báo nào</h3>
-            <p className="text-sm text-gray-500 mt-1 max-w-sm mx-auto">
-              Không có thông báo nào phù hợp với bộ lọc hoặc từ khóa tìm kiếm của bạn.
-            </p>
-          </div>
-        )}
-
-        {/* Pagination Footer */}
-        {filteredNotifications.length > 0 && (
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mt-6 pt-5 border-t border-gray-100 text-base text-gray-600">
-            <div>
-              Hiển thị <span className="font-bold text-gray-900">{(currentPage - 1) * itemsPerPage + 1}</span> -{" "}
-              <span className="font-bold text-gray-900">
-                {Math.min(currentPage * itemsPerPage, filteredNotifications.length)}
-              </span>{" "}
-              trên <span className="font-bold text-gray-900">{filteredNotifications.length}</span> thông báo
-            </div>
-
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
-                disabled={currentPage === 1}
-                className="p-2.5 border border-gray-200 bg-white rounded-xl hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition"
-              >
-                <ChevronLeft size={18} />
-              </button>
-
-              {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-                <button
-                  key={page}
-                  onClick={() => setCurrentPage(page)}
-                  className={`px-4 py-2 rounded-xl font-bold text-base cursor-pointer transition ${
-                    currentPage === page
-                      ? "bg-blue-600 text-white shadow-xs"
-                      : "border border-gray-200 bg-white text-gray-700 hover:bg-gray-50"
-                  }`}
-                >
-                  {page}
-                </button>
+      {isLoading && notifications.length === 0 ? (
+        <div className="p-12 text-center text-gray-500 font-normal bg-white rounded-2xl border border-gray-100/80 shadow-xs flex flex-col items-center justify-center gap-3">
+          <Loader2 className="w-8 h-8 text-blue-600 animate-spin" />
+          <span className="text-base font-medium text-gray-700">Đang tải dữ liệu thông báo...</span>
+        </div>
+      ) : (
+        <div className="bg-white rounded-2xl border border-gray-100/80 shadow-xs p-6">
+          {paginatedNotifications.length > 0 ? (
+            <div className="space-y-3.5">
+              {paginatedNotifications.map((notification) => (
+                <NotificationCard
+                  key={notification.notificationId}
+                  notification={notification}
+                  onViewDetail={handleViewDetail}
+                  onMarkAsRead={handleMarkAsRead}
+                  onDelete={() => handleOpenDeleteConfirm(notification)}
+                />
               ))}
-
-              <button
-                onClick={() => setCurrentPage((p) => Math.min(p + 1, totalPages))}
-                disabled={currentPage === totalPages}
-                className="p-2.5 border border-gray-200 bg-white rounded-xl hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition"
-              >
-                <ChevronRight size={18} />
-              </button>
             </div>
-          </div>
-        )}
-      </div>
+          ) : (
+            <div className="py-14 text-center">
+              <BellOff className="mx-auto text-gray-300 mb-3" size={52} />
+              <h3 className="text-lg font-bold text-gray-800">Không tìm thấy thông báo nào</h3>
+              <p className="text-sm text-gray-500 mt-1 max-w-sm mx-auto">
+                Không có thông báo nào phù hợp với bộ lọc hoặc từ khóa tìm kiếm của bạn.
+              </p>
+            </div>
+          )}
+
+          {/* Pagination Footer */}
+          {filteredNotifications.length > 0 && (
+            <Pagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              onPageChange={(page) => setCurrentPage(page)}
+              totalItems={filteredNotifications.length}
+              itemsPerPage={itemsPerPage}
+              itemLabel="thông báo"
+            />
+          )}
+        </div>
+      )}
+
+      {/* Create Notification Modal */}
+      <CreateNotificationModal
+        isOpen={isCreateModalOpen}
+        onClose={() => setIsCreateModalOpen(false)}
+        onSubmit={handleCreateNotification}
+      />
 
       {/* Notification Detail Modal */}
       <NotificationDetailModal

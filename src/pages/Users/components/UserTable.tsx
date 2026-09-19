@@ -2,7 +2,7 @@ import { useState, useMemo } from "react";
 import type { User } from "../types";
 import UserSearch from "./UserSearch";
 import UserRow from "./UserRow";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import Pagination from "../../../components/common/Pagination";
 
 interface UserTableProps {
   users: User[];
@@ -23,7 +23,9 @@ export default function UserTable({
 
   const roles = useMemo(() => {
     const roleSet = new Set<string>();
-    users.forEach((u) => roleSet.add(u.role));
+    users.forEach((u) => {
+      if (u.role) roleSet.add(u.role);
+    });
     return Array.from(roleSet);
   }, [users]);
 
@@ -39,6 +41,7 @@ export default function UserTable({
       const term = searchTerm.toLowerCase().trim();
       const matchesSearch =
         !term ||
+        (user.fullName || "").toLowerCase().includes(term) ||
         (user.email || "").toLowerCase().includes(term) ||
         (user.phone || user.phoneNumber || "").includes(term);
 
@@ -82,16 +85,17 @@ export default function UserTable({
       />
 
       <div className="overflow-x-auto">
-        <table className="w-full text-left border-collapse min-w-[850px]">
+        <table className="w-full text-left border-collapse min-w-[1020px]">
           <thead>
             <tr className="bg-gray-200/70 text-gray-800 font-bold text-base">
-              <th className="py-4 px-4 rounded-l-xl">Email</th>
+              <th className="py-4 px-4 rounded-l-xl">Họ và tên</th>
+              <th className="py-4 px-4">Email</th>
               <th className="py-4 px-4">Số điện thoại</th>
-              <th className="py-4 px-4">Vai trò</th>
-              <th className="py-4 px-4">Ngày tham gia</th>
-              <th className="py-4 px-4">Cập nhật lần cuối</th>
-              <th className="py-4 px-4">Trạng thái</th>
-              <th className="py-4 px-4 text-center rounded-r-xl">Chỉnh sửa</th>
+              <th className="py-4 px-4 min-w-[120px]">Vai trò</th>
+              <th className="py-4 px-4 min-w-[140px]">Ngày tham gia</th>
+              <th className="py-4 px-4 min-w-[140px]">Cập nhật lần cuối</th>
+              <th className="py-4 px-4 min-w-[125px]">Trạng thái</th>
+              <th className="py-4 px-4 text-center rounded-r-xl min-w-[100px]">Chỉnh sửa</th>
             </tr>
           </thead>
           <tbody>
@@ -107,7 +111,7 @@ export default function UserTable({
             ) : (
               <tr>
                 <td
-                  colSpan={7}
+                  colSpan={8}
                   className="text-center py-10 text-gray-500 font-medium text-lg"
                 >
                   Không tìm thấy tài khoản nào khớp với từ khóa.
@@ -120,47 +124,14 @@ export default function UserTable({
 
       {/* Pagination Footer */}
       {filteredUsers.length > 0 && (
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mt-6 pt-4 border-t border-gray-100 text-base text-gray-600">
-          <div>
-            Hiển thị <span className="font-bold text-gray-900">{(currentPage - 1) * itemsPerPage + 1}</span> -{" "}
-            <span className="font-bold text-gray-900">
-              {Math.min(currentPage * itemsPerPage, filteredUsers.length)}
-            </span>{" "}
-            trên <span className="font-bold text-gray-900">{filteredUsers.length}</span> tài khoản
-          </div>
-
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
-              disabled={currentPage === 1}
-              className="p-2.5 border border-gray-200 rounded-xl hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition"
-            >
-              <ChevronLeft size={18} />
-            </button>
-
-            {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-              <button
-                key={page}
-                onClick={() => setCurrentPage(page)}
-                className={`px-4 py-2 rounded-xl font-bold text-base cursor-pointer transition ${
-                  currentPage === page
-                    ? "bg-blue-600 text-white shadow-xs"
-                    : "border border-gray-200 text-gray-700 hover:bg-gray-50"
-                }`}
-              >
-                {page}
-              </button>
-            ))}
-
-            <button
-              onClick={() => setCurrentPage((p) => Math.min(p + 1, totalPages))}
-              disabled={currentPage === totalPages}
-              className="p-2.5 border border-gray-200 rounded-xl hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition"
-            >
-              <ChevronRight size={18} />
-            </button>
-          </div>
-        </div>
+        <Pagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          onPageChange={(page) => setCurrentPage(page)}
+          totalItems={filteredUsers.length}
+          itemsPerPage={itemsPerPage}
+          itemLabel="tài khoản"
+        />
       )}
     </div>
   );

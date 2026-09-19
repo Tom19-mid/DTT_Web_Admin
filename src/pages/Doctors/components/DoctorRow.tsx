@@ -20,8 +20,8 @@ export default function DoctorRow({
 
   return (
     <tr className="border-b border-gray-100 hover:bg-gray-50/60 transition-colors">
-      <td className="py-4 px-4 text-center font-medium text-gray-500 text-base">
-        {doctor.stt}
+      <td className="py-4 px-4 text-center font-bold text-gray-700 text-base">
+        {doctor.doctorId || doctor.id}
       </td>
       <td className="py-4 px-4 font-bold text-gray-900 text-base">
         <button
@@ -31,13 +31,13 @@ export default function DoctorRow({
           {doctor.avatar && !imgError ? (
             <img
               src={doctor.avatar}
-              alt={doctor.fullName}
+              alt={doctor.fullName || "Bác sĩ"}
               onError={() => setImgError(true)}
               className="w-9 h-9 rounded-full object-cover border border-gray-200 shrink-0"
             />
           ) : (
             <div className="w-9 h-9 rounded-full bg-blue-100 text-blue-700 font-bold flex items-center justify-center text-sm shrink-0">
-              {doctor.fullName.charAt(0)}
+              {(doctor.fullName || "?").charAt(0)}
             </div>
           )}
           <span>{doctor.fullName}</span>
@@ -71,6 +71,7 @@ export default function DoctorRow({
           onViewDetail={() => onViewDetail && onViewDetail(doctor)}
           onEdit={() => onEdit && onEdit(doctor)}
           onLock={() => onLock && onLock(doctor)}
+          isLocked={doctor.status === "Đã khóa" || doctor.status === "Locked"}
         />
       </td>
     </tr>

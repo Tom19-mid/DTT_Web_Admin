@@ -1,25 +1,36 @@
 import { useState, useEffect, useRef } from "react";
-import { X, Save, Calendar, ChevronLeft, ChevronRight } from "lucide-react";
+import { X, Save, Calendar, ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
 import type { Doctor, DoctorStatus } from "../types";
 import ConfirmLockModal from "./ConfirmLockModal";
 
 interface DoctorFormModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSave: (doctorData: Omit<Doctor, "id" | "stt"> & { id?: number }) => void;
+  onSave: (doctorData: any) => Promise<void> | void;
   initialData?: Doctor | null;
+  specialtiesOptions?: Array<{ specialtyId: number; specialtyName: string }>;
+  onAddToast?: (toast: {
+    type: "success" | "error" | "info";
+    title?: string;
+    message: string;
+  }) => void;
 }
 
+// Fallback CHỈ dùng khi /api/specialties chưa tải xong/lỗi — trước đây 9 tên này không khớp tên
+// thật trong DB (vd "Nội khoa" thay vì "Nội tổng quát", "Chấn thương chỉnh hình" thay vì "Cơ xương
+// khớp"), lại thiếu Chẩn đoán hình ảnh. Khớp đúng nguyên văn 11 tên thật trong bảng specialties.
 const specialtiesList = [
-  "Tim mạch",
-  "Thần kinh học",
-  "Nội khoa",
-  "Da liễu",
-  "Chấn thương chỉnh hình",
-  "Phụ khoa",
-  "Nhãn khoa",
-  "Tai Mũi Họng",
+  "Nội tổng quát",
   "Nhi khoa",
+  "Sản phụ khoa",
+  "Cơ xương khớp",
+  "Tim mạch",
+  "Thần kinh",
+  "Da liễu",
+  "Chẩn đoán hình ảnh",
+  "Răng hàm mặt",
+  "Tai-Mũi-Họng",
+  "Mắt",
 ];
 
 const monthNames = [
@@ -45,6 +56,24 @@ const getTodayFormatted = () => {
   const mStr = String(today.getMonth() + 1).padStart(2, "0");
   const yStr = String(today.getFullYear());
   return `${dStr}/${mStr}/${yStr}`;
+};
+
+const parseDateToComparable = (str?: string): number => {
+  if (!str) return 0;
+  if (str.includes("/")) {
+    const parts = str.split("/");
+    if (parts.length === 3) {
+      const [d, m, y] = parts;
+      return new Date(Number(y), Number(m) - 1, Number(d)).getTime();
+    }
+  } else if (str.includes("-")) {
+    const parts = str.split("-");
+    if (parts.length === 3) {
+      const [y, m, d] = parts;
+      return new Date(Number(y), Number(m) - 1, Number(d)).getTime();
+    }
+  }
+  return 0;
 };
 
 // Custom Date Picker Component matching AppointmentFormModal UI with auto-scroll down
@@ -302,15 +331,20 @@ export default function DoctorFormModal({
   onClose,
   onSave,
   initialData,
+  specialtiesOptions,
+  onAddToast,
 }: DoctorFormModalProps) {
   const [fullName, setFullName] = useState("");
   const [avatar, setAvatar] = useState("");
-  const [specialty, setSpecialty] = useState("Tim mạch");
+  const [specialty, setSpecialty] = useState("Nội tổng quát");
+  const [specialtyId, setSpecialtyId] = useState<number | undefined>(undefined);
   const [qualifications, setQualifications] = useState("");
   const [experience, setExperience] = useState("");
+  const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
   const [clinicRoom, setClinicRoom] = useState("");
   const [status, setStatus] = useState<DoctorStatus>("Đang hoạt động");
+  const [isTestData, setIsTestData] = useState(false);
 
   // Leave fields
   const [leaveStartDate, setLeaveStartDate] = useState("");
@@ -318,6 +352,7 @@ export default function DoctorFormModal({
   const [leaveReason, setLeaveReason] = useState("");
 
   const [isConfirmLockOpen, setIsConfirmLockOpen] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const [prevInitialData, setPrevInitialData] = useState<Doctor | null | undefined>(undefined);
   const [prevIsOpen, setPrevIsOpen] = useState(false);
@@ -327,25 +362,31 @@ export default function DoctorFormModal({
     setPrevIsOpen(isOpen);
     if (initialData) {
       setFullName(initialData.fullName || "");
-      setAvatar(initialData.avatar || "");
-      setSpecialty(initialData.specialty || "");
-      setQualifications(initialData.qualifications || "");
-      setExperience(String(initialData.experience ?? ""));
-      setEmail(initialData.email || "");
+      setAvatar(initialData.avatar || initialData.avatarUrl || "");
+      setSpecialty(initialData.specialtyName || initialData.specialty || "Nội tổng quát");
+      setSpecialtyId(initialData.specialtyId || undefined);
+      setQualifications(initialData.qualifications || initialData.degree || "");
+      setExperience(String(initialData.experience ?? initialData.experienceYears ?? ""));
+      setPhone(initialData.phone || "");
+      setEmail(initialData.email || initialData.userEmail || "");
       setClinicRoom(initialData.clinicRoom || "");
       setStatus(initialData.status);
+      setIsTestData(!!initialData.isTestData);
       setLeaveStartDate(initialData.leaveStartDate || getTodayFormatted());
       setLeaveEndDate(initialData.leaveEndDate || getTodayFormatted());
       setLeaveReason(initialData.leaveReason || "");
     } else {
       setFullName("");
       setAvatar("");
-      setSpecialty("Tim mạch");
+      setSpecialty("Nội tổng quát");
+      setSpecialtyId(undefined);
       setQualifications("");
       setExperience("");
+      setPhone("");
       setEmail("");
       setClinicRoom("");
       setStatus("Đang hoạt động");
+      setIsTestData(false);
       setLeaveStartDate(getTodayFormatted());
       setLeaveEndDate(getTodayFormatted());
       setLeaveReason("");
@@ -355,11 +396,66 @@ export default function DoctorFormModal({
 
   if (!isOpen) return null;
 
+  const notifyError = (message: string, title = "Lỗi thao tác") => {
+    if (onAddToast) {
+      onAddToast({
+        type: "error",
+        title,
+        message,
+      });
+    } else {
+      alert(message);
+    }
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!fullName.trim()) {
-      alert("Vui lòng nhập Họ tên bác sĩ!");
+      notifyError("Vui lòng nhập Họ tên bác sĩ!", "Lỗi thao tác");
       return;
+    }
+
+    // "Chuyên khoa" (dropdown, dữ liệu thật) và "Trình độ chuyên môn" (nhập tay tự do) là 2 field
+    // độc lập, không có gì đối chiếu — đây chính là cách 1 bác sĩ có thể bị lưu specialtyId trỏ
+    // 1 khoa (vd Tim mạch) trong khi Trình độ chuyên môn lại ghi tên 1 khoa KHÁC (vd "Cơ xương
+    // khớp"), khiến bác sĩ hiện sai chuyên khoa trên Mobile. Cảnh báo mềm (không chặn cứng, vì
+    // "Tiến sĩ Y khoa" hay các mô tả chung chung khác vẫn hợp lệ) khi phát hiện tên 1 chuyên khoa
+    // KHÁC xuất hiện trong Trình độ chuyên môn.
+    const mismatchedSpecialty = specialtiesOptions?.find(
+      (s) =>
+        s.specialtyId !== specialtyId &&
+        qualifications.trim() !== "" &&
+        qualifications.toLowerCase().includes(s.specialtyName.toLowerCase())
+    );
+    if (mismatchedSpecialty) {
+      const proceed = window.confirm(
+        `Trình độ chuyên môn đang nhắc tới "${mismatchedSpecialty.specialtyName}", nhưng Chuyên khoa đã chọn là "${specialty}". Có thể bạn đã chọn nhầm chuyên khoa.\n\nBạn có chắc chắn muốn lưu như vậy không?`
+      );
+      if (!proceed) return;
+    }
+
+    if (status === "Nghỉ phép") {
+      if (!leaveStartDate) {
+        notifyError("Vui lòng chọn Ngày bắt đầu nghỉ!", "Lỗi thao tác");
+        return;
+      }
+      if (!leaveEndDate) {
+        notifyError("Vui lòng chọn Ngày kết thúc nghỉ!", "Lỗi thao tác");
+        return;
+      }
+      const startMs = parseDateToComparable(leaveStartDate);
+      const endMs = parseDateToComparable(leaveEndDate);
+      if (startMs && endMs && endMs < startMs) {
+        notifyError(
+          "Ngày kết thúc nghỉ phải lớn hơn hoặc bằng ngày bắt đầu nghỉ!",
+          "Lỗi thao tác"
+        );
+        return;
+      }
+      if (!leaveReason.trim()) {
+        notifyError("Vui lòng nhập lý do xin nghỉ phép!", "Lỗi thao tác");
+        return;
+      }
     }
 
     if (status === "Đã khóa" && initialData?.status !== "Đã khóa") {
@@ -370,27 +466,40 @@ export default function DoctorFormModal({
     doSave();
   };
 
-  const doSave = () => {
-    onSave({
-      doctorId: initialData?.doctorId ?? initialData?.id,
-      id: initialData?.id,
-      fullName: fullName.trim(),
-      avatar: avatar.trim() || undefined,
-      specialty,
-      qualifications: qualifications.trim(),
-      experience: experience.trim(),
-      email: email.trim(),
-      clinicRoom: clinicRoom.trim(),
-      status,
-      ratingAverage: initialData?.ratingAverage || 5.0,
-      totalReviews: initialData?.totalReviews || 0,
-      leaveStartDate: status === "Nghỉ phép" ? leaveStartDate : undefined,
-      leaveEndDate: status === "Nghỉ phép" ? leaveEndDate : undefined,
-      leaveReason: status === "Nghỉ phép" ? leaveReason : undefined,
-      leaveStatus: status === "Nghỉ phép" ? (initialData?.leaveStatus || "Chờ duyệt") : undefined,
-    });
-    setIsConfirmLockOpen(false);
-    onClose();
+  const doSave = async () => {
+    try {
+      setIsSubmitting(true);
+      await onSave({
+        doctorId: initialData?.doctorId ?? initialData?.id,
+        id: initialData?.doctorId ?? initialData?.id,
+        fullName: fullName.trim(),
+        avatar: avatar.trim() || undefined,
+        specialty,
+        specialtyName: specialty,
+        specialtyId: specialtyId,
+        qualifications: qualifications.trim(),
+        degree: qualifications.trim(),
+        experience: experience.trim(),
+        experienceYears: Number(experience) || 0,
+        phone: phone.trim(),
+        email: email.trim(),
+        clinicRoom: clinicRoom.trim(),
+        status,
+        isTestData,
+        ratingAverage: initialData?.ratingAverage || initialData?.rating || 5.0,
+        totalReviews: initialData?.totalReviews || initialData?.reviewCount || 0,
+        leaveStartDate: status === "Nghỉ phép" ? leaveStartDate : undefined,
+        leaveEndDate: status === "Nghỉ phép" ? leaveEndDate : undefined,
+        leaveReason: status === "Nghỉ phép" ? leaveReason : undefined,
+        leaveStatus: status === "Nghỉ phép" ? "Chờ duyệt" : undefined,
+      });
+      setIsConfirmLockOpen(false);
+      onClose();
+    } catch (err: any) {
+      notifyError(err.message || "Lỗi khi lưu thông tin bác sĩ!", "Lỗi thao tác");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -440,10 +549,24 @@ export default function DoctorFormModal({
                 </label>
                 <select
                   value={specialty}
-                  onChange={(e) => setSpecialty(e.target.value)}
+                  onChange={(e) => {
+                    const newSpecName = e.target.value;
+                    setSpecialty(newSpecName);
+                    if (specialtiesOptions && specialtiesOptions.length > 0) {
+                      const matched = specialtiesOptions.find(
+                        (s) => s.specialtyName.toLowerCase().trim() === newSpecName.toLowerCase().trim()
+                      );
+                      if (matched) {
+                        setSpecialtyId(matched.specialtyId);
+                      }
+                    }
+                  }}
                   className="w-full border border-gray-300 rounded-xl px-4 py-2.5 text-base text-gray-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 bg-white transition-all cursor-pointer font-medium"
                 >
-                  {specialtiesList.map((item) => (
+                  {((specialtiesOptions && specialtiesOptions.length > 0)
+                    ? specialtiesOptions.map((s) => s.specialtyName)
+                    : specialtiesList
+                  ).map((item) => (
                     <option key={item} value={item}>
                       {item}
                     </option>
@@ -497,34 +620,49 @@ export default function DoctorFormModal({
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {/* Số điện thoại */}
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-1">
+                  Số điện thoại <span className="text-rose-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                  placeholder="VD: 0901234567..."
+                  required
+                  maxLength={10}
+                  className="w-full border border-gray-300 rounded-xl px-4 py-2.5 text-base text-gray-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all"
+                />
+              </div>
+
               {/* Email */}
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-1">
-                  Email <span className="text-rose-500">*</span>
+                  Email
                 </label>
                 <input
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="VD: dr.binh@clinic.com..."
-                  required
                   className="w-full border border-gray-300 rounded-xl px-4 py-2.5 text-base text-gray-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all"
                 />
               </div>
+            </div>
 
-              {/* Phòng khám */}
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-1">
-                  Phòng khám
-                </label>
-                <input
-                  type="text"
-                  value={clinicRoom}
-                  onChange={(e) => setClinicRoom(e.target.value)}
-                  placeholder="VD: P01, Room 102..."
-                  className="w-full border border-gray-300 rounded-xl px-4 py-2.5 text-base text-gray-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all"
-                />
-              </div>
+            {/* Phòng khám */}
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-1">
+                Phòng khám
+              </label>
+              <input
+                type="text"
+                value={clinicRoom}
+                onChange={(e) => setClinicRoom(e.target.value)}
+                placeholder="VD: Phòng 101, Phòng 102..."
+                className="w-full border border-gray-300 rounded-xl px-4 py-2.5 text-base text-gray-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all"
+              />
             </div>
 
             {/* Trạng thái */}
@@ -561,6 +699,20 @@ export default function DoctorFormModal({
                 </select>
               </div>
             )}
+
+            {/* Dữ liệu test — QA tự đánh dấu khi tạo bác sĩ để thử nghiệm, tự động ẩn khỏi App Bệnh
+                nhân mà không cần khóa tài khoản (vẫn đăng nhập/dùng thử WinForms bình thường). */}
+            <label className="flex items-center gap-2.5 p-3 bg-amber-50/70 border border-amber-100 rounded-xl cursor-pointer select-none">
+              <input
+                type="checkbox"
+                checked={isTestData}
+                onChange={(e) => setIsTestData(e.target.checked)}
+                className="w-4.5 h-4.5 rounded border-gray-300 text-amber-600 focus:ring-amber-500/40 cursor-pointer"
+              />
+              <span className="text-sm font-semibold text-amber-900">
+                Đây là hồ sơ dữ liệu test (ẩn khỏi App Bệnh nhân)
+              </span>
+            </label>
 
             {/* Phân vùng Thông tin Nghỉ phép (CHỈ hiển thị khi status === "Nghỉ phép") */}
             {status === "Nghỉ phép" && (
@@ -615,15 +767,21 @@ export default function DoctorFormModal({
               <button
                 type="button"
                 onClick={onClose}
-                className="px-6 py-2.5 border border-gray-300 rounded-xl text-gray-700 font-bold hover:bg-gray-50 transition cursor-pointer text-base"
+                disabled={isSubmitting}
+                className="px-6 py-2.5 border border-gray-300 rounded-xl text-gray-700 font-bold hover:bg-gray-50 transition cursor-pointer text-base disabled:opacity-50"
               >
                 Hủy
               </button>
               <button
                 type="submit"
-                className="inline-flex items-center gap-2 px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl shadow-sm transition cursor-pointer text-base"
+                disabled={isSubmitting}
+                className="inline-flex items-center gap-2 px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl shadow-sm transition cursor-pointer text-base disabled:opacity-50"
               >
-                <Save size={18} />
+                {isSubmitting ? (
+                  <Loader2 size={18} className="animate-spin" />
+                ) : (
+                  <Save size={18} />
+                )}
                 <span>{initialData ? "Cập nhật" : "Tạo bác sĩ"}</span>
               </button>
             </div>

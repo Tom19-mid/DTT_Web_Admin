@@ -2,11 +2,13 @@ import { useState, useMemo } from "react";
 import type { Medicine, MedicineCategory } from "../types";
 import MedicineSearch from "./MedicineSearch";
 import MedicineRow from "./MedicineRow";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import Pagination from "../../../components/common/Pagination";
+import { Loader2 } from "lucide-react";
 
 interface MedicineTableProps {
   medicines: Medicine[];
   categories: MedicineCategory[];
+  loading?: boolean;
   onViewDetail: (medicine: Medicine) => void;
   onEditMedicine: (medicine: Medicine) => void;
   onToggleStatus: (medicine: Medicine) => void;
@@ -15,12 +17,15 @@ interface MedicineTableProps {
 export default function MedicineTable({
   medicines,
   categories,
+  loading = false,
   onViewDetail,
   onEditMedicine,
   onToggleStatus,
 }: MedicineTableProps) {
   const [searchTerm, setSearchTerm] = useState("");
-  const [selectedCategoryId, setSelectedCategoryId] = useState<number | "ALL">("ALL");
+  const [selectedCategoryId, setSelectedCategoryId] = useState<number | "ALL">(
+    "ALL",
+  );
   const [selectedStatus, setSelectedStatus] = useState<string>("ALL");
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
@@ -34,24 +39,23 @@ export default function MedicineTable({
 
   const filteredMedicines = useMemo(() => {
     return medicines.filter((med) => {
-      // Search term matching ID, name, description, usage
       const term = searchTerm.toLowerCase().trim();
+      const name = (med.medicineName || med.name || "").toLowerCase();
+      const desc = (med.description || "").toLowerCase();
+      const usage = (med.defaultUsage || med.usage || "").toLowerCase();
+
       const matchesSearch =
         !term ||
-        med.medicineId.toString().includes(term) ||
-        med.medicineName.toLowerCase().includes(term) ||
-        med.description.toLowerCase().includes(term) ||
-        med.defaultUsage.toLowerCase().includes(term) ||
-        med.unit.toLowerCase().includes(term);
+        name.includes(term) ||
+        desc.includes(term) ||
+        usage.includes(term);
 
-      // Category filter
       const matchesCategory =
-        selectedCategoryId === "ALL" || med.categoryId === selectedCategoryId;
+        selectedCategoryId === "ALL" ||
+        med.categoryId === Number(selectedCategoryId);
 
-      // Status filter
       const matchesStatus =
-        selectedStatus === "ALL" ||
-        med.status === selectedStatus;
+        selectedStatus === "ALL" || med.status === selectedStatus;
 
       return matchesSearch && matchesCategory && matchesStatus;
     });
@@ -107,7 +111,21 @@ export default function MedicineTable({
             </tr>
           </thead>
           <tbody>
-            {paginatedMedicines.length > 0 ? (
+            {loading && medicines.length === 0 ? (
+              <tr>
+                <td
+                  colSpan={11}
+                  className="text-center py-12 text-gray-500 font-medium"
+                >
+                  <div className="flex flex-col items-center justify-center gap-3">
+                    <Loader2 className="w-8 h-8 text-blue-600 animate-spin" />
+                    <span className="text-gray-600 font-medium text-base">
+                      Đang tải danh sách thuốc...
+                    </span>
+                  </div>
+                </td>
+              </tr>
+            ) : paginatedMedicines.length > 0 ? (
               paginatedMedicines.map((med) => (
                 <MedicineRow
                   key={med.medicineId}
@@ -133,47 +151,14 @@ export default function MedicineTable({
 
       {/* Pagination Footer */}
       {filteredMedicines.length > 0 && (
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mt-6 pt-4 border-t border-gray-100 text-base text-gray-600">
-          <div>
-            Hiển thị <span className="font-bold text-gray-900">{(currentPage - 1) * itemsPerPage + 1}</span> -{" "}
-            <span className="font-bold text-gray-900">
-              {Math.min(currentPage * itemsPerPage, filteredMedicines.length)}
-            </span>{" "}
-            trên <span className="font-bold text-gray-900">{filteredMedicines.length}</span> thuốc
-          </div>
-
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
-              disabled={currentPage === 1}
-              className="p-2.5 border border-gray-200 rounded-xl hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition"
-            >
-              <ChevronLeft size={18} />
-            </button>
-
-            {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-              <button
-                key={page}
-                onClick={() => setCurrentPage(page)}
-                className={`px-4 py-2 rounded-xl font-bold text-base cursor-pointer transition ${
-                  currentPage === page
-                    ? "bg-blue-600 text-white shadow-xs"
-                    : "border border-gray-200 text-gray-700 hover:bg-gray-50"
-                }`}
-              >
-                {page}
-              </button>
-            ))}
-
-            <button
-              onClick={() => setCurrentPage((p) => Math.min(p + 1, totalPages))}
-              disabled={currentPage === totalPages}
-              className="p-2.5 border border-gray-200 rounded-xl hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition"
-            >
-              <ChevronRight size={18} />
-            </button>
-          </div>
-        </div>
+        <Pagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          onPageChange={(page) => setCurrentPage(page)}
+          totalItems={filteredMedicines.length}
+          itemsPerPage={itemsPerPage}
+          itemLabel="thuốc"
+        />
       )}
     </div>
   );

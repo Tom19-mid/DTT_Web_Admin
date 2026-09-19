@@ -451,3 +451,6 @@ FodyWeavers.xsd
 *.msix
 *.msm
 *.msp
+
+# file Agents
+.agents/

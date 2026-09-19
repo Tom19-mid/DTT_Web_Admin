@@ -1,4 +1,4 @@
-import { LockKeyhole, X } from "lucide-react";
+import { Lock, Unlock, X } from "lucide-react";
 import type { Medicine } from "../types";
 
 interface ConfirmStatusModalProps {
@@ -16,47 +16,72 @@ export default function ConfirmStatusModal({
 }: ConfirmStatusModalProps) {
   if (!isOpen || !medicine) return null;
 
-  const isOperating = medicine.status === "Đang hoạt động";
-  const targetStatus = isOperating ? "Ngưng hoạt động" : "Đang hoạt động";
-  const targetStatusClass =
-    targetStatus === "Đang hoạt động" ? "text-emerald-600" : "text-amber-600";
+  const isCurrentlyLocked =
+    medicine.status === "Ngưng hoạt động" || medicine.status === "Inactive";
 
   return (
     <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-xs flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6 relative animate-in fade-in zoom-in duration-200">
+      <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6 relative animate-in fade-in zoom-in-95 duration-200">
         <button
           onClick={onClose}
-          className="absolute top-4 right-4 p-1 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100 transition cursor-pointer"
+          className="absolute top-4 right-4 p-1.5 text-gray-400 hover:text-gray-600 rounded-lg transition cursor-pointer"
         >
           <X size={20} />
         </button>
 
-        <div className="flex flex-col items-center text-center space-y-4">
-          <div className="p-3 bg-amber-100 text-amber-600 rounded-full">
-            <LockKeyhole size={32} />
+        <div className="flex flex-col items-center text-center py-2">
+          <div
+            className={`w-14 h-14 rounded-full flex items-center justify-center mb-4 shrink-0 shadow-2xs ${
+              isCurrentlyLocked
+                ? "bg-emerald-100 text-emerald-600"
+                : "bg-rose-100 text-rose-600"
+            }`}
+          >
+            {isCurrentlyLocked ? <Unlock size={28} /> : <Lock size={28} />}
           </div>
 
-          <div>
-            <h3 className="text-xl font-bold text-gray-900">Xác nhận chuyển trạng thái</h3>
-            <p className="text-base text-gray-600 mt-2">
-              Bạn có muốn thay đổi trạng thái của thuốc{" "}
-              <span className="font-bold text-gray-900">"{medicine.medicineName}"</span> sang{" "}
-              <span className={`font-bold ${targetStatusClass}`}>"{targetStatus}"</span>?
-            </p>
-          </div>
+          <h3 className="text-xl font-bold text-gray-900 mb-2">
+            {isCurrentlyLocked
+              ? "Mở lại thuốc"
+              : "Xác nhận ngưng hoạt động thuốc"}
+          </h3>
 
-          <div className="flex items-center justify-center gap-3 w-full pt-2">
+          <p className="text-base text-gray-600 mb-6 leading-relaxed">
+            {isCurrentlyLocked ? (
+              <>
+                Bạn có chắc chắn muốn mở lại thuốc{" "}
+                <span className="font-bold text-gray-900">
+                  "{medicine.medicineName}"
+                </span>{" "}
+                không?
+              </>
+            ) : (
+              <>
+                Bạn có chắc chắn muốn ngưng hoạt động thuốc{" "}
+                <span className="font-bold text-gray-900">
+                  "{medicine.medicineName}"
+                </span>{" "}
+                không?
+              </>
+            )}
+          </p>
+
+          <div className="flex items-center justify-center gap-3 w-full">
             <button
               onClick={onClose}
-              className="w-1/2 py-3 border border-gray-300 rounded-xl text-gray-700 font-bold hover:bg-gray-50 transition cursor-pointer text-base"
+              className="w-1/2 py-2.5 border border-gray-300 rounded-xl text-gray-700 font-bold hover:bg-gray-50 transition cursor-pointer text-base"
             >
-              Hủy bỏ
+              Hủy
             </button>
             <button
               onClick={onConfirm}
-              className="w-1/2 py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl shadow-sm transition cursor-pointer text-base"
+              className={`w-1/2 py-2.5 text-white font-bold rounded-xl shadow-sm transition cursor-pointer text-base ${
+                isCurrentlyLocked
+                  ? "bg-emerald-600 hover:bg-emerald-700"
+                  : "bg-rose-600 hover:bg-rose-700"
+              }`}
             >
-              Xác nhận
+              {isCurrentlyLocked ? "Mở thuốc" : "Ngưng hoạt động"}
             </button>
           </div>
         </div>
