@@ -25,13 +25,16 @@ const monthNames = [
 
 const dayNames = ["CN", "T2", "T3", "T4", "T5", "T6", "T7"];
 
-// Generate time options 06:00 → 22:00 with 30-min steps
+// Generate time options 06:00 → 23:30 with 30-min steps.
+// KHÔNG thêm "24:00": backend đọc giờ bằng TimeSpan (WorkSchedulesController.ParseTime) — "24:00" không
+// parse được nên âm thầm rơi về giá trị mặc định 17:00, lưu sai lịch mà không báo lỗi. 23:30 là mốc
+// kết thúc muộn nhất an toàn (khung giờ cuối 23:00 – 23:30).
 const generateTimeOptions = (): string[] => {
   const times: string[] = [];
-  for (let hour = 6; hour <= 22; hour++) {
+  for (let hour = 6; hour <= 23; hour++) {
     const hStr = String(hour).padStart(2, "0");
     times.push(`${hStr}:00`);
-    if (hour < 22) times.push(`${hStr}:30`);
+    times.push(`${hStr}:30`);
   }
   return times;
 };
