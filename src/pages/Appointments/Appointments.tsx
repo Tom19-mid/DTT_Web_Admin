@@ -266,10 +266,13 @@ export default function Appointments() {
         return;
       }
 
-      // Map status name to statusId (1: Scheduled, 2: Waiting, 3: InProgress, 4: Completed, 5: Cancelled, 6: NoShow, 7: CheckedIn, 8: WaitingForDoctor, 9: AwaitingTestResults, 10: PendingDispensing)
+      // Map status name to statusId (1: Scheduled, 2: Waiting, 3: InProgress, 4: Completed, 5: Cancelled, 6: NoShow, 7: CheckedIn, 8: WaitingForDoctor, 9: AwaitingTestResults, 10: PendingDispensing, 11: PendingPayment)
       let statusId = 1;
       const st = String(appData.status || "Scheduled").toLowerCase();
-      if (st.includes("pendingdispensing") || st.includes("phát thuốc")) statusId = 10;
+      // PendingPayment phải được nhận diện TRƯỚC nhánh chung "chờ" bên dưới — trước đây "Chờ thanh toán" rơi vào
+      // st.includes("chờ") → statusId = 2, nên Admin sửa 1 lịch đang chờ thanh toán là lịch bị lùi về "Waiting".
+      if (st.includes("pendingpayment") || st.includes("thanh toán")) statusId = 11;
+      else if (st.includes("pendingdispensing") || st.includes("phát thuốc")) statusId = 10;
       else if (st.includes("awaitingtestresults") || st.includes("waitingtestresults") || st.includes("xét nghiệm")) statusId = 9;
       else if (st.includes("waitingfordoctor") || st.includes("waitingdoctor") || st.includes("chờ bác sĩ")) statusId = 8;
       else if (st.includes("checkedin") || st.includes("check in")) statusId = 7;
